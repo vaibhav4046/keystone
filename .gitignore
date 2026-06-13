@@ -1,0 +1,32 @@
+# secrets
+.env
+*.env
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# node / web
+node_modules/
+web/dist/
+dist/
+.vite/
+
+# tauri / rust
+desktop/src-tauri/target/
+target/
+
+# data and local graph
+data/audit_ledger.jsonl
+*.duckdb
+schema_snapshot.local.json
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
