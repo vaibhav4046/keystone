@@ -14,7 +14,8 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from core import fixtures, graph as graph_mod, impact as impact_mod
+from core import (fixtures, graph as graph_mod, impact as impact_mod,
+                  policy as policy_mod, attest as attest_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -86,13 +87,27 @@ def main():
         "definitions": names,
         "impact": {},
         "precedent": {},
+        "policy": {"policy": policy_mod.load_policy(), "policy_hash": policy_mod.policy_hash()},
+        "attestation": {},
         "audit": {"rows": led.rows(), "verify": led.verify()},
     }
+    rows = led.rows()
     for n in names:
         imp = impact_mod.compute_blast_radius(g, n)
-        if imp:
-            bundle["impact"][n] = imp.to_dict()
-            bundle["precedent"][n] = led.precedent(target_symbols=[n], signature=imp.signature)
+        if not imp:
+            continue
+        d = imp.to_dict()
+        prec = led.precedent(target_symbols=[n], signature=imp.signature)
+        pol = policy_mod.evaluate(d, prec)
+        d["policy"] = pol
+        d["orbit_snapshot_sha256"] = attest_mod.orbit_snapshot_sha256(d)
+        bundle["impact"][n] = d
+        bundle["precedent"][n] = prec
+        # precompute an attestation for any symbol that already has a seeded decision
+        match = [r for r in rows if n in (r.get("target_symbols") or [])]
+        if match:
+            bundle["attestation"][n] = attest_mod.build_attestation(
+                impact_dict=d, policy_eval=pol, row=match[0], source_mode="FALLBACK")
     g.close()
 
     out = os.path.join(WEB, "data.json")

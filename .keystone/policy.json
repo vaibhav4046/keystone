@@ -1,0 +1,12 @@
+{
+  "version": "1",
+  "_comment": "Keystone governance policy as code. Canonical sha256 of this file is pinned into every decision in the audit ledger, so an auditor can reconstruct the exact policy in force at any historical approval. Tiers map the engine-computed blast radius (distinct affected files) to a required approver count, a minimum review window, and an ALLOW / HOLD / BLOCK action. Deterministic: same graph snapshot + same policy => same tier. No model.",
+  "tiers": [
+    {"name": "ISOLATED",   "max_affected_files": 1,    "required_approvers": 1, "review_window_hours": 0,  "action": "ALLOW"},
+    {"name": "LOCAL",      "max_affected_files": 3,    "required_approvers": 1, "review_window_hours": 4,  "action": "ALLOW"},
+    {"name": "CROSS_TEAM", "max_affected_files": 8,    "required_approvers": 2, "review_window_hours": 24, "action": "ALLOW"},
+    {"name": "ORG_WIDE",   "max_affected_files": null, "required_approvers": 3, "review_window_hours": 48, "action": "HOLD"}
+  ],
+  "block_on_identical_contradiction": true,
+  "max_blast_radius_defs": null
+}

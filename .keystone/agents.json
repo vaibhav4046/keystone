@@ -1,0 +1,17 @@
+{
+  "_comment": "Keystone agent registry as code. Maps an autonomous coding agent's author id to a scope manifest enforced deterministically (fnmatch path globs + max blast radius). A change an agent opens outside this scope is a hard SCOPE-VIOLATION. Matching is literal; there is no ML and no fuzzy matching. A registry miss is reported as AGENT_UNREGISTERED (detected, not proven). Editing this file is itself a governed change.",
+  "agents": {
+    "claude-code": {
+      "model": "claude-opus-4-8",
+      "allowed_paths": ["/src/**"],
+      "forbidden_paths": ["/src/cli/**", "**/config*.py"],
+      "max_blast_radius": 6
+    },
+    "dependabot": {
+      "model": "rules-bot",
+      "allowed_paths": ["**/requirements.txt", "**/package-lock.json", "**/Cargo.lock"],
+      "forbidden_paths": ["/src/**"],
+      "max_blast_radius": 0
+    }
+  }
+}

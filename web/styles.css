@@ -145,6 +145,21 @@ body{min-height:100vh}
 .gate-err:not(:empty){min-height:16px}
 .leaf-note{margin-top:8px;padding:8px 10px;border-radius:7px;background:var(--bg-raised);color:var(--text-mid);font-size:11.5px;line-height:1.45}
 .leaf-note b{color:var(--orange);font-weight:500}
+
+/* governance / policy tier gate */
+.gov{margin:10px 14px 4px;padding:10px;border-radius:8px;border:1px solid var(--bg-line);background:var(--bg-raised);font-size:12px}
+.gov.ok{border-color:rgba(59,224,129,.4)} .gov.warn{border-color:rgba(255,176,46,.5)} .gov.bad{border-color:rgba(255,92,102,.55)}
+.gov-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tier{font-family:var(--mono);font-weight:700;font-size:11px;letter-spacing:.08em;padding:3px 8px;border-radius:6px;background:var(--bg-void);color:var(--text-hi);border:1px solid var(--bg-line)}
+.tier-ISOLATED{color:var(--green)} .tier-LOCAL{color:var(--cyan)} .tier-CROSS_TEAM{color:var(--gold)} .tier-ORG_WIDE{color:var(--danger-2)}
+.gov-act{font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:6px;font-size:11px}
+.gov-act.ok{background:rgba(59,224,129,.14);color:var(--green)} .gov-act.warn{background:rgba(255,176,46,.14);color:var(--amber)} .gov-act.bad{background:rgba(255,92,102,.14);color:var(--danger)}
+.gov-need{margin-left:auto;color:var(--text-mid);font-size:11px}
+.gov-owner{margin-top:6px;color:var(--text-mid)}
+.gov-owner b{color:var(--text-hi)}
+.gov-why{margin:6px 0 0;padding-left:16px;color:var(--text-mid);line-height:1.5}
+.gov-why li{margin:2px 0}
+.gov-foot{margin-top:6px;color:var(--text-dim);font-size:10.5px}
 @media (max-width:1080px){
   .grid{grid-template-columns:1fr}
   .rail{min-height:auto}
