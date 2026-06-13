@@ -59,6 +59,32 @@ def test_precedent_contradiction_over_http():
     assert p["contradiction_strength"] == "identical"
 
 
+def test_governance_block_refuses_approve_without_override():
+    # tokenize carries a seeded identical-signature rejection -> policy action BLOCK
+    r = client.post("/api/approve", json={"name": "tokenize", "decision": "approve",
+                                          "reviewer": "x", "rationale": "ship it anyway"})
+    assert r.status_code == 409
+    assert r.json()["detail"]["error"] == "GOVERNANCE_BLOCK"
+    ovr = client.post("/api/approve", json={"name": "tokenize", "decision": "approve", "reviewer": "x",
+                                            "rationale": "accept risk, RFC filed", "override": True})
+    assert ovr.status_code == 200 and ovr.json()["row"]["override"] is True
+
+
+def test_quorum_requires_distinct_approvers():
+    # serialize is CROSS_TEAM (>=2 approvers required). Seed-agnostic: a distinct
+    # approver advances the quorum, the same approver twice does not.
+    a = client.post("/api/approve", json={"name": "serialize", "decision": "approve",
+                                          "reviewer": "qa_alice", "rationale": "looks safe"}).json()
+    assert a["quorum"]["required"] >= 2
+    base = a["quorum"]["confirmed"]
+    same = client.post("/api/approve", json={"name": "serialize", "decision": "approve",
+                                             "reviewer": "qa_alice", "rationale": "still safe"}).json()
+    assert same["quorum"]["confirmed"] == base                   # same actor does not advance quorum
+    diff = client.post("/api/approve", json={"name": "serialize", "decision": "approve",
+                                             "reviewer": "qa_bob", "rationale": "second reviewer ok"}).json()
+    assert diff["quorum"]["confirmed"] == base + 1               # a distinct actor advances it
+
+
 def test_approve_records_and_chain_verifies():
     before = client.get("/api/audit").json()["verify"]["count"]
     r = client.post("/api/approve", json={"name": "parse", "decision": "approve",

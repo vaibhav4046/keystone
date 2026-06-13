@@ -2,9 +2,9 @@
 
 [![ci](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml)
 
-Governed change review on the GitLab Orbit code knowledge graph. Keystone shows the real blast radius of a change, requires a human approval with a recorded reason, and keeps a tamper-evident memory that proves it was never edited.
+A graph-driven governance and audit layer for the GitLab Orbit code knowledge graph. Orbit already gives you the blast radius of a change; Keystone turns that blast radius into the enforcement decision and binds it to an auditable record. It maps the impact to a policy tier that sets required approvers and an ALLOW / HOLD / BLOCK action, refuses an approval that contradicts a prior identical-blast rejection, gates autonomous coding agents against a committed scope manifest, and mints a tamper-evident, standards-shaped attestation for every decision. The differentiator is not the blast-radius view, which GitLab markets; it is the tamper-evident precedent memory and the graph-computed enforcement tier wrapped around it.
 
-Built for the GitLab Transcend Hackathon, Showcase track.
+A GitLab-native extension, not a standalone product: it consumes Orbit, drives Orbit's own CLI, ships as a project SKILL.md plus a CI governance gate, and is built for the GitLab Transcend Hackathon, Showcase track. The onboarding path is a merge-request hook (or the committed `.gitlab-ci.yml` gate) that calls the Keystone API on the touched symbols and fails the pipeline on a BLOCK.
 
 Live demo: https://vaibhav4046.github.io/keystone/ (the public sample, labeled FALLBACK; the live local-graph run is in the demo video).
 

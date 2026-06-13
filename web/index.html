@@ -86,6 +86,8 @@
           <button id="approve" class="btn approve" disabled>APPROVE</button>
           <button id="reject" class="btn reject" disabled>REJECT</button>
         </div>
+        <label id="override-row" class="gate-note" style="display:none"><input type="checkbox" id="override" /> override the policy BLOCK (recorded as an accountable override)</label>
+        <div id="gate-status" class="gate-note"></div>
         <div class="gate-note">appends one HMAC-keyed hash-linked ledger row + mints a decision attestation. Nothing else changes.</div>
         <button id="export-att" class="btn ghost" disabled>EXPORT ATTESTATION (in-toto / SLSA-VSA)</button>
         <div id="sample-note" class="gate-note" style="opacity:0;color:var(--gold);transition:opacity .3s"></div>

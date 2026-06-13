@@ -81,6 +81,9 @@ DEFINITIONS = [
     (23, "healthcheck", "api.routes.healthcheck", "/src/api/routes.py", "Function", 72, 90),      # calls route
     (24, "metrics", "util.metrics.metrics", "/src/util/metrics.py", "Function", 4, 30),           # standalone
     (25, "Logger", "util.log.Logger", "/src/util/log.py", "Class", 22, 60),                       # standalone
+    # an org-wide hub: called from one function in 13 distinct files, so changing it
+    # crosses the CROSS_TEAM file cap into the ORG_WIDE tier (HOLD action) for the demo
+    (26, "audit_log", "util.log.audit_log", "/src/util/log.py", "Function", 62, 90),
 ]
 
 # gl_edge: (source_id, source_kind, relationship_kind, target_id, target_kind)
@@ -108,12 +111,17 @@ _CALLS = [
     (19, 17),  # route -> handle_get
     (19, 18),  # route -> handle_post
     (23, 19),  # healthcheck -> route
+    # 13 callers of the audit_log hub, one per distinct file -> ORG_WIDE tier on change.
+    # These are OUTGOING edges from existing symbols, so their own (reverse) blast
+    # radii are unchanged; only audit_log gains a large reverse fan-out.
+    (1, 26), (2, 26), (3, 26), (4, 26), (5, 26), (9, 26), (11, 26),
+    (15, 26), (16, 26), (17, 26), (19, 26), (21, 26), (24, 26),
 ]
 # DEFINES edges (File -> Definition): which file defines each definition.
 _DEF_FILE = {
     1: 1, 2: 2, 3: 3, 4: 4, 6: 4, 7: 4, 5: 5, 8: 6, 9: 7, 10: 1,
     11: 8, 12: 8, 13: 8, 14: 8, 20: 8, 22: 8, 15: 9, 16: 10,
-    17: 11, 18: 11, 19: 12, 23: 12, 21: 13, 24: 14, 25: 6,
+    17: 11, 18: 11, 19: 12, 23: 12, 21: 13, 24: 14, 25: 6, 26: 6,
 }
 # CONTAINS edges (Directory -> File) and (Directory -> Directory) for fidelity.
 _DIR_FILES = [(1, 4), (2, 1), (2, 2), (2, 3), (3, 5), (3, 7), (4, 6),
