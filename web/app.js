@@ -127,6 +127,9 @@ function drawBlast(imp) {
   ttl.setAttribute("id", "bsvg-title");
   ttl.textContent = `Blast radius of ${imp.epicenter.name}: ${imp.counts.total_affected} affected definitions, listed in the IMPACT panel.`;
   svg.appendChild(ttl);
+  // cancel any in-flight reveal/counter timers from a previous selection so a fast
+  // click-through cannot leave a stale, corrupted count on screen
+  _timers.forEach(clearTimeout); _timers = []; _ctv = 0;
   const W = 600, H = 420, cx = 300, cy = 210;
   const rings = imp.rings; // {"0":[id], "1":[...], ...}
   const maxRing = Math.max(...Object.keys(rings).map(Number));
@@ -178,24 +181,34 @@ function drawBlast(imp) {
     l.setAttribute("class", "edge");
     svg.appendChild(l); return l;
   });
-  // nodes
+  // nodes. Dense rings (the live graph puts 12 nodes in ring-1) would overlap, so
+  // labels are truncated with a full-name <title> tooltip, and on very dense rings
+  // labels are hidden (the names stay listed exactly in the IMPACT panel).
   const nodeEls = [];
   order.forEach(({ id, r }) => {
     const g = document.createElementNS(ns, "g");
     g.setAttribute("class", "node");
     const isEpi = id === imp.epicenter.id;
+    const full = nameOf(imp, id);
+    const ttl = document.createElementNS(ns, "title");
+    ttl.textContent = full;
+    g.appendChild(ttl);                                  // hover shows the full name
     const circ = document.createElementNS(ns, "circle");
     circ.setAttribute("cx", pos[id].x); circ.setAttribute("cy", pos[id].y);
     circ.setAttribute("r", isEpi ? 16 : 9);
     circ.setAttribute("fill", ringColor(r));
     if (isEpi) circ.setAttribute("filter", "url(#glow)");
     g.appendChild(circ);
-    const t = document.createElementNS(ns, "text");
-    t.setAttribute("x", pos[id].x); t.setAttribute("y", pos[id].y + (isEpi ? 30 : 20));
-    t.setAttribute("text-anchor", "middle"); t.setAttribute("fill", isEpi ? "#EDEDED" : "#9BA3AE");
-    t.setAttribute("font-size", isEpi ? "13" : "11"); t.setAttribute("font-family", "JetBrains Mono, monospace");
-    t.textContent = nameOf(imp, id);
-    g.appendChild(t);
+    const dense = (rings[r] || []).length > 8;
+    if (!dense || isEpi) {
+      const t = document.createElementNS(ns, "text");
+      t.setAttribute("x", pos[id].x); t.setAttribute("y", pos[id].y + (isEpi ? 30 : 20));
+      t.setAttribute("text-anchor", "middle"); t.setAttribute("fill", isEpi ? "#EDEDED" : "#9BA3AE");
+      t.setAttribute("font-size", isEpi ? "13" : "11"); t.setAttribute("font-family", "JetBrains Mono, monospace");
+      const label = full.length > 11 ? full.slice(0, 10) + "…" : full;
+      t.textContent = label;
+      g.appendChild(t);
+    }
     svg.appendChild(g); nodeEls.push({ g, r, id });
   });
   // glow filter
@@ -216,15 +229,15 @@ function drawBlast(imp) {
   let revealed = 0;
   nodeEls.forEach((n, idx) => {
     const delay = n.r === 0 ? 0 : 180 + n.r * 230 + (idx % 5) * 40;
-    setTimeout(() => {
+    _timers.push(setTimeout(() => {
       n.g.classList.add("show");
       if (n.id !== imp.epicenter.id) { revealed++; animateCounterTo(revealed); }
-    }, delay);
+    }, delay));
   });
-  eEls.forEach((e, i) => setTimeout(() => e.classList.add("show"), 220 + i * 60));
-  setTimeout(() => $("#counter").textContent = pad(total), 200 + maxRing * 230 + 400);
+  eEls.forEach((e, i) => _timers.push(setTimeout(() => e.classList.add("show"), 220 + i * 60)));
+  _timers.push(setTimeout(() => $("#counter").textContent = pad(total), 200 + maxRing * 230 + 400));
 }
-let _ctv = 0;
+let _ctv = 0, _timers = [];
 function animateCounterTo(v) { _ctv = v; $("#counter").textContent = pad(v); }
 function pad(n) { return String(n).padStart(4, "0"); }
 function idNames(imp) { const m = {}; Object.keys(imp.names || {}).forEach((k) => m[Number(k)] = imp.names[k]); return m; }
@@ -237,13 +250,17 @@ function renderRings(imp) {
   const rows = [["0", "EPICENTER", 1, esc(imp.epicenter.name) + (epiSub ? ` <span class="rn-sub">${esc(epiSub)}</span>` : "")]];
   Object.keys(imp.rings).map(Number).sort((a, b) => a - b).forEach((r) => {
     if (r === 0) return;
-    rows.push([String(r), r === 1 ? "DIRECT" : (r === 2 ? "TRANSITIVE" : "AT RISK"), imp.rings[r].length,
+    const tag = r === 1 ? "DIRECT" : (r === 2 ? "TRANSITIVE" : "AT RISK");
+    rows.push([String(r), `R${r} ${tag}`, imp.rings[r].length,   // R-prefix: severity not by colour alone
       imp.rings[r].map((id) => esc(nameOf(imp, id))).join(", ")]);
   });
   rows.push(["U", "UNAFFECTED", c.unaffected, ""]);
   let html = rows.map(([r, label, n, names]) =>
     `<div class="ringrow r${r}"><span class="rl">${label}</span><span class="rc tabnum">${n}</span><span class="rn">${names || "—"}</span></div>`
   ).join("");
+  if (c.total_affected === 0) {
+    html += `<div class="leaf-note">leaf symbol — nothing depends on it, so changing it is contained by design. Try <b>tokenize</b> or <b>compile_unit</b> to see a blast radius and a prior decision.</div>`;
+  }
   const cc = imp.orbit_crosscheck;
   if (cc && cc.ok) {
     html += `<div class="orbit-verified" title="${esc(cc.command || "")}"><span class="ov-dot"></span>` +
@@ -294,8 +311,8 @@ async function refreshLedger() {
   } else if (sampleAppend) {
     vd.textContent = "SAMPLE · NOT VERIFIED"; vd.className = "verdict warn";
   } else if (STATIC_MODE) {
-    vd.textContent = "VERIFIED AT BUILD TIME"; vd.className = "verdict warn";
-    vd.title = "the public sample chain was verified when built; run the local app to verify the live HMAC chain";
+    vd.textContent = "SAMPLE · PUBLIC KEY"; vd.className = "verdict warn";
+    vd.title = "public demo only: the sample HMAC key is published in source, so this chain is illustrative, not tamper-evident. The real local app keys the chain with a secret per-machine key.";
   } else {
     vd.textContent = "CHAIN VERIFIED"; vd.className = "verdict ok";
   }
@@ -303,7 +320,7 @@ async function refreshLedger() {
   tb.innerHTML = a.rows.map((r) => `<tr class="${(!v.ok && r.seq >= v.broken_index) ? "broken" : ""}">
     <td class="tabnum">${r.seq}</td><td class="ch tabnum">${(r.ts || "").replace("T", " ").replace("Z", "")}</td>
     <td>${esc(r.change_id)}</td><td class="tabnum">${(r.blast_radius_set || []).length}</td>
-    <td>${esc(r.actor)}</td><td class="dec ${r.decision}">${r.decision}</td>
+    <td>${esc(r.actor)}</td><td class="dec ${esc(r.decision)}">${esc(r.decision)}</td>
     <td class="hash tabnum">${(r.prev_hash || "").slice(0, 8)}… → ${(r.row_hash || "").slice(0, 8)}…</td></tr>`).join("");
   // re-sync the chain chip in topbar
   try { paintStatus(await api("/api/status")); } catch (e) {}
@@ -325,8 +342,15 @@ function wire() {
 async function decide(decision) {
   const reviewer = $("#reviewer").value.trim() || "anon";
   const reason = $("#reason").value.trim();
-  if (!reason) { $("#reason").focus(); $("#reason").style.outline = "2px solid var(--danger)"; return; }
-  $("#reason").style.outline = "";
+  const err = $("#reason-err");
+  if (!reason) {
+    $("#reason").focus(); $("#reason").style.outline = "2px solid var(--danger)";
+    $("#reason").setAttribute("aria-invalid", "true");
+    if (err) err.textContent = "A reason is required before recording a decision.";
+    return;
+  }
+  $("#reason").style.outline = ""; $("#reason").removeAttribute("aria-invalid");
+  if (err) err.textContent = "";
   if (!STATIC_MODE) {
     try {
       const r = await fetch("/api/approve", {

@@ -1,14 +1,14 @@
 [
   {
     "subcommand": "schema",
-    "command": "orbit schema",
+    "command": "glab orbit local schema",
     "ok": true,
     "stdout": "+--------------------+-------------------+-------------------------------------------------+\n| table_name         | column_name       | data_type                                       |\n+--------------------+-------------------+-------------------------------------------------+\n| _orbit_manifest    | repo_path         | VARCHAR                                         |\n| _orbit_manifest    | project_id        | BIGINT                                          |\n| _orbit_manifest    | parent_repo_path  | VARCHAR                                         |\n| _orbit_manifest    | branch            |"
   },
   {
     "subcommand": "sql",
-    "command": "orbit sql 'SELECT name FROM gl_definition LIMIT 3'",
+    "command": "glab orbit local sql 'SELECT name FROM gl_definition WHERE definition_type IN ('\"'\"'Function'\"'\"','\"'\"'Method'\"'\"','\"'\"'Class'\"'\"','\"'\"'DecoratedFunction'\"'\"') LIMIT 3'",
     "ok": true,
-    "stdout": "+---------------------+\n| name                |\n+---------------------+\n| .claude/launch.json |\n| default             |\n| web/app.js          |\n+---------------------+\n"
+    "stdout": "+--------------+\n| name         |\n+--------------+\n| $            |\n| ensureStatic |\n| fromStatic   |\n+--------------+\n"
   }
 ]
