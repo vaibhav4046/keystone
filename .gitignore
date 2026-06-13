@@ -30,3 +30,6 @@ schema_snapshot.local.json
 Thumbs.db
 .idea/
 .vscode/
+
+# any ledger variant (runtime, seed) — regenerable
+data/*.jsonl
