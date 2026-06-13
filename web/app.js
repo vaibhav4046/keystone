@@ -1,0 +1,271 @@
+"use strict";
+// Keystone web hero. Talks to the FastAPI core. Every number shown comes from
+// the API (engine-computed); this script only renders and animates.
+const $ = (s) => document.querySelector(s);
+const api = (p) => fetch(p).then((r) => { if (!r.ok) throw new Error(p + " " + r.status); return r.json(); });
+const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let STATE = { defs: [], selected: null, impact: null };
+
+const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#caa94a" };
+function ringColor(r) { return RING_COLOR[r] || "#5C6672"; }
+
+async function boot() {
+  try {
+    const st = await api("/api/status");
+    paintStatus(st);
+  } catch (e) { /* status optional */ }
+  const d = await api("/api/definitions");
+  STATE.defs = d.names;
+  renderDefList(STATE.defs);
+  await refreshLedger();
+  // auto-select the demo symbol
+  if (STATE.defs.includes("tokenize")) select("tokenize");
+  wire();
+}
+
+function paintStatus(st) {
+  const src = $("#src-chip"), orbit = $("#orbit-chip"), chain = $("#chain-chip"), llm = $("#llm-chip");
+  const live = st.source_mode === "LIVE";
+  src.innerHTML = `<span class="dot ${live ? "g" : "a"}"></span>source <b>${st.source_mode}</b>`;
+  src.className = "chip " + (live ? "ok" : "warn");
+  orbit.innerHTML = `orbit <b>${st.orbit_access}</b>`;
+  const ok = st.audit_chain && st.audit_chain.ok;
+  chain.innerHTML = `<span class="dot ${ok ? "g" : "r"}"></span>chain <b>${ok ? "verified" : "broken@" + st.audit_chain.broken_index}</b>`;
+  chain.className = "chip " + (ok ? "ok" : "bad");
+  const n = (st.llm_providers_configured || []).length;
+  llm.innerHTML = `llm <b>${n ? n + " ready" : "none (deterministic)"}</b>`;
+  $("#db-mode").textContent = st.source_mode === "LIVE" ? "Orbit Local (live)" : "fixture (FALLBACK)";
+  $("#def-count").textContent = st.definitions;
+  $("#db-path").textContent = (st.duckdb_path || "").split(/[\\/]/).slice(-2).join("/");
+  $("#db-path").title = st.duckdb_path || "";
+  $("#foot-src").textContent = (st.source_mode === "LIVE" ? "LIVE Orbit Local graph" : "FALLBACK sample graph; live graph runs locally and is shown in the demo video") + " · " + st.duckdb_path;
+}
+
+function renderDefList(names) {
+  const ul = $("#deflist");
+  ul.innerHTML = "";
+  names.forEach((n) => {
+    const li = document.createElement("li");
+    li.dataset.name = n;
+    li.innerHTML = `<span>${n}</span>`;
+    li.onclick = () => select(n);
+    if (n === STATE.selected) li.classList.add("sel");
+    ul.appendChild(li);
+  });
+}
+
+async function select(name) {
+  STATE.selected = name;
+  document.querySelectorAll("#deflist li").forEach((li) => li.classList.toggle("sel", li.dataset.name === name));
+  $("#epi").textContent = name;
+  const imp = await api("/api/impact/" + encodeURIComponent(name));
+  STATE.impact = imp;
+  drawBlast(imp);
+  renderRings(imp);
+  const prec = await api("/api/precedent/" + encodeURIComponent(name));
+  renderPrecedent(prec);
+  $("#approve").disabled = false; $("#reject").disabled = false;
+}
+
+// ---- blast radius SVG reveal ----
+function drawBlast(imp) {
+  const svg = $("#bsvg");
+  svg.innerHTML = "";
+  const W = 600, H = 420, cx = 300, cy = 210;
+  const rings = imp.rings; // {"0":[id], "1":[...], ...}
+  const maxRing = Math.max(...Object.keys(rings).map(Number));
+  const radii = { 0: 0 };
+  for (let r = 1; r <= maxRing; r++) radii[r] = 60 + (r - 1) * 78;
+
+  // position nodes deterministically around their ring
+  const pos = {};
+  const order = [];
+  Object.keys(rings).map(Number).sort((a, b) => a - b).forEach((r) => {
+    const ids = rings[r];
+    ids.forEach((id, i) => {
+      let x = cx, y = cy;
+      if (r > 0) {
+        const ang = (-Math.PI / 2) + (2 * Math.PI * i) / ids.length + r * 0.6;
+        x = cx + radii[r] * Math.cos(ang);
+        y = cy + radii[r] * Math.sin(ang) * 0.82;
+      }
+      pos[id] = { x, y, r };
+      order.push({ id, r, i });
+    });
+  });
+
+  const ns = "http://www.w3.org/2000/svg";
+  // ring guides
+  for (let r = 1; r <= maxRing; r++) {
+    const c = document.createElementNS(ns, "ellipse");
+    c.setAttribute("cx", cx); c.setAttribute("cy", cy);
+    c.setAttribute("rx", radii[r]); c.setAttribute("ry", radii[r] * 0.82);
+    c.setAttribute("fill", "none"); c.setAttribute("stroke", "#1c1e24"); c.setAttribute("stroke-dasharray", "3 5");
+    svg.appendChild(c);
+  }
+  // edges epicenter->ring1->...
+  const edges = [];
+  Object.keys(rings).map(Number).sort((a, b) => a - b).forEach((r) => {
+    if (r === 0) return;
+    rings[r].forEach((id) => {
+      // connect to nearest inner node (epicenter for r1, else first of r-1)
+      const inner = r === 1 ? imp.epicenter.id : rings[r - 1][0];
+      if (pos[inner]) edges.push([inner, id, Math.max(r, (pos[inner].r || 0))]);
+    });
+  });
+  const eEls = edges.map(([a, b]) => {
+    const l = document.createElementNS(ns, "line");
+    l.setAttribute("x1", pos[a].x); l.setAttribute("y1", pos[a].y);
+    l.setAttribute("x2", pos[b].x); l.setAttribute("y2", pos[b].y);
+    l.setAttribute("class", "edge");
+    svg.appendChild(l); return l;
+  });
+  // nodes
+  const nodeEls = [];
+  order.forEach(({ id, r }) => {
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("class", "node");
+    const isEpi = id === imp.epicenter.id;
+    const circ = document.createElementNS(ns, "circle");
+    circ.setAttribute("cx", pos[id].x); circ.setAttribute("cy", pos[id].y);
+    circ.setAttribute("r", isEpi ? 16 : 9);
+    circ.setAttribute("fill", ringColor(r));
+    if (isEpi) circ.setAttribute("filter", "url(#glow)");
+    g.appendChild(circ);
+    const t = document.createElementNS(ns, "text");
+    t.setAttribute("x", pos[id].x); t.setAttribute("y", pos[id].y + (isEpi ? 30 : 20));
+    t.setAttribute("text-anchor", "middle"); t.setAttribute("fill", isEpi ? "#EDEDED" : "#9BA3AE");
+    t.setAttribute("font-size", isEpi ? "13" : "11"); t.setAttribute("font-family", "JetBrains Mono, monospace");
+    t.textContent = nameOf(imp, id);
+    g.appendChild(t);
+    svg.appendChild(g); nodeEls.push({ g, r, id });
+  });
+  // glow filter
+  const defs = document.createElementNS(ns, "defs");
+  defs.innerHTML = '<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg.insertBefore(defs, svg.firstChild);
+
+  // animate reveal + counter to total_affected
+  imp._names = imp._names || idNames(imp);
+  const total = imp.counts.total_affected;
+  if (reduceMotion) {
+    nodeEls.forEach((n) => n.g.classList.add("show"));
+    eEls.forEach((e) => e.classList.add("show"));
+    $("#counter").textContent = pad(total);
+    return;
+  }
+  $("#counter").textContent = "0000";
+  let revealed = 0;
+  nodeEls.forEach((n, idx) => {
+    const delay = n.r === 0 ? 0 : 180 + n.r * 230 + (idx % 5) * 40;
+    setTimeout(() => {
+      n.g.classList.add("show");
+      if (n.id !== imp.epicenter.id) { revealed++; animateCounterTo(revealed); }
+    }, delay);
+  });
+  eEls.forEach((e, i) => setTimeout(() => e.classList.add("show"), 220 + i * 60));
+  setTimeout(() => $("#counter").textContent = pad(total), 200 + maxRing * 230 + 400);
+}
+let _ctv = 0;
+function animateCounterTo(v) { _ctv = v; $("#counter").textContent = pad(v); }
+function pad(n) { return String(n).padStart(4, "0"); }
+function idNames(imp) { const m = {}; Object.keys(imp.names || {}).forEach((k) => m[Number(k)] = imp.names[k]); return m; }
+function nameOf(imp, id) { return (imp._names && imp._names[id]) || (imp.names && imp.names[String(id)]) || ("#" + id); }
+
+function renderRings(imp) {
+  const box = $("#rings");
+  const c = imp.counts;
+  const rows = [["0", "EPICENTER", 1, imp.epicenter.name]];
+  Object.keys(imp.rings).map(Number).sort((a, b) => a - b).forEach((r) => {
+    if (r === 0) return;
+    rows.push([String(r), r === 1 ? "DIRECT" : (r === 2 ? "TRANSITIVE" : "AT RISK"), imp.rings[r].length,
+      imp.rings[r].map((id) => nameOf(imp, id)).join(", ")]);
+  });
+  rows.push(["U", "UNAFFECTED", c.unaffected, ""]);
+  box.innerHTML = rows.map(([r, label, n, names]) =>
+    `<div class="ringrow r${r}"><span class="rl">${label}</span><span class="rc tabnum">${n}</span><span class="rn">${names || "—"}</span></div>`
+  ).join("") + `<div class="sig">blast signature <b>${imp.signature.slice(0, 16)}…</b> · computed from the sorted affected id set</div>`;
+}
+
+function renderPrecedent(p) {
+  const box = $("#precedent");
+  if (!p || p.match_count === 0) { box.innerHTML = `<div class="muted">No prior governed decisions on this symbol.</div>`; return; }
+  let html = `<div class="counts"><span class="ap">approved <b class="tabnum">${p.approved}</b></span><span class="rj">rejected <b class="tabnum">${p.rejected}</b></span><span>matches <b class="tabnum">${p.match_count}</b></span></div>`;
+  if (p.contradiction) {
+    const c = p.contradiction;
+    html += `<div class="contradiction"><span class="ttl">${p.contradiction_same_signature ? "CONTRADICTION · identical blast signature" : "CONTRADICTION · prior rejection"}</span>
+      ${c.actor} rejected change ${c.change_id} on this blast radius.
+      <div class="quote">"${esc(c.rationale)}"</div>
+      <div class="rowref">ledger row #${c.seq} · ${c.row_hash.slice(0, 12)}…</div></div>`;
+  }
+  if (p.most_recent) {
+    const m = p.most_recent;
+    html += `<div>most recent: <b style="color:${m.decision === "approve" ? "var(--green)" : "var(--danger)"}">${m.decision}</b> by ${m.actor}
+      <div class="quote">"${esc(m.rationale)}"</div><div class="rowref">row #${m.seq} · ${m.row_hash.slice(0, 12)}…</div></div>`;
+  }
+  box.innerHTML = html;
+}
+
+async function refreshLedger() {
+  const a = await api("/api/audit");
+  // names for blast columns are ids; show count
+  const v = a.verify;
+  const vd = $("#chain-verdict");
+  vd.textContent = v.ok ? "CHAIN VERIFIED" : ("BROKEN AT ROW " + v.broken_index);
+  vd.className = "verdict " + (v.ok ? "ok" : "bad");
+  const tb = $("#lrows");
+  tb.innerHTML = a.rows.map((r) => `<tr class="${(!v.ok && r.seq >= v.broken_index) ? "broken" : ""}">
+    <td class="tabnum">${r.seq}</td><td class="ch tabnum">${(r.ts || "").replace("T", " ").replace("Z", "")}</td>
+    <td>${esc(r.change_id)}</td><td class="tabnum">${(r.blast_radius_set || []).length}</td>
+    <td>${esc(r.actor)}</td><td class="dec ${r.decision}">${r.decision}</td>
+    <td class="hash tabnum">${(r.prev_hash || "").slice(0, 8)}… → ${(r.row_hash || "").slice(0, 8)}…</td></tr>`).join("");
+  // re-sync the chain chip in topbar
+  try { paintStatus(await api("/api/status")); } catch (e) {}
+}
+
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function wire() {
+  $("#search").addEventListener("input", (e) => {
+    const q = e.target.value.toLowerCase();
+    renderDefList(STATE.defs.filter((n) => n.toLowerCase().includes(q)));
+  });
+  $("#approve").onclick = () => decide("approve");
+  $("#reject").onclick = () => decide("reject");
+  $("#verify").onclick = refreshLedger;
+  $("#tamper").onclick = tamperDemo;
+}
+
+async function decide(decision) {
+  const reviewer = $("#reviewer").value.trim() || "anon";
+  const reason = $("#reason").value.trim();
+  if (!reason) { $("#reason").focus(); $("#reason").style.outline = "2px solid var(--danger)"; return; }
+  $("#reason").style.outline = "";
+  const r = await fetch("/api/approve", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason }),
+  });
+  if (r.ok) { $("#reason").value = ""; await refreshLedger(); await select(STATE.selected); }
+}
+
+// in-memory tamper demo: re-render the ledger as if a row were edited, flip the badge red.
+// This does NOT write to disk; it visualizes what verify() detects. (The real test in
+// tests/test_engine.py proves disk-level tamper detection.)
+async function tamperDemo() {
+  const a = await api("/api/audit");
+  if (!a.rows.length) return;
+  const idx = Math.max(0, a.rows.length - 1 - Math.floor(a.rows.length / 2));
+  const vd = $("#chain-verdict");
+  vd.textContent = "BROKEN AT ROW " + idx + " (simulated)";
+  vd.className = "verdict bad";
+  document.querySelectorAll("#lrows tr").forEach((tr) => {
+    const seq = Number(tr.children[0].textContent);
+    if (seq >= idx) tr.classList.add("broken");
+  });
+  $("#chain-chip").innerHTML = `<span class="dot r"></span>chain <b>broken@${idx} (sim)</b>`;
+  $("#chain-chip").className = "chip bad";
+  setTimeout(refreshLedger, 2600); // self-heal: re-read real (untampered) chain
+}
+
+boot();

@@ -31,7 +31,8 @@ class Impact:
     affected_ids: list       # all dependents, sorted, excludes the epicenter
     counts: dict             # {"ring_1": n, "ring_2": n, ..., "total_affected": n, "unaffected": n}
     signature: str           # blast_radius_signature_hash
-    owners: list             # [{"id","name","file","dir"}] for epicenter + each affected def
+    owners: list             # [{"id","ring","name","file","dir"}] for epicenter + each affected def
+    names: dict              # {def_id: name} for epicenter + every affected def
 
     def to_dict(self) -> dict:
         return {
@@ -41,6 +42,7 @@ class Impact:
             "counts": self.counts,
             "signature": self.signature,
             "owners": self.owners,
+            "names": {str(k): v for k, v in self.names.items()},
         }
 
 
@@ -85,9 +87,11 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
     counts["total_affected"] = len(affected)
     counts["unaffected"] = max(0, graph.total_definitions() - 1 - len(affected))
 
-    owners = [{"ring": 0, **graph.owning_file_and_dir(epi_id)}]
+    owners = [{"id": epi_id, "ring": 0, **graph.owning_file_and_dir(epi_id)}]
+    names = {epi_id: epi["name"]}
     for i in affected:
-        owners.append({"ring": ring_of[i], **graph.owning_file_and_dir(i)})
+        owners.append({"id": i, "ring": ring_of[i], **graph.owning_file_and_dir(i)})
+        names[i] = graph.name_of(i)
 
     return Impact(
         epicenter_id=epi_id,
@@ -97,4 +101,5 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
         counts=counts,
         signature=blast_radius_signature(affected),
         owners=owners,
+        names=names,
     )
