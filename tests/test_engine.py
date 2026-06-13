@@ -37,14 +37,27 @@ def test_blast_radius_exact_counts(graph):
     assert imp.counts["ring_3"] == 2        # compile_unit, format_src
     assert imp.counts["total_affected"] == 5
     assert imp.affected_ids == [2, 3, 4, 6, 7]
-    assert imp.counts["unaffected"] == 4    # main, log_event, load_config, Token
+    # unaffected = everything else in the graph (relative, so the fixture can grow)
+    assert imp.counts["unaffected"] == graph.total_definitions() - 1 - imp.counts["total_affected"]
+
+
+def test_serialize_hub_blast(graph):
+    """The second fixture cluster: serialize is a high-fan-in hub so exploring the
+    public graph beyond the tokenize demo shows real depth."""
+    imp = impact_mod.compute_blast_radius(graph, "serialize", max_depth=3)
+    assert imp is not None
+    assert imp.counts["ring_1"] == 5                 # to_json, to_yaml, cache_put, render, export_csv
+    assert imp.counts["total_affected"] == 9         # + save_doc, handle_get (r2) + handle_post, route (r3)
+    # the SVG can draw real edges: every affected node has a real BFS parent
+    assert all(i in imp.parents for i in imp.affected_ids)
+    assert all(str(i) in imp.to_dict()["parents"] for i in imp.affected_ids)  # stringified for JSON
 
 
 def test_signature_is_stable_and_set_based(graph):
     a = impact_mod.compute_blast_radius(graph, "tokenize", max_depth=3).signature
     b = impact_mod.compute_blast_radius(graph, "tokenize", max_depth=3).signature
     assert a == b                            # deterministic
-    assert a == impact_mod.blast_radius_signature([7, 4, 3, 2, 6])  # order-independent
+    assert a == impact_mod.blast_radius_signature([7, 4, 3, 2, 6], epicenter_id=1)  # order-independent, epicenter-bound
 
 
 def test_unknown_symbol_returns_none(graph):
@@ -105,12 +118,12 @@ def test_precedent_surfaces_contradiction(tmp_path):
     path = str(tmp_path / "ledger.jsonl")
     led = Ledger(path)
     for row in fixtures.seed_ledger_rows():
-        sig = impact_mod.blast_radius_signature(row["blast_radius_set"])
+        sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
         led.append(actor=row["actor"], change_id=row["change_id"],
                    target_symbols=row["target_symbols"], blast_radius_set=row["blast_radius_set"],
                    signature=sig, decision=row["decision"], rationale=row["rationale"])
-    # use the SAME signature the engine computes for tokenize at default depth
-    live_sig = impact_mod.blast_radius_signature([2, 3, 4, 6, 7])
+    # use the SAME signature the engine computes for tokenize (epicenter id 1) at default depth
+    live_sig = impact_mod.blast_radius_signature([2, 3, 4, 6, 7], epicenter_id=1)
     prec = led.precedent(target_symbols=["tokenize"], signature=live_sig)
     assert prec["match_count"] >= 1
     assert prec["rejected"] >= 1
@@ -121,9 +134,50 @@ def test_precedent_surfaces_contradiction(tmp_path):
     assert prec["contradiction_same_signature"] is True
 
 
+def test_signature_distinguishes_symbols_with_no_dependents():
+    """Two different symbols that both have an empty affected set must NOT collide
+    (the old sha256(json([])) collision caused phantom contradictions)."""
+    a = impact_mod.blast_radius_signature([], epicenter_id=8)
+    b = impact_mod.blast_radius_signature([], epicenter_id=9)
+    assert a != b
+
+
+def test_forged_append_with_public_sha256_is_rejected(tmp_path):
+    """An attacker who can append but lacks the HMAC key cannot forge a valid tail:
+    a row whose row_hash is a plain sha256 (the public guess) fails verification."""
+    import hashlib, json
+    path = str(tmp_path / "ledger.jsonl")
+    led = Ledger(path)
+    led.append(actor="a", change_id="MR-1", target_symbols=["x"], blast_radius_set=[2],
+               signature="s", decision="approve", rationale="legit")
+    prev = led._read_raw()[-1]["row_hash"]
+    payload = {"seq": 1, "ts": "2026-06-12T00:00:00Z", "actor": "mallory", "change_id": "MR-FORGE",
+               "target_symbols": ["x"], "blast_radius_set": [2], "signature": "s",
+               "decision": "approve", "rationale": "forged", "prev_hash": prev}
+    canon = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    payload["row_hash"] = hashlib.sha256((prev + canon).encode()).hexdigest()  # public guess, no key
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n")
+    v = led.verify()
+    assert v["ok"] is False and v["broken_index"] == 1
+
+
+def test_contradiction_strength_identical_vs_symbol(tmp_path):
+    path = str(tmp_path / "ledger.jsonl")
+    led = Ledger(path)
+    sig = impact_mod.blast_radius_signature([2, 3], epicenter_id=1)
+    led.append(actor="r", change_id="MR-9", target_symbols=["foo"], blast_radius_set=[2, 3],
+               signature=sig, decision="reject", rationale="no")
+    same = led.precedent(target_symbols=["foo"], signature=sig)
+    assert same["contradiction_strength"] == "identical"
+    diff_sig = impact_mod.blast_radius_signature([2, 3, 9], epicenter_id=1)
+    diff = led.precedent(target_symbols=["foo"], signature=diff_sig)
+    assert diff["contradiction_strength"] == "symbol"   # same symbol, different blast -> weaker
+
+
 def test_contradiction_signature_matches_live_blast(graph):
     """End-to-end: the engine-computed signature for tokenize equals the seeded
     rejection's signature, so the signature-identical contradiction genuinely fires."""
     imp = impact_mod.compute_blast_radius(graph, "tokenize", max_depth=3)
     seed = [r for r in fixtures.seed_ledger_rows() if r["change_id"] == "MR-203"][0]
-    assert impact_mod.blast_radius_signature(seed["blast_radius_set"]) == imp.signature
+    assert impact_mod.blast_radius_signature(seed["blast_radius_set"], seed.get("epicenter_id")) == imp.signature

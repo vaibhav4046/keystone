@@ -29,7 +29,7 @@ def main():
         os.remove(LEDGER)
     led = Ledger(LEDGER)
     for row in fixtures.seed_ledger_rows():
-        sig = impact_mod.blast_radius_signature(row["blast_radius_set"])
+        sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
         led.append(actor=row["actor"], change_id=row["change_id"],
                    target_symbols=row["target_symbols"], blast_radius_set=row["blast_radius_set"],
                    signature=sig, decision=row["decision"], rationale=row["rationale"])

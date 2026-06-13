@@ -43,6 +43,11 @@ class Source:
     valid: bool
 
 
+def _safe_ident(name: str) -> bool:
+    """A table identifier safe to interpolate into a PRAGMA (letters, digits, _)."""
+    return bool(name) and all(c.isalnum() or c == "_" for c in name)
+
+
 def _ensure_fixture() -> str:
     if not os.path.exists(FIXTURE_DUCKDB):
         fixtures.build_fixture_duckdb(FIXTURE_DUCKDB)
@@ -82,6 +87,11 @@ class Graph:
         names = [r[0] for r in self._con.execute("SHOW TABLES").fetchall()]
         self.source.tables = names
         for t in names:
+            # defensive: only introspect well-formed identifiers (the DB is
+            # Orbit-controlled, but never interpolate an unexpected name into SQL)
+            if not _safe_ident(t):
+                self._cols[t] = []
+                continue
             try:
                 info = self._con.execute(f"PRAGMA table_info('{t}')").fetchall()
                 self._cols[t] = [row[1] for row in info]  # row[1] = column name
@@ -103,17 +113,23 @@ class Graph:
                 "AND e.target_kind = 'Definition')")
 
     def find_definition(self, name: str) -> Optional[dict]:
-        """Resolve a name to one definition. If several share the name, pick the one
-        with the most callers (the most consequential to change), tie-break by id."""
+        """Resolve a name (or a fully-qualified name) to one definition.
+
+        A qualified query (containing a dot, matching gl_definition.fqn) resolves
+        exactly, so callers can disambiguate two same-short-name symbols. A bare
+        short name resolves to the definition with the most callers (the most
+        consequential to change), tie-break by id; the returned fqn + file let the
+        UI show exactly which symbol was picked so it can never silently mislead."""
+        col = "fqn" if ("." in name and self.has("gl_definition", "fqn")) else "name"
         rows = self._con.execute(
-            f"SELECT d.id, d.name, d.file_path, d.definition_type, {self._fanin_subquery()} AS fanin "
-            "FROM gl_definition d WHERE d.name = ? ORDER BY fanin DESC, d.id ASC LIMIT 1",
+            f"SELECT d.id, d.name, d.fqn, d.file_path, d.definition_type, {self._fanin_subquery()} AS fanin "
+            f"FROM gl_definition d WHERE d.{col} = ? ORDER BY fanin DESC, d.id ASC LIMIT 1",
             [name],
         ).fetchall()
         if not rows:
             return None
-        i, n, fpath, dtype, _fan = rows[0]
-        return {"id": i, "name": n, "file": fpath, "kind": dtype}
+        i, n, fqn, fpath, dtype, _fan = rows[0]
+        return {"id": i, "name": n, "fqn": fqn or "", "file": fpath or "", "kind": dtype}
 
     def all_definition_names(self, limit: int = 120) -> list:
         """Distinct reviewable symbol names (functions/methods/classes), ordered by

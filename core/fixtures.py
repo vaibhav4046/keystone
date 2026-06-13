@@ -30,6 +30,8 @@ DIRECTORIES = [
     (2, "/src/parser", "parser"),
     (3, "/src/cli", "cli"),
     (4, "/src/util", "util"),
+    (5, "/src/io", "io"),
+    (6, "/src/api", "api"),
 ]
 
 # gl_file: (id, path, name, extension, language)
@@ -41,6 +43,13 @@ FILES = [
     (5, "/src/cli/main.py", "main.py", "py", "python"),
     (6, "/src/util/log.py", "log.py", "py", "python"),
     (7, "/src/cli/config.py", "config.py", "py", "python"),
+    (8, "/src/io/serialize.py", "serialize.py", "py", "python"),
+    (9, "/src/io/db.py", "db.py", "py", "python"),
+    (10, "/src/io/cache.py", "cache.py", "py", "python"),
+    (11, "/src/api/handlers.py", "handlers.py", "py", "python"),
+    (12, "/src/api/routes.py", "routes.py", "py", "python"),
+    (13, "/src/io/export.py", "export.py", "py", "python"),
+    (14, "/src/util/metrics.py", "metrics.py", "py", "python"),
 ]
 
 # gl_definition: (id, name, fqn, file_path, definition_type, start_line, end_line)
@@ -55,11 +64,29 @@ DEFINITIONS = [
     (8, "log_event", "util.log.log_event", "/src/util/log.py", "Function", 4, 20),             # unrelated, no path to tokenize
     (9, "load_config", "cli.config.load_config", "/src/cli/config.py", "Function", 6, 40),     # unrelated to tokenize
     (10, "Token", "parser.lexer.Token", "/src/parser/lexer.py", "Class", 50, 80),              # used by tokenize, no dependents in demo
+    # Second cluster: a serialization hot path with a high-fan-in hub, so exploring
+    # the public FALLBACK graph beyond the scripted tokenize demo shows real depth.
+    (11, "serialize", "io.serialize.serialize", "/src/io/serialize.py", "Function", 10, 60),    # hub: many dependents
+    (12, "encode", "io.serialize.encode", "/src/io/serialize.py", "Function", 62, 90),
+    (13, "to_json", "io.serialize.to_json", "/src/io/serialize.py", "Function", 92, 120),        # calls serialize
+    (14, "to_yaml", "io.serialize.to_yaml", "/src/io/serialize.py", "Function", 122, 150),       # calls serialize
+    (15, "save_doc", "io.db.save_doc", "/src/io/db.py", "Function", 8, 44),                       # calls to_json
+    (16, "cache_put", "io.cache.cache_put", "/src/io/cache.py", "Function", 6, 30),               # calls serialize
+    (17, "handle_get", "api.handlers.handle_get", "/src/api/handlers.py", "Function", 12, 50),    # calls to_json
+    (18, "handle_post", "api.handlers.handle_post", "/src/api/handlers.py", "Function", 52, 96),  # calls save_doc
+    (19, "route", "api.routes.route", "/src/api/routes.py", "Function", 10, 70),                  # calls handle_get/post
+    (20, "render", "io.serialize.render", "/src/io/serialize.py", "Function", 152, 180),          # calls serialize
+    (21, "export_csv", "io.export.export_csv", "/src/io/export.py", "Function", 6, 40),           # calls serialize
+    (22, "validate", "io.serialize.validate", "/src/io/serialize.py", "Function", 182, 210),      # calls encode
+    (23, "healthcheck", "api.routes.healthcheck", "/src/api/routes.py", "Function", 72, 90),      # calls route
+    (24, "metrics", "util.metrics.metrics", "/src/util/metrics.py", "Function", 4, 30),           # standalone
+    (25, "Logger", "util.log.Logger", "/src/util/log.py", "Class", 22, 60),                       # standalone
 ]
 
 # gl_edge: (source_id, source_kind, relationship_kind, target_id, target_kind)
 # CALLS edges (Definition -> Definition) drive the blast radius. source calls target.
 _CALLS = [
+    # parser hot path (the scripted tokenize/parse demo; do not change)
     (2, 1),   # parse -> tokenize
     (3, 2),   # build_ast -> parse
     (6, 2),   # lint -> parse
@@ -67,12 +94,31 @@ _CALLS = [
     (7, 3),   # format_src -> build_ast
     (5, 4),   # main -> compile_unit
     (5, 9),   # main -> load_config (off the tokenize path)
+    # serialization hot path: serialize(11) is the hub with many dependents
+    (13, 11),  # to_json -> serialize
+    (14, 11),  # to_yaml -> serialize
+    (16, 11),  # cache_put -> serialize
+    (20, 11),  # render -> serialize
+    (21, 11),  # export_csv -> serialize
+    (11, 12),  # serialize -> encode
+    (22, 12),  # validate -> encode
+    (15, 13),  # save_doc -> to_json
+    (17, 13),  # handle_get -> to_json
+    (18, 15),  # handle_post -> save_doc
+    (19, 17),  # route -> handle_get
+    (19, 18),  # route -> handle_post
+    (23, 19),  # healthcheck -> route
 ]
 # DEFINES edges (File -> Definition): which file defines each definition.
-_DEF_FILE = {1: 1, 2: 2, 3: 3, 4: 4, 6: 4, 7: 4, 5: 5, 8: 6, 9: 7, 10: 1}
+_DEF_FILE = {
+    1: 1, 2: 2, 3: 3, 4: 4, 6: 4, 7: 4, 5: 5, 8: 6, 9: 7, 10: 1,
+    11: 8, 12: 8, 13: 8, 14: 8, 20: 8, 22: 8, 15: 9, 16: 10,
+    17: 11, 18: 11, 19: 12, 23: 12, 21: 13, 24: 14, 25: 6,
+}
 # CONTAINS edges (Directory -> File) and (Directory -> Directory) for fidelity.
-_DIR_FILES = [(1, 4), (2, 1), (2, 2), (2, 3), (3, 5), (3, 7), (4, 6)]
-_DIR_DIRS = [(1, 2), (1, 3), (1, 4)]
+_DIR_FILES = [(1, 4), (2, 1), (2, 2), (2, 3), (3, 5), (3, 7), (4, 6),
+              (5, 8), (5, 9), (5, 10), (5, 13), (6, 11), (6, 12), (4, 14)]
+_DIR_DIRS = [(1, 2), (1, 3), (1, 4), (1, 5), (1, 6)]
 
 
 def _edges():
@@ -139,6 +185,7 @@ def seed_ledger_rows():
             "actor": "h.okafor",
             "change_id": "MR-118",
             "target_symbols": ["parse"],
+            "epicenter_id": 2,                 # parse
             "blast_radius_set": [3, 4, 5, 6, 7],
             "decision": "approve",
             "rationale": "Signature unchanged, added an optional kwarg with a default. Low risk.",
@@ -147,6 +194,7 @@ def seed_ledger_rows():
             "actor": "s.castellano",
             "change_id": "MR-203",
             "target_symbols": ["tokenize"],
+            "epicenter_id": 1,                 # tokenize
             # Same affected set the engine computes for tokenize at the default depth,
             # so the contradiction fires on a SIGNATURE-IDENTICAL prior rejection,
             # the strongest form of the precedent beat.
