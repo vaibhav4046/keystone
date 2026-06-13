@@ -44,7 +44,15 @@ def build_attestation(*, impact_dict: dict, policy_eval: dict, row: dict, source
     """An in-toto Statement carrying a SLSA-VSA-style predicate for one decision."""
     snap = orbit_snapshot_sha256(impact_dict)
     epi = impact_dict.get("epicenter", {}) or {}
-    passed = row.get("decision") == "approve"
+    qstatus = row.get("quorum_status")
+    if qstatus == "APPROVED":
+        result = "PASSED"
+    elif qstatus == "PENDING_APPROVAL":
+        result = "PENDING"
+    elif qstatus == "REJECTED":
+        result = "FAILED"
+    else:
+        result = "PASSED" if row.get("decision") == "approve" else "FAILED"
     return {
         "_type": STATEMENT_TYPE,
         "predicateType": PREDICATE_TYPE,
@@ -57,8 +65,11 @@ def build_attestation(*, impact_dict: dict, policy_eval: dict, row: dict, source
             "timeVerified": row.get("ts"),
             "policy": {"version": policy_eval.get("policy_version"),
                        "sha256": policy_eval.get("policy_hash"), "uri": ".keystone/policy.json"},
-            "verificationResult": "PASSED" if passed else "FAILED",
+            "verificationResult": result,
             "decision": row.get("decision"),
+            "quorumStatus": qstatus,
+            "confirmedApprovers": row.get("confirmed_approvers"),
+            "override": row.get("override", False),
             "reviewer": row.get("actor"),
             "reviewerKind": row.get("author_kind", "human"),
             "changeId": row.get("change_id"),

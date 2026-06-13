@@ -137,7 +137,10 @@ def status():
         "audit_chain": v,                      # {ok, count, broken_index}
         "definitions": _graph.total_definitions(),
         "orbit_cli_transcript": orbit_cli.get_transcript(limit=6),  # proves the CLI ran
-        "integrity": {"hmac": True, "approve_token_required": APPROVE_TOKEN is not None},
+        "integrity": {"hmac": True, "approve_token_required": APPROVE_TOKEN is not None,
+                      # honest: a token proves possession, not identity. Cryptographic
+                      # identity binding (GitLab OIDC sub claim) is future work.
+                      "reviewer_verified": False},
     }
 
 
@@ -214,6 +217,7 @@ class Decision(BaseModel):
     rationale: str = Field(min_length=1, max_length=2048)
     change_id: Optional[str] = Field(default=None, max_length=120)  # a real MR/change id, if available
     author_kind: Optional[str] = Field(default=None, max_length=16)  # "agent" enforces an agent scope manifest
+    override: bool = False                                            # accountable override of a policy BLOCK
     max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
 
 
@@ -250,10 +254,34 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
     if not scope["in_scope"]:
         raise HTTPException(403, {"error": "SCOPE_VIOLATION", "author": author, "violations": scope["violations"]})
     pol = out["policy"]
+    # ENFORCEMENT, not advisory: a policy BLOCK refuses an approval unless an explicit,
+    # accountable override is supplied (and the override is recorded in the row).
+    if d.decision == "approve" and pol["action"] == "BLOCK" and not d.override:
+        raise HTTPException(409, {"error": "GOVERNANCE_BLOCK", "reasons": pol["reasons"], "policy": pol,
+                                  "hint": "set override=true with a rationale to record an accountable override"})
+
+    # Quorum: a tier asking for N approvers is only satisfied by N DISTINCT approvers
+    # of the same change (same symbol + blast signature). Until then the change is
+    # PENDING_APPROVAL, not approved — the required_approvers number is a guarantee now.
+    sig = imp.signature
+    prior = {r["actor"] for r in _ledger.rows()
+             if r.get("decision") == "approve" and d.name in (r.get("target_symbols") or [])
+             and r.get("signature") == sig}
+    confirmed = sorted(prior | ({d.reviewer} if d.decision == "approve" else set()))
+    required = pol["required_approvers"]
+    if d.decision == "reject":
+        quorum_status = "REJECTED"
+    elif len(confirmed) >= required:
+        quorum_status = "APPROVED"
+    else:
+        quorum_status = "PENDING_APPROVAL"
+
     extra = {
         "tier": pol["tier"], "governance_action": pol["action"],
         "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
         "orbit_snapshot_sha256": out["orbit_snapshot_sha256"], "author_kind": author["badge"],
+        "required_approvers": required, "confirmed_approvers": len(confirmed),
+        "quorum_status": quorum_status, "override": bool(d.override and pol["action"] == "BLOCK"),
     }
     row = _ledger.append(
         actor=d.reviewer, change_id=d.change_id or f"KS-{d.name}", target_symbols=[d.name],
@@ -263,7 +291,9 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # real time, not fixture
     )
     att = attest_mod.build_attestation(impact_dict=out, policy_eval=pol, row=row, source_mode=_graph.source.mode)
-    return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": author, "attestation": att}
+    return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": author,
+            "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status},
+            "attestation": att}
 
 
 @app.get("/api/attestation/{name}")

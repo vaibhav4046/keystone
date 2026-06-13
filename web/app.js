@@ -123,8 +123,25 @@ async function select(name) {
   renderRings(imp);
   const prec = await api("/api/precedent/" + encodeURIComponent(name));
   renderPrecedent(prec);
-  $("#approve").disabled = false; $("#reject").disabled = false;
+  $("#reject").disabled = false;
   const ex = $("#export-att"); if (ex) ex.disabled = false;
+  applyGatePolicy();
+}
+
+// Enforcement in the UI: a policy BLOCK disables APPROVE unless the reviewer ticks
+// the accountable override; HOLD warns. Mirrors the backend 409 GOVERNANCE_BLOCK.
+function applyGatePolicy() {
+  const pol = STATE.impact && STATE.impact.policy;
+  const ov = $("#override"), ovRow = $("#override-row"), status = $("#gate-status");
+  const blocked = pol && pol.action === "BLOCK";
+  if (ovRow) ovRow.style.display = blocked ? "block" : "none";
+  if (!blocked && ov) ov.checked = false;
+  $("#approve").disabled = !!(blocked && !(ov && ov.checked));
+  if (status) {
+    if (blocked) { status.textContent = "Policy action is BLOCK — approval is not permitted without an override."; status.style.color = "var(--danger-2)"; }
+    else if (pol && pol.action === "HOLD") { status.textContent = "Policy action is HOLD — " + pol.required_approvers + " approvers required."; status.style.color = "var(--amber)"; }
+    else { status.textContent = ""; }
+  }
 }
 
 async function exportAttestation() {
@@ -376,6 +393,7 @@ function wire() {
   $("#verify").onclick = refreshLedger;
   $("#tamper").onclick = tamperDemo;
   const ex = $("#export-att"); if (ex) ex.onclick = exportAttestation;
+  const ov = $("#override"); if (ov) ov.onchange = applyGatePolicy;
 }
 
 async function decide(decision) {
@@ -391,23 +409,41 @@ async function decide(decision) {
   $("#reason").style.outline = ""; $("#reason").removeAttribute("aria-invalid");
   if (err) err.textContent = "";
   const authorKind = ($("#authorkind") && $("#authorkind").value) || "human";
+  const override = !!($("#override") && $("#override").checked);
+  const pol = STATE.impact && STATE.impact.policy;
   if (!STATIC_MODE) {
     try {
       const r = await fetch("/api/approve", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason, author_kind: authorKind }),
+        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason, author_kind: authorKind, override }),
       });
-      if (r.ok) { $("#reason").value = ""; await refreshLedger(); await select(STATE.selected); return; }
+      if (r.ok) {
+        const body = await r.json().catch(() => ({}));
+        $("#reason").value = "";
+        const st = $("#gate-status");
+        if (st && body.quorum) { st.textContent = "recorded · " + body.quorum.status + " (" + body.quorum.confirmed + "/" + body.quorum.required + " approvers)"; st.style.color = "var(--text-mid)"; }
+        await refreshLedger(); await select(STATE.selected); return;
+      }
+      const b = await r.json().catch(() => ({}));
+      const det = (b && b.detail) || {};
       if (r.status === 403) {                       // agent acting outside its scope manifest
-        const b = await r.json().catch(() => ({}));
-        const det = (b && b.detail) || {};
         if (err) err.textContent = "SCOPE VIOLATION (agent blocked): " + ((det.violations || ["out of scope"]).join("; "));
+        return;
+      }
+      if (r.status === 409) {                       // policy BLOCK, no override
+        if (err) err.textContent = "GOVERNANCE BLOCK: " + ((det.reasons || ["blocked by policy"]).join("; ")) + " — tick override to record an accountable override.";
+        if ($("#override-row")) $("#override-row").style.display = "block";
         return;
       }
       throw new Error("approve " + r.status);
     } catch (e) {
       await ensureStatic(); STATIC_MODE = true; // fall through to client-side sample append
     }
+  }
+  // static mode: enforce BLOCK in-browser too (the demo must not let you click past a BLOCK)
+  if (decision === "approve" && pol && pol.action === "BLOCK" && !override) {
+    if (err) err.textContent = "Policy action is BLOCK — approval is not permitted without an override.";
+    return;
   }
   // Public sample (no backend): append in-browser so the gate stays interactive.
   // Persisted, server-verified writes happen in the live local app (shown in the video).

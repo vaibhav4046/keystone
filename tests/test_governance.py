@@ -30,10 +30,12 @@ def test_policy_tier_scales_with_blast(graph):
     tok = policy_mod.evaluate(impact_mod.compute_blast_radius(graph, "tokenize").to_dict(), {})
     ser = policy_mod.evaluate(impact_mod.compute_blast_radius(graph, "serialize").to_dict(), {})
     leaf = policy_mod.evaluate(impact_mod.compute_blast_radius(graph, "to_yaml").to_dict(), {})
+    org = policy_mod.evaluate(impact_mod.compute_blast_radius(graph, "audit_log").to_dict(), {})
     assert leaf["tier"] == "ISOLATED" and leaf["action"] == "ALLOW"        # no dependents
-    assert ser["counts"]["affected_definitions"] == 9                       # the hub
+    assert ser["counts"]["affected_definitions"] == 9                       # the cross-team hub
     assert ser["required_approvers"] >= tok["required_approvers"]          # bigger blast => stricter
-    assert ser["action"] in ("ALLOW", "HOLD")
+    assert org["tier"] == "ORG_WIDE" and org["action"] == "HOLD"           # the org-wide hub holds
+    assert org["required_approvers"] == 3
 
 
 def test_policy_blocks_on_identical_contradiction(graph):
@@ -76,6 +78,23 @@ def test_attestation_rejects_absent_row(graph, tmp_path):
                                        source_mode="FALLBACK")
     v = attest_mod.verify_attestation(att, led)
     assert v["ok"] is False and v["row_present"] is False
+
+
+def test_public_sample_key_is_forgeable(monkeypatch):
+    """Honest documentation: the PUBLIC static bundle uses a published HMAC key, so
+    its chain is illustrative only — anyone holding the published key reproduces a
+    valid row hash. This is why the public UI labels it SAMPLE / PUBLIC KEY and the
+    real per-machine key is secret."""
+    import hashlib
+    import hmac as _hmac
+    from core import audit as A
+    monkeypatch.setenv("KEYSTONE_LEDGER_KEY", "keystone-public-sample-v1")
+    A._CACHED_KEY = None
+    payload = {"seq": 0, "x": "y"}
+    canon = A._canonical(payload)
+    forged = _hmac.new(b"keystone-public-sample-v1", (A.GENESIS_PREV + canon).encode(), hashlib.sha256).hexdigest()
+    assert A._row_hash(A.GENESIS_PREV, payload) == forged   # a key holder can forge a valid hash
+    A._CACHED_KEY = None
 
 
 def test_agent_scope_enforced(graph):
