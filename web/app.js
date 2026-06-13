@@ -44,6 +44,7 @@ const api = async (p) => {
 };
 
 let STATE = { defs: [], selected: null, impact: null };
+window.STATE = STATE;                       // exposed for the motion layer (motion.js)
 
 const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
 function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
@@ -292,6 +293,8 @@ function drawBlast(imp) {
   });
   eEls.forEach((e, i) => _timers.push(setTimeout(() => e.classList.add("show"), 220 + i * 60)));
   _timers.push(setTimeout(() => $("#counter").textContent = pad(total), 200 + maxRing * 230 + 400));
+  imp._names = imp._names || idNames(imp);
+  if (window.__ksRenderGraph) window.__ksRenderGraph(imp);   // premium 3D graph (motion.js); SVG stays as fallback
 }
 let _ctv = 0, _timers = [];
 function animateCounterTo(v) { _ctv = v; $("#counter").textContent = pad(v); }

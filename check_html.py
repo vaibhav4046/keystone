@@ -1,0 +1,11 @@
+with open('web/index.html') as f:
+    content = f.read()
+print('has lang attr:', 'lang=' in content)
+print('has skip-link:', 'skip-link' in content)
+print('has noscript:', '<noscript>' in content)
+print('has aria-live:', 'aria-live' in content)
+print('has aria-label:', 'aria-label' in content)
+print('has visually-hidden:', 'visually-hidden' in content)
+print('has role status:', 'role="status"' in content)
+print('has aria-busy:', 'aria-busy' in content)
+print('has aria-invalid:', 'aria-invalid' in content)
