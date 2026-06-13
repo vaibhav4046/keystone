@@ -1,17 +1,25 @@
 """Pure-Python graph engine over the Orbit Local DuckDB (or committed fixture).
 
 No web imports, no LLM. Opens the DuckDB read-only, INTROSPECTS the schema before
-querying (master-prompt Invariant two: only gl_definition.name is documented, so
-never hardcode a column blindly), and exposes deterministic reads. Every number
-the product shows comes from here, computed from real rows, reproducible.
+querying, and exposes deterministic reads. Every number the product shows comes
+from here, computed from real rows, reproducible.
 
-Source resolution and honest labeling (Invariant four):
-  - LIVE   : a valid Orbit Local DuckDB at ~/.orbit/graph.duckdb
+Schema (verified against `glab orbit local schema`, orbit binary v0.74.0):
+  gl_definition(id, name, fqn, file_path, definition_type, start_line, end_line, ...)
+  gl_edge(source_id, source_kind, relationship_kind, target_id, target_kind, ...)
+  gl_file(id, path, name, extension, language, ...)
+  gl_directory(id, path, name, ...)
+A CALLS edge (source_kind='Definition' -> target_kind='Definition') means the
+source definition calls the target. Reverse those edges to get dependents.
+
+Source resolution and honest labeling:
+  - LIVE    : a valid Orbit Local DuckDB at ~/.orbit/graph.duckdb
   - FALLBACK: the committed fixture, used when the live DuckDB is absent/invalid
 """
 from __future__ import annotations
 
 import os
+import posixpath
 from dataclasses import dataclass
 from typing import Optional
 
@@ -22,6 +30,9 @@ FIXTURE_DUCKDB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", 
 FIXTURE_DUCKDB = os.path.abspath(FIXTURE_DUCKDB)
 
 EXPECTED_TABLES = {"gl_definition", "gl_file", "gl_directory", "gl_edge"}
+
+# definition_type values worth listing as reviewable symbols (real Orbit values).
+CALLABLE_TYPES = ("Function", "Method", "DecoratedFunction", "Class", "DecoratedClass")
 
 
 @dataclass
@@ -77,42 +88,70 @@ class Graph:
             except Exception:
                 self._cols[t] = []
 
+    def has(self, table: str, col: str) -> bool:
+        return col in self._cols.get(table, [])
+
     def schema_report(self) -> dict:
         return {"mode": self.source.mode, "path": self.source.path,
                 "tables": self.source.tables, "columns": self._cols}
 
+    # --- core reads (real Orbit schema) ---
+
+    def _fanin_subquery(self) -> str:
+        return ("(SELECT COUNT(*) FROM gl_edge e WHERE e.target_id = d.id "
+                "AND e.relationship_kind = 'CALLS' AND e.source_kind = 'Definition' "
+                "AND e.target_kind = 'Definition')")
+
     def find_definition(self, name: str) -> Optional[dict]:
+        """Resolve a name to one definition. If several share the name, pick the one
+        with the most callers (the most consequential to change), tie-break by id."""
         rows = self._con.execute(
-            "SELECT id, name, file_id, kind FROM gl_definition WHERE name = ?", [name]
+            f"SELECT d.id, d.name, d.file_path, d.definition_type, {self._fanin_subquery()} AS fanin "
+            "FROM gl_definition d WHERE d.name = ? ORDER BY fanin DESC, d.id ASC LIMIT 1",
+            [name],
         ).fetchall()
         if not rows:
             return None
-        i, n, fid, kind = rows[0]
-        return {"id": i, "name": n, "file_id": fid, "kind": kind}
+        i, n, fpath, dtype, _fan = rows[0]
+        return {"id": i, "name": n, "file": fpath, "kind": dtype}
 
-    def all_definition_names(self) -> list:
-        return [r[0] for r in self._con.execute(
-            "SELECT name FROM gl_definition ORDER BY name").fetchall()]
+    def all_definition_names(self, limit: int = 120) -> list:
+        """Distinct reviewable symbol names (functions/methods/classes), ordered by
+        caller fan-in then name, so the most consequential symbols surface first."""
+        type_list = ",".join("'%s'" % t for t in CALLABLE_TYPES)
+        rows = self._con.execute(
+            f"SELECT d.name, MAX({self._fanin_subquery()}) AS fanin "
+            f"FROM gl_definition d WHERE d.definition_type IN ({type_list}) "
+            "AND d.name IS NOT NULL AND d.name <> '' "
+            "GROUP BY d.name ORDER BY fanin DESC, d.name ASC LIMIT ?",
+            [limit],
+        ).fetchall()
+        names = [r[0] for r in rows]
+        if not names:  # extreme fallback: any named definition
+            names = [r[0] for r in self._con.execute(
+                "SELECT DISTINCT name FROM gl_definition WHERE name IS NOT NULL AND name <> '' "
+                "ORDER BY name LIMIT ?", [limit]).fetchall()]
+        return names
 
     def direct_callers(self, def_id: int) -> list:
-        """Definition ids that CALL def_id (reverse 'calls' edges)."""
+        """Definition ids that CALL def_id (reverse CALLS edges, Definition->Definition)."""
         rows = self._con.execute(
-            "SELECT src_id FROM gl_edge WHERE dst_id = ? AND type = 'calls'", [def_id]
+            "SELECT source_id FROM gl_edge WHERE target_id = ? AND relationship_kind = 'CALLS' "
+            "AND source_kind = 'Definition' AND target_kind = 'Definition'", [def_id]
         ).fetchall()
-        return sorted({r[0] for r in rows})
+        # exclude self-edges defensively
+        return sorted({r[0] for r in rows if r[0] != def_id})
 
     def owning_file_and_dir(self, def_id: int) -> dict:
         rows = self._con.execute(
-            """SELECT d.name, f.path, dir.path
-               FROM gl_definition d
-               JOIN gl_file f ON d.file_id = f.id
-               LEFT JOIN gl_directory dir ON f.dir_id = dir.id
-               WHERE d.id = ?""", [def_id]
+            "SELECT name, file_path FROM gl_definition WHERE id = ?", [def_id]
         ).fetchall()
         if not rows:
             return {}
-        name, fpath, dpath = rows[0]
-        return {"name": name, "file": fpath, "dir": dpath}
+        name, fpath = rows[0]
+        fpath = fpath or ""
+        d = posixpath.dirname(fpath.replace("\\", "/")) if fpath else ""
+        return {"name": name, "file": fpath, "dir": d}
 
     def name_of(self, def_id: int) -> str:
         rows = self._con.execute("SELECT name FROM gl_definition WHERE id = ?", [def_id]).fetchall()
@@ -120,6 +159,16 @@ class Graph:
 
     def total_definitions(self) -> int:
         return self._con.execute("SELECT count(*) FROM gl_definition").fetchone()[0]
+
+    def repo_label(self) -> Optional[str]:
+        """Best-effort repo name from the manifest, for the status panel."""
+        if "_orbit_manifest" not in self._cols:
+            return None
+        try:
+            row = self._con.execute("SELECT repo_path FROM _orbit_manifest LIMIT 1").fetchone()
+            return row[0] if row else None
+        except Exception:
+            return None
 
     def close(self):
         try:
