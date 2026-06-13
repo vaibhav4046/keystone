@@ -50,6 +50,14 @@ from typing import Any, Optional
 # glab binary name; override with KEYSTONE_GLAB_BINARY for an absolute path.
 GLAB_BINARY = os.environ.get("KEYSTONE_GLAB_BINARY", "glab")
 
+# The Orbit Local CLI is the `orbit` binary that `glab orbit local` launches.
+# Going through glab adds a per-invocation network update/version check that can
+# hang offline, so when KEYSTONE_ORBIT_BINARY points at the orbit binary directly
+# we drive it as `orbit <subcommand>` (fast, offline). Both forms ARE the Orbit
+# Local CLI; this only changes the launcher. Unset by default so tests and the
+# documented `glab orbit local` form remain the canonical path.
+ORBIT_BINARY = os.environ.get("KEYSTONE_ORBIT_BINARY") or None
+
 # Hard per-invocation timeout in seconds. Orbit schema/sql calls are local and
 # should be quick, but a generous ceiling keeps a stalled CLI from ever blocking
 # a render. Override with KEYSTONE_ORBIT_CLI_TIMEOUT.
@@ -110,11 +118,35 @@ def _truncate(text: str, cap: int) -> str:
     return text[:cap] + "\n... [truncated {} chars]".format(len(text) - cap)
 
 
-def glab_available(binary: str = GLAB_BINARY) -> bool:
-    """True when a glab executable is resolvable on PATH (or as an abs path)."""
+def _binary_available(binary: str) -> bool:
     return shutil.which(binary) is not None or (
         os.path.isabs(binary) and os.path.isfile(binary)
     )
+
+
+def glab_available(binary: str = GLAB_BINARY) -> bool:
+    """True when a glab executable is resolvable on PATH (or as an abs path)."""
+    return _binary_available(binary)
+
+
+def _driver():
+    """Resolve which CLI launcher to drive.
+
+    Returns (binary, prefix_args, source, label). When KEYSTONE_ORBIT_BINARY is
+    set we drive the orbit binary directly (`orbit <sub>`); otherwise the
+    documented `glab orbit local <sub>` form.
+    """
+    if ORBIT_BINARY:
+        return ORBIT_BINARY, [], "orbit local", "orbit"
+    return GLAB_BINARY, ["orbit", "local"], "glab orbit local", "glab"
+
+
+def cli_available() -> bool:
+    """True when the resolved launcher (orbit binary or glab) is runnable."""
+    binary, _prefix, _source, _label = _driver()
+    if ORBIT_BINARY:
+        return _binary_available(binary)
+    return glab_available()
 
 
 def _record(result: OrbitCliResult) -> None:
@@ -169,12 +201,13 @@ def _run(subcommand: str, extra_args: list[str], timeout: float) -> OrbitCliResu
     Always records the result in the transcript, including failures, so the
     status panel shows the attempt even when the binary is missing.
     """
-    argv = [GLAB_BINARY, "orbit", "local", subcommand, *extra_args]
+    binary, prefix, source, label = _driver()
+    argv = [binary, *prefix, subcommand, *extra_args]
     command = _render_command(argv)
     started = time.time()
     perf = time.perf_counter()
 
-    if not glab_available():
+    if not cli_available():
         result = OrbitCliResult(
             subcommand=subcommand,
             argv=argv,
@@ -184,7 +217,8 @@ def _run(subcommand: str, extra_args: list[str], timeout: float) -> OrbitCliResu
             stderr="",
             duration_ms=0.0,
             ok=False,
-            error="glab binary not found on PATH; using direct-DuckDB fast path",
+            source=source,
+            error="{} binary not found on PATH; using direct-DuckDB fast path".format(label),
             ts=started,
         )
         _record(result)
@@ -209,7 +243,8 @@ def _run(subcommand: str, extra_args: list[str], timeout: float) -> OrbitCliResu
             stderr=proc.stderr or "",
             duration_ms=duration_ms,
             ok=ok,
-            error=None if ok else "glab exited {}".format(proc.returncode),
+            source=source,
+            error=None if ok else "{} exited {}".format(label, proc.returncode),
             ts=started,
         )
     except subprocess.TimeoutExpired:
@@ -223,7 +258,8 @@ def _run(subcommand: str, extra_args: list[str], timeout: float) -> OrbitCliResu
             stderr="",
             duration_ms=duration_ms,
             ok=False,
-            error="glab timed out after {:.1f}s".format(timeout),
+            source=source,
+            error="{} timed out after {:.1f}s".format(label, timeout),
             ts=started,
         )
     except OSError as exc:  # binary vanished between check and exec, perms, etc.
@@ -237,7 +273,8 @@ def _run(subcommand: str, extra_args: list[str], timeout: float) -> OrbitCliResu
             stderr="",
             duration_ms=duration_ms,
             ok=False,
-            error="failed to run glab: {}".format(exc),
+            source=source,
+            error="failed to run {}: {}".format(label, exc),
             ts=started,
         )
 

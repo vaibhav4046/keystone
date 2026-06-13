@@ -54,9 +54,11 @@ def test_unknown_symbol_returns_none(graph):
 def test_independent_recompute_matches(graph):
     """Round-two QA: recompute total_affected by a separate code path and match."""
     imp = impact_mod.compute_blast_radius(graph, "tokenize", max_depth=3)
-    # independent BFS over raw edges via the connection
+    # independent BFS over raw edges via the connection (real Orbit edge columns)
     con = graph._con
-    edges = con.execute("SELECT src_id, dst_id FROM gl_edge WHERE type='calls'").fetchall()
+    edges = con.execute(
+        "SELECT source_id, target_id FROM gl_edge WHERE relationship_kind='CALLS' "
+        "AND source_kind='Definition' AND target_kind='Definition'").fetchall()
     rev = {}
     for s, d in edges:
         rev.setdefault(d, set()).add(s)
