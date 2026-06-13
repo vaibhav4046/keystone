@@ -25,7 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
-                  policy as policy_mod, attest as attest_mod, agents as agents_mod)
+                  policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -179,18 +179,6 @@ def _impact_with_governance(name: str, max_depth: int):
     return imp, out
 
 
-def _prior_approvers(name: str, signature: str, change_id: str) -> list:
-    """Distinct prior approvers that count toward quorum: same change_id (one MR),
-    excluding seeded historical rows, and only approvals AFTER the most recent
-    rejection for that change (a rejection resets the quorum). Returns sorted actor
-    ids, so quorum is provable from the bound identities, not just a count."""
-    rows = _ledger.rows()                                  # newest-first
-    rel = [r for r in rows if not r.get("seeded") and r.get("change_id") == change_id
-           and name in (r.get("target_symbols") or []) and r.get("signature") == signature]
-    last_reject = max([r["seq"] for r in rel if r.get("decision") == "reject"], default=-1)
-    return sorted({r["actor"] for r in rel if r.get("decision") == "approve" and r["seq"] > last_reject})
-
-
 @app.get("/api/impact/{name}")
 def impact(name: str = Path(max_length=256), max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
     _imp, out = _impact_with_governance(name, max_depth)
@@ -237,7 +225,8 @@ class Decision(BaseModel):
     decision: Literal["approve", "reject"]
     reviewer: str = Field(min_length=1, max_length=120)
     rationale: str = Field(min_length=1, max_length=2048)
-    change_id: Optional[str] = Field(default=None, max_length=120)  # a real MR/change id, if available
+    change_id: Optional[str] = Field(default=None, max_length=120)  # the MR/change id; quorum is per change_id
+    change_author: Optional[str] = Field(default=None, max_length=120)  # who proposed the change (four-eyes)
     author_kind: Optional[str] = Field(default=None, max_length=16)  # "agent" enforces an agent scope manifest
     override: bool = False                                            # accountable override of a policy BLOCK
     max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
@@ -268,43 +257,16 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
         raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
     if not _rate_ok():
         raise HTTPException(429, "too many approvals; slow down")
-    imp, out = _impact_with_governance(d.name, d.max_depth)
-    if out is None:
-        raise HTTPException(404, f"definition not found: {d.name}")
-    # agent governance: a registered agent acting outside its committed scope manifest
-    # is hard-refused (it cannot self-approve out of bounds); a human can still decide.
-    author = agents_mod.resolve_author(d.reviewer, declared_kind=d.author_kind)
-    scope = agents_mod.check_scope(author, out)
-    if not scope["in_scope"]:
-        raise HTTPException(403, {"error": "SCOPE_VIOLATION", "author": author, "violations": scope["violations"]})
-    # An unregistered agent cannot be trusted to self-approve: require registration
-    # (or a human reviewer). A registered agent stays within its scope manifest (above).
-    if d.decision == "approve" and author["badge"] == "AGENT_UNREGISTERED":
-        raise HTTPException(403, {"error": "UNREGISTERED_AGENT", "author": author,
-                                  "hint": "register this agent in .keystone/agents.json or have a human review"})
-    pol = out["policy"]
-    # ENFORCEMENT, not advisory: a policy BLOCK refuses an approval unless an explicit,
-    # accountable override is supplied (and the override is recorded in the row).
-    if d.decision == "approve" and pol["action"] == "BLOCK" and not d.override:
-        raise HTTPException(409, {"error": "GOVERNANCE_BLOCK", "reasons": pol["reasons"], "policy": pol,
-                                  "hint": "set override=true with a rationale to record an accountable override"})
+    # one shared enforcement decision (identical to the CLI gate, core/gate.py)
+    res = gate_mod.evaluate(_graph, _ledger, name=d.name, decision=d.decision, reviewer=d.reviewer,
+                            change_id=d.change_id, change_author=d.change_author, author_kind=d.author_kind,
+                            override=d.override, max_depth=d.max_depth)
+    if not res["ok"]:
+        raise HTTPException(res["status"], res.get("detail") or res["error"])
 
-    sig = imp.signature
-    change_id = d.change_id or f"KS-{d.name}"
-    # Quorum: N DISTINCT approvers of the same change close it; until then PENDING.
-    prior = _prior_approvers(d.name, sig, change_id)
-    confirmed = sorted(set(prior) | ({d.reviewer} if d.decision == "approve" else set()))
-    required = pol["required_approvers"]
-    if d.decision == "reject":
-        quorum_status = "REJECTED"
-    elif len(confirmed) >= required:
-        quorum_status = "APPROVED"
-    else:
-        quorum_status = "PENDING_APPROVAL"
-
-    # Optional time gate: enforced only when the policy opts in (window_enforced),
-    # so the demo stays instant while the capability is real and honestly labeled.
-    if (d.decision == "approve" and quorum_status == "APPROVED"
+    sig, change_id, pol, out = res["sig"], res["change_id"], res["policy"], res["impact"]
+    # Optional time gate (backend-only state): enforced only when the policy opts in.
+    if (d.decision == "approve" and res["quorum"]["status"] == "APPROVED"
             and pol.get("review_window_hours") and policy_mod.load_policy().get("window_enforced")):
         opened = _change_opened_at.get((change_id, sig))
         if opened is not None and (time.time() - opened) < pol["review_window_hours"] * 3600:
@@ -312,23 +274,15 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
             raise HTTPException(409, {"error": "REVIEW_WINDOW_PENDING", "time_remaining_hours": remaining})
     _change_opened_at.setdefault((change_id, sig), time.time())
 
-    extra = {
-        "tier": pol["tier"], "governance_action": pol["action"],
-        "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
-        "orbit_snapshot_sha256": out["orbit_snapshot_sha256"], "author_kind": author["badge"],
-        "required_approvers": required, "confirmed_approvers": confirmed,  # bound actor ids, not a count
-        "quorum_status": quorum_status, "override": bool(d.override and pol["action"] == "BLOCK"),
-    }
     row = _ledger.append(
-        actor=d.reviewer, change_id=change_id, target_symbols=[d.name],
-        target_fqns=[imp.epicenter_fqn] if imp.epicenter_fqn else None,
-        blast_radius_set=imp.affected_ids, signature=imp.signature,
-        decision=d.decision, rationale=d.rationale, extra=extra,
+        actor=d.reviewer, change_id=change_id, target_symbols=[d.name], target_fqns=res["target_fqns"],
+        blast_radius_set=res["blast_set"], signature=sig, decision=d.decision, rationale=d.rationale,
+        extra=res["row_extra"],
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # real time, not fixture
     )
     att = attest_mod.build_attestation(impact_dict=out, policy_eval=pol, row=row, source_mode=_graph.source.mode)
-    return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": author,
-            "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status},
+    return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": res["author"],
+            "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status")},
             "attestation": att}
 
 

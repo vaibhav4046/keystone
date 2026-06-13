@@ -27,19 +27,20 @@ governance-gate:
   image: python:3.13-slim
   script:
     - pip install --quiet -r requirements.txt
-    - python skills/keystone/run_review.py metrics --local --fixture --fail-on-contradiction
+    # the SAME policy gate the API uses: a clean symbol passes, a BLOCKed one fails
+    - python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
   rules:
     - when: always
 
-# Demonstration that the gate BLOCKS a contradicted change (allowed to fail so the
-# pipeline still goes green; in a real setup this job would block the merge).
+# Demonstration that the gate BLOCKS a contradicted change. allow_failure keeps the
+# pipeline green while showing the refusal; in a real MR this would block the merge.
 governance-gate-demo:
   stage: gate
   image: python:3.13-slim
   allow_failure: true
   script:
     - pip install --quiet -r requirements.txt
-    - python skills/keystone/run_review.py tokenize --local --fixture --fail-on-contradiction
+    - python skills/keystone/run_review.py tokenize --local --fixture --fail-on-block
   rules:
     - when: always
 

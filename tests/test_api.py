@@ -85,6 +85,28 @@ def test_quorum_requires_distinct_approvers():
     assert diff["quorum"]["confirmed"] == base + 1               # a distinct actor advances it
 
 
+def test_self_approval_is_blocked():
+    # the author of a change cannot approve their own change (four-eyes)
+    r = client.post("/api/approve", json={"name": "metrics", "decision": "approve", "reviewer": "alice",
+                                          "change_author": "alice", "rationale": "lgtm"})
+    assert r.status_code == 403 and r.json()["detail"]["error"] == "SELF_APPROVAL"
+    ovr = client.post("/api/approve", json={"name": "metrics", "decision": "approve", "reviewer": "alice",
+                                            "change_author": "alice", "rationale": "solo, accepted", "override": True})
+    assert ovr.status_code == 200
+
+
+def test_change_id_separates_quorum_buckets():
+    # two unrelated MRs on the same symbol do NOT share a quorum pool
+    a = client.post("/api/approve", json={"name": "serialize", "decision": "approve", "reviewer": "r1",
+                                          "change_id": "MR-100", "rationale": "mr100"}).json()
+    b = client.post("/api/approve", json={"name": "serialize", "decision": "approve", "reviewer": "r1",
+                                          "change_id": "MR-200", "rationale": "mr200"}).json()
+    assert a["quorum"]["confirmed"] == 1 and b["quorum"]["confirmed"] == 1   # separate buckets
+    close = client.post("/api/approve", json={"name": "serialize", "decision": "approve", "reviewer": "r2",
+                                              "change_id": "MR-100", "rationale": "second on mr100"}).json()
+    assert close["quorum"]["status"] == "APPROVED" and close["quorum"]["confirmed"] == 2
+
+
 def test_unregistered_agent_cannot_self_approve():
     r = client.post("/api/approve", json={"name": "serialize", "decision": "approve",
                                           "reviewer": "mystery-bot", "rationale": "auto-fix",

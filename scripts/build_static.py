@@ -56,13 +56,25 @@ def main():
     if os.path.exists(LEDGER):
         os.remove(LEDGER)
     led = Ledger(LEDGER)
+    g = graph_mod.Graph(prefer_live=False)
+    pol_active = policy_mod.load_policy()
     for row in fixtures.seed_ledger_rows():
         sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
+        # attach the same governance context a live deployment records, so the public
+        # ledger shows the enforcement fields (tier, action, policy hash, snapshot)
+        extra = {"seeded": True}
+        sym = (row.get("target_symbols") or [None])[0]
+        imp = impact_mod.compute_blast_radius(g, sym) if sym else None
+        if imp:
+            d = imp.to_dict()
+            pol = policy_mod.evaluate(d, {}, pol_active)
+            extra.update({"tier": pol["tier"], "governance_action": pol["action"],
+                          "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
+                          "orbit_snapshot_sha256": attest_mod.orbit_snapshot_sha256(d)})
         led.append(actor=row["actor"], change_id=row["change_id"], target_symbols=row["target_symbols"],
                    blast_radius_set=row["blast_radius_set"], signature=sig,
-                   decision=row["decision"], rationale=row["rationale"])
+                   decision=row["decision"], rationale=row["rationale"], extra=extra)
 
-    g = graph_mod.Graph(prefer_live=False)
     names = g.all_definition_names()
     rep = g.schema_report()
     tx = _orbit_transcript()
