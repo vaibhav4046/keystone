@@ -12,6 +12,7 @@
 <body>
 <a class="skip-link" href="#bsvg">Skip to blast radius</a>
 <noscript><div class="noscript-msg">Keystone is a live command center that needs JavaScript to render. Enable JavaScript, or run it locally — see the README.</div></noscript>
+<canvas id="bg" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
 
 <header class="topbar">
@@ -26,7 +27,7 @@
 
 <main class="grid">
   <!-- left rail -->
-  <section class="rail panel">
+  <section class="rail panel" data-reveal>
     <div class="rail-h" id="symbols-h">SYMBOLS</div>
     <input id="search" class="search" placeholder="filter symbols..." autocomplete="off" aria-label="filter symbols" />
     <div class="rail-hint">try <b>tokenize</b> or <b>compile_unit</b> — they carry a prior decision</div>
@@ -40,12 +41,13 @@
   </section>
 
   <!-- center: blast radius -->
-  <section class="stage panel">
+  <section class="stage panel" data-reveal>
     <div class="stage-h">
       <span>BLAST RADIUS</span>
       <span class="epi" id="epi">select a symbol</span>
     </div>
     <div class="canvas-wrap">
+      <canvas id="g3d" aria-hidden="true"></canvas>
       <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="bsvg-title"><title id="bsvg-title">Blast-radius graph; the exact rings and names are listed in the IMPACT panel.</title></svg>
       <p class="visually-hidden">The blast radius is also listed as text in the IMPACT panel to the right.</p>
       <div class="counter"><span id="counter">0000</span><small>affected</small></div>
@@ -60,7 +62,7 @@
   </section>
 
   <!-- right: impact + precedent + gate -->
-  <section class="side">
+  <section class="side" data-reveal>
     <div class="panel impact">
       <div class="p-h">IMPACT</div>
       <div id="rings" class="rings" aria-live="polite"><div class="muted">No symbol selected.</div></div>
@@ -97,7 +99,7 @@
 </main>
 
 <!-- audit ledger -->
-<section class="ledger panel">
+<section class="ledger panel" data-reveal>
   <div class="p-h">
     AUDIT LEDGER
     <span id="chain-verdict" class="verdict" role="status" aria-live="assertive">...</span>
@@ -118,5 +120,6 @@
 </footer>
 
 <script src="app.js"></script>
+<script src="motion.js"></script>
 </body>
 </html>
