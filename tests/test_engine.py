@@ -175,6 +175,18 @@ def test_contradiction_strength_identical_vs_symbol(tmp_path):
     assert diff["contradiction_strength"] == "symbol"   # same symbol, different blast -> weaker
 
 
+def test_precedent_suppresses_cross_namespace_collision(tmp_path):
+    """A prior reject on mod_a.parse must NOT contradict a review of mod_b.parse
+    (same short name, different fqn) — fqn is authoritative when both sides have one."""
+    led = Ledger(str(tmp_path / "ledger.jsonl"))
+    led.append(actor="r", change_id="MR-A", target_symbols=["parse"], target_fqns=["mod_a.parse"],
+               blast_radius_set=[2, 3], signature="sigA", decision="reject", rationale="no")
+    same_ns = led.precedent(target_symbols=["parse"], target_fqns=["mod_a.parse"])
+    assert same_ns["contradiction"] is not None and same_ns["contradiction_matched_by"] == "fqn"
+    other_ns = led.precedent(target_symbols=["parse"], target_fqns=["mod_b.parse"])
+    assert other_ns["contradiction"] is None and other_ns["match_count"] == 0   # no phantom contradiction
+
+
 def test_contradiction_signature_matches_live_blast(graph):
     """End-to-end: the engine-computed signature for tokenize equals the seeded
     rejection's signature, so the signature-identical contradiction genuinely fires."""

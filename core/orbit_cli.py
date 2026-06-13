@@ -367,12 +367,12 @@ def sql(query: str, timeout: float = DEFAULT_TIMEOUT) -> OrbitCliResult:
 def probe(timeout: float = DEFAULT_TIMEOUT) -> OrbitCliResult:
     """Cheap liveness probe used at session start.
 
-    Runs the one query the master prompt certifies as safe pre-introspection,
-    SELECT name FROM gl_definition LIMIT 3, so a single call confirms both that
-    the CLI runs and that the graph has rows. Result is recorded in the
-    transcript like any other invocation.
+    Selects callable definition names (function/method/class), so a single call
+    confirms the CLI runs AND returns plausible code symbols rather than file-path
+    module entries. Result is recorded in the transcript like any other invocation.
     """
-    return sql("SELECT name FROM gl_definition LIMIT 3", timeout=timeout)
+    return sql("SELECT name FROM gl_definition WHERE definition_type IN "
+               "('Function','Method','Class','DecoratedFunction') LIMIT 3", timeout=timeout)
 
 
 __all__ = [

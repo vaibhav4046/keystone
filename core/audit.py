@@ -154,15 +154,22 @@ class Ledger:
         rows = self._read_raw()
         matches = []
         for row in rows:
-            hit = False
+            row_fqns = set(row.get("target_fqns", []))
+            matched_by = None
             if signature and row.get("signature") == signature:
-                hit = True
-            if target_fqns and target_fqns.intersection(set(row.get("target_fqns", []))):
-                hit = True
-            if target_symbols and target_symbols.intersection(set(row.get("target_symbols", []))):
-                hit = True
-            if hit:
-                matches.append(row)
+                matched_by = "signature"
+            elif target_fqns and row_fqns and target_fqns & row_fqns:
+                matched_by = "fqn"
+            elif target_symbols and target_symbols & set(row.get("target_symbols", [])):
+                # Trust a bare short-name match only when fqn disambiguation is NOT
+                # available on both sides; otherwise two same-named symbols in
+                # different namespaces would collide into a false contradiction.
+                if not (target_fqns and row_fqns):
+                    matched_by = "name"
+            if matched_by:
+                m = dict(row)
+                m["_matched_by"] = matched_by
+                matches.append(m)
         approvals = [r for r in matches if r["decision"] == "approve"]
         rejections = [r for r in matches if r["decision"] == "reject"]
         most_recent = matches[-1] if matches else None
@@ -185,15 +192,20 @@ class Ledger:
             contradiction_strength = "identical"
         else:
             contradiction_strength = "symbol"
+        by_match = {"signature": 0, "fqn": 0, "name": 0}
+        for m in matches:
+            by_match[m.get("_matched_by", "name")] = by_match.get(m.get("_matched_by", "name"), 0) + 1
         return {
             "match_count": len(matches),
             "approved": len(approvals),
             "rejected": len(rejections),
+            "matched_by": by_match,                              # signature/fqn/name counts
+            "contradiction_matched_by": contradiction.get("_matched_by") if contradiction else None,
             "most_recent": most_recent,
             "contradiction": contradiction,
             "contradiction_same_signature": contradiction_same_signature,
             "contradiction_strength": contradiction_strength,
-            "matched_rows": [{"seq": m["seq"], "row_hash": m["row_hash"],
+            "matched_rows": [{"seq": m["seq"], "row_hash": m["row_hash"], "matched_by": m.get("_matched_by"),
                               "decision": m["decision"], "actor": m["actor"],
                               "rationale": m["rationale"]} for m in matches],
         }

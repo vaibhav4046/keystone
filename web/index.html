@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+<a class="skip-link" href="#bsvg">Skip to blast radius</a>
+<noscript><div class="noscript-msg">Keystone is a live command center that needs JavaScript to render. Enable JavaScript, or run it locally — see the README.</div></noscript>
 <div class="scanlines" aria-hidden="true"></div>
 
 <header class="topbar">
@@ -27,6 +29,7 @@
   <section class="rail panel">
     <div class="rail-h" id="symbols-h">SYMBOLS</div>
     <input id="search" class="search" placeholder="filter symbols..." autocomplete="off" aria-label="filter symbols" />
+    <div class="rail-hint">try <b>tokenize</b> or <b>compile_unit</b> — they carry a prior decision</div>
     <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
     <div class="rail-foot">
       <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
@@ -72,8 +75,9 @@
       <div class="p-h">APPROVAL GATE</div>
       <div class="gate-body">
         <input id="reviewer" class="ip" placeholder="reviewer (your name)" aria-label="reviewer name" maxlength="120" />
-        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" />
-        <div class="gate-note id-note">identity is self-asserted in this demo; production binds it to GitLab SSO (see README).</div>
+        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" aria-describedby="reason-err" />
+        <div id="reason-err" class="gate-err" role="alert"></div>
+        <div class="gate-note id-note">identity is token-gated in this deployment; production binds it to a GitLab OIDC sub claim (see README). The chain proves the text was not edited, not who typed it.</div>
         <div class="gate-btns">
           <button id="approve" class="btn approve" disabled>APPROVE</button>
           <button id="reject" class="btn reject" disabled>REJECT</button>

@@ -8,8 +8,11 @@ never the source of a displayed figure. Runs fully offline on the fixture.
 from __future__ import annotations
 
 import datetime
+import hmac
 import os
 import sys
+import threading
+import time
 from contextlib import asynccontextmanager
 from typing import Literal, Optional
 
@@ -183,10 +186,29 @@ class Decision(BaseModel):
     max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
 
 
+# Simple in-process per-minute limiter on the only state-mutating endpoint, so a
+# loop cannot flood the ledger (each row makes contradiction recall O(n)).
+_RATE = {"window": 0, "count": 0}
+_RATE_LOCK = threading.Lock()
+_RATE_MAX_PER_MIN = int(os.environ.get("KEYSTONE_APPROVE_RATE_PER_MIN", "30"))
+
+
+def _rate_ok() -> bool:
+    now = int(time.time() // 60)
+    with _RATE_LOCK:
+        if now != _RATE["window"]:
+            _RATE["window"] = now
+            _RATE["count"] = 0
+        _RATE["count"] += 1
+        return _RATE["count"] <= _RATE_MAX_PER_MIN
+
+
 @app.post("/api/approve")
 def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None)):
-    if APPROVE_TOKEN is not None and x_keystone_token != APPROVE_TOKEN:
-        raise HTTPException(401, "invalid or missing X-Keystone-Token")
+    if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
+        raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
+    if not _rate_ok():
+        raise HTTPException(429, "too many approvals; slow down")
     imp = impact_mod.compute_blast_radius(_graph, d.name, max_depth=d.max_depth)
     if imp is None:
         raise HTTPException(404, f"definition not found: {d.name}")

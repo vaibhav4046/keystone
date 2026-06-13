@@ -107,11 +107,19 @@ def _local_callables(prefer_live=True):
     import os
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.abspath(os.path.join(here, "..", "..")))
+    import tempfile
     from core import graph as graph_mod, impact as impact_mod, seed as seed_mod
     from core.audit import Ledger
     g = graph_mod.Graph(prefer_live=prefer_live)
-    led = Ledger(os.path.join(os.path.expanduser("~"), ".keystone", "gate_ledger.jsonl"))
-    if not led.rows():
+    if not prefer_live:
+        # hermetic: a fresh temp ledger, always reseeded, so the fixture contradiction
+        # fires deterministically regardless of any prior ~/.keystone state.
+        ledger_path = os.path.join(tempfile.mkdtemp(), "gate_ledger.jsonl")
+    else:
+        ledger_path = os.environ.get("KEYSTONE_LEDGER_PATH") or \
+            os.path.join(os.path.expanduser("~"), ".keystone", "gate_ledger.jsonl")
+    led = Ledger(ledger_path)
+    if (not prefer_live) or (not led.rows()):
         for row in seed_mod.seed_rows_for(g):
             sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
             led.append(actor=row["actor"], change_id=row["change_id"], target_symbols=row["target_symbols"],

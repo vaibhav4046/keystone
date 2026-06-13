@@ -33,3 +33,6 @@ Thumbs.db
 
 # any ledger variant (runtime, seed) — regenerable
 data/*.jsonl
+
+# server logs (transient)
+data/*.log

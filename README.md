@@ -39,7 +39,7 @@ The ledger is a per-instance append-only file: one shared store per deployment, 
 
 ## How big is the problem
 
-Take it as a disclosed estimate, not a measured market: a 500-engineer org running a few hundred merge requests a week will see a handful of change-failure incidents a quarter (DORA puts elite change-failure rates in the 0 to 15 percent band, and most orgs are not elite). If even a few of those each quarter are a silent breaking change to shared code that a blast-radius view would have caught, at tens of engineer-hours each, the recurring cost is real money and real trust, every quarter, per org. That is the wedge Keystone aims at; the precise figure depends on the org and is stated here as an assumption, not a citation.
+The buyer is concrete: a platform or CODEOWNERS team on GitLab Ultimate running Orbit Local across a large monorepo, the people already accountable for review and for the post-incident write-up. Take the sizing as a disclosed estimate, not a measured market: a 500-engineer org running a few hundred merge requests a week will see a handful of change-failure incidents a quarter (Google's DORA program reports change-failure rates spanning roughly 0 to 15 percent for elite teams and higher for everyone else). If even a few of those each quarter are a silent breaking change to shared code that a blast-radius view would have caught, at tens of engineer-hours each, the recurring cost is real money and real trust, every quarter, per org. That is the wedge Keystone aims at; the precise figure depends on the org and is stated here as an assumption, not a citation.
 
 ## Run it
 
@@ -50,7 +50,7 @@ python scripts/build_fixture.py          # build the sample graph + seed the led
 python -m uvicorn backend.app:app --port 8787
 ```
 
-Open http://127.0.0.1:8787 and select a symbol. Run the test suite with `python -m pytest -q` (32 tests: exact-result blast radius, independent recompute, hash-chain tamper detection, forged-append rejection, epicenter-bound signatures, precedent contradiction strength, and the skill workflow).
+Open http://127.0.0.1:8787 and select a symbol. Run the test suite with `python -m pytest -q`: exact-result blast radius, independent recompute, hash-chain tamper detection, forged-append rejection, epicenter-bound signatures, precedent contradiction strength, cross-namespace precedent, the HTTP API layer, and the skill workflow.
 
 ## Run it on a real Orbit graph
 

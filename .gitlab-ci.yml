@@ -50,8 +50,9 @@ pages:
   stage: deploy
   image: python:3.13-slim
   script:
-    - pip install --quiet duckdb
+    - pip install --quiet -r requirements.txt
     - python scripts/build_static.py
+    - python -c "import json; d=json.load(open('web/data.json')); assert d['definitions'] and d['impact']"
     - rm -rf public && mkdir public && cp -r web/* public/
   artifacts:
     paths:
