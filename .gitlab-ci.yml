@@ -1,0 +1,31 @@
+# Keystone CI: prove the engine on every push, and publish the web hero to
+# GitLab Pages with no extra accounts or paid services. Pushing to GitLab gives
+# a green test badge AND a judge-clickable live link at the Pages URL.
+stages:
+  - test
+  - deploy
+
+test:
+  stage: test
+  image: python:3.13-slim
+  script:
+    - pip install --quiet duckdb fastapi "uvicorn[standard]"
+    - python -m pytest -q
+  rules:
+    - when: always
+
+# Publishes the self-contained static hero (live-API-first, FALLBACK bundle when
+# no backend is reachable). build_static.py regenerates web/data.json from the
+# engine, then web/ is copied to public/ which GitLab Pages serves.
+pages:
+  stage: deploy
+  image: python:3.13-slim
+  script:
+    - pip install --quiet duckdb
+    - python scripts/build_static.py
+    - rm -rf public && mkdir public && cp -r web/* public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
