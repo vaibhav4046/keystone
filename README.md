@@ -40,6 +40,8 @@ python skills/keystone/run_review.py parse --decide approve --reviewer you --rea
 
 The live engine reads a real GitLab Orbit Local graph at `~/.orbit/graph.duckdb` and drives Orbit's own CLI (`glab orbit local schema` and `glab orbit local sql`) for live introspection and queries. When no live graph is present, Keystone runs on a committed sample fixture and labels the source FALLBACK in the UI. A public deployment serves that labeled fixture; the live local-graph run is shown in the demo video. Keystone never presents fixture data as live.
 
+The web command center is also a self-contained static site. `python scripts/build_static.py` precomputes `web/data.json` from the engine, and the frontend tries the live API first and falls back to that bundle when no backend is reachable. So `web/` deploys to any static host with no server: `npx wrangler pages deploy web` (Cloudflare Pages), or commit `web/` as a GitLab Pages artifact. The deployed gate stays interactive; it records decisions in the browser only and says so, while the local app persists to the hash-chained ledger.
+
 ## How it is built
 
 One core, many shells. A pure-Python engine owns all logic: `core/graph.py` reads the Orbit-shaped DuckDB read-only after introspecting its schema, `core/impact.py` computes the bounded reverse-BFS rings and the blast-radius signature, `core/audit.py` maintains the append-only hash-chained ledger and the deterministic precedent recall, `core/orbit_cli.py` drives the real Orbit CLI. A single FastAPI app serves it. The web command center, the CLI, and the Skill are thin clients of that one core.

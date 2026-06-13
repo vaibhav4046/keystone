@@ -2,8 +2,39 @@
 // Keystone web hero. Talks to the FastAPI core. Every number shown comes from
 // the API (engine-computed); this script only renders and animates.
 const $ = (s) => document.querySelector(s);
-const api = (p) => fetch(p).then((r) => { if (!r.ok) throw new Error(p + " " + r.status); return r.json(); });
 const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Live-API-first, static-bundle fallback so the hero deploys with no backend.
+let STATIC = null, STATIC_MODE = false;
+async function ensureStatic() {
+  if (STATIC) return STATIC;
+  STATIC = await fetch("data.json").then((r) => r.json());
+  return STATIC;
+}
+function fromStatic(p) {
+  const s = STATIC;
+  if (p === "/api/status") return s.status;
+  if (p === "/api/definitions") return { names: s.definitions };
+  if (p === "/api/audit") return s.audit;
+  if (p === "/api/audit/verify") return s.audit.verify;
+  if (p.startsWith("/api/impact/")) { const n = decodeURIComponent(p.split("/").pop()); return s.impact[n] || {}; }
+  if (p.startsWith("/api/precedent/")) { const n = decodeURIComponent(p.split("/").pop()); return s.precedent[n] || { match_count: 0 }; }
+  throw new Error("no static route " + p);
+}
+const api = async (p) => {
+  if (!STATIC_MODE) {
+    try {
+      const r = await fetch(p);
+      if (r.ok) return await r.json();
+      throw new Error(p + " " + r.status);
+    } catch (e) {
+      // first failure: switch to static bundle for the rest of the session
+      try { await ensureStatic(); STATIC_MODE = true; } catch (e2) { throw e; }
+    }
+  }
+  await ensureStatic();
+  return fromStatic(p);
+};
 
 let STATE = { defs: [], selected: null, impact: null };
 
@@ -242,11 +273,30 @@ async function decide(decision) {
   const reason = $("#reason").value.trim();
   if (!reason) { $("#reason").focus(); $("#reason").style.outline = "2px solid var(--danger)"; return; }
   $("#reason").style.outline = "";
-  const r = await fetch("/api/approve", {
-    method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason }),
+  if (!STATIC_MODE) {
+    try {
+      const r = await fetch("/api/approve", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason }),
+      });
+      if (r.ok) { $("#reason").value = ""; await refreshLedger(); await select(STATE.selected); return; }
+      throw new Error("approve " + r.status);
+    } catch (e) {
+      await ensureStatic(); STATIC_MODE = true; // fall through to client-side sample append
+    }
+  }
+  // Public sample (no backend): append in-browser so the gate stays interactive.
+  // Persisted, server-verified writes happen in the live local app (shown in the video).
+  const imp = STATIC.impact[STATE.selected] || {};
+  STATIC.audit.rows.push({
+    seq: STATIC.audit.rows.length, actor: reviewer, change_id: "KS-" + STATE.selected,
+    target_symbols: [STATE.selected], decision, rationale: reason,
+    signature: imp.signature || "", ts: "sample", row_hash: "(in-browser sample)",
   });
-  if (r.ok) { $("#reason").value = ""; await refreshLedger(); await select(STATE.selected); }
+  $("#reason").value = "";
+  await refreshLedger(); await select(STATE.selected);
+  const note = $("#sample-note");
+  if (note) { note.textContent = "recorded in this browser only — the live local app persists to the hash-chained ledger"; note.style.opacity = "1"; }
 }
 
 // in-memory tamper demo: re-render the ledger as if a row were edited, flip the badge red.
