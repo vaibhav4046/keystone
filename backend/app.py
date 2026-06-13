@@ -87,7 +87,8 @@ if not os.path.exists(LEDGER_PATH) or os.path.getsize(LEDGER_PATH) == 0:
         sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
         _ledger.append(actor=row["actor"], change_id=row["change_id"],
                        target_symbols=row["target_symbols"], blast_radius_set=row["blast_radius_set"],
-                       signature=sig, decision=row["decision"], rationale=row["rationale"])
+                       signature=sig, decision=row["decision"], rationale=row["rationale"],
+                       extra={"seeded": True})   # historical precedent, excluded from live quorum counts
 
 
 def _orbit_access() -> str:
@@ -116,8 +117,17 @@ def _orbit_crosscheck(epi_id: int) -> Optional[dict]:
         res = orbit_cli.sql(q)
         if not res.ok:
             return None
-        digits = "".join(ch for ch in (res.stdout or "") if ch.isdigit())
-        n = int(digits) if digits else None
+        n = None
+        parsed = res.parsed                      # structured rows from orbit_cli._parse_rows
+        if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+            for val in parsed[0].values():
+                s = str(val).strip()
+                if s.isdigit():
+                    n = int(s); break
+        if n is None:                            # robust fallback: last integer token
+            import re as _re
+            m = _re.findall(r"\d+", res.stdout or "")
+            n = int(m[-1]) if m else None
         return {"ring1_cli": n, "command": res.command, "ok": n is not None}
     except Exception:
         return None
@@ -167,6 +177,18 @@ def _impact_with_governance(name: str, max_depth: int):
         cross["match"] = cross.get("ring1_cli") == cross["ring1_engine"]
         out["orbit_crosscheck"] = cross
     return imp, out
+
+
+def _prior_approvers(name: str, signature: str, change_id: str) -> list:
+    """Distinct prior approvers that count toward quorum: same change_id (one MR),
+    excluding seeded historical rows, and only approvals AFTER the most recent
+    rejection for that change (a rejection resets the quorum). Returns sorted actor
+    ids, so quorum is provable from the bound identities, not just a count."""
+    rows = _ledger.rows()                                  # newest-first
+    rel = [r for r in rows if not r.get("seeded") and r.get("change_id") == change_id
+           and name in (r.get("target_symbols") or []) and r.get("signature") == signature]
+    last_reject = max([r["seq"] for r in rel if r.get("decision") == "reject"], default=-1)
+    return sorted({r["actor"] for r in rel if r.get("decision") == "approve" and r["seq"] > last_reject})
 
 
 @app.get("/api/impact/{name}")
@@ -226,6 +248,8 @@ class Decision(BaseModel):
 _RATE = {"window": 0, "count": 0}
 _RATE_LOCK = threading.Lock()
 _RATE_MAX_PER_MIN = int(os.environ.get("KEYSTONE_APPROVE_RATE_PER_MIN", "30"))
+# first-review timestamp per (change_id, signature), for the optional time-window gate
+_change_opened_at: dict = {}
 
 
 def _rate_ok() -> bool:
@@ -253,6 +277,11 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
     scope = agents_mod.check_scope(author, out)
     if not scope["in_scope"]:
         raise HTTPException(403, {"error": "SCOPE_VIOLATION", "author": author, "violations": scope["violations"]})
+    # An unregistered agent cannot be trusted to self-approve: require registration
+    # (or a human reviewer). A registered agent stays within its scope manifest (above).
+    if d.decision == "approve" and author["badge"] == "AGENT_UNREGISTERED":
+        raise HTTPException(403, {"error": "UNREGISTERED_AGENT", "author": author,
+                                  "hint": "register this agent in .keystone/agents.json or have a human review"})
     pol = out["policy"]
     # ENFORCEMENT, not advisory: a policy BLOCK refuses an approval unless an explicit,
     # accountable override is supplied (and the override is recorded in the row).
@@ -260,14 +289,11 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
         raise HTTPException(409, {"error": "GOVERNANCE_BLOCK", "reasons": pol["reasons"], "policy": pol,
                                   "hint": "set override=true with a rationale to record an accountable override"})
 
-    # Quorum: a tier asking for N approvers is only satisfied by N DISTINCT approvers
-    # of the same change (same symbol + blast signature). Until then the change is
-    # PENDING_APPROVAL, not approved — the required_approvers number is a guarantee now.
     sig = imp.signature
-    prior = {r["actor"] for r in _ledger.rows()
-             if r.get("decision") == "approve" and d.name in (r.get("target_symbols") or [])
-             and r.get("signature") == sig}
-    confirmed = sorted(prior | ({d.reviewer} if d.decision == "approve" else set()))
+    change_id = d.change_id or f"KS-{d.name}"
+    # Quorum: N DISTINCT approvers of the same change close it; until then PENDING.
+    prior = _prior_approvers(d.name, sig, change_id)
+    confirmed = sorted(set(prior) | ({d.reviewer} if d.decision == "approve" else set()))
     required = pol["required_approvers"]
     if d.decision == "reject":
         quorum_status = "REJECTED"
@@ -276,15 +302,25 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
     else:
         quorum_status = "PENDING_APPROVAL"
 
+    # Optional time gate: enforced only when the policy opts in (window_enforced),
+    # so the demo stays instant while the capability is real and honestly labeled.
+    if (d.decision == "approve" and quorum_status == "APPROVED"
+            and pol.get("review_window_hours") and policy_mod.load_policy().get("window_enforced")):
+        opened = _change_opened_at.get((change_id, sig))
+        if opened is not None and (time.time() - opened) < pol["review_window_hours"] * 3600:
+            remaining = round((pol["review_window_hours"] * 3600 - (time.time() - opened)) / 3600, 2)
+            raise HTTPException(409, {"error": "REVIEW_WINDOW_PENDING", "time_remaining_hours": remaining})
+    _change_opened_at.setdefault((change_id, sig), time.time())
+
     extra = {
         "tier": pol["tier"], "governance_action": pol["action"],
         "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
         "orbit_snapshot_sha256": out["orbit_snapshot_sha256"], "author_kind": author["badge"],
-        "required_approvers": required, "confirmed_approvers": len(confirmed),
+        "required_approvers": required, "confirmed_approvers": confirmed,  # bound actor ids, not a count
         "quorum_status": quorum_status, "override": bool(d.override and pol["action"] == "BLOCK"),
     }
     row = _ledger.append(
-        actor=d.reviewer, change_id=d.change_id or f"KS-{d.name}", target_symbols=[d.name],
+        actor=d.reviewer, change_id=change_id, target_symbols=[d.name],
         target_fqns=[imp.epicenter_fqn] if imp.epicenter_fqn else None,
         blast_radius_set=imp.affected_ids, signature=imp.signature,
         decision=d.decision, rationale=d.rationale, extra=extra,

@@ -8,5 +8,6 @@
     {"name": "ORG_WIDE",   "max_affected_files": null, "required_approvers": 3, "review_window_hours": 48, "action": "HOLD"}
   ],
   "block_on_identical_contradiction": true,
-  "max_blast_radius_defs": null
+  "max_blast_radius_defs": null,
+  "window_enforced": false
 }

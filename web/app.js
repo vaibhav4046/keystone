@@ -356,27 +356,24 @@ async function refreshLedger() {
   // names for blast columns are ids; show count
   const v = a.verify;
   const vd = $("#chain-verdict");
-  // honest badge. In the public static bundle a judge cannot recompute the HMAC
-  // (the key is server-side), so don't claim live "CHAIN VERIFIED": show the
-  // pre-seeded chain as amber "verified at build time", and any in-browser append
-  // as "sample, not verified". Only the live backend shows green CHAIN VERIFIED.
-  const sampleAppend = STATIC_MODE && (a.rows || []).some((r) => r.ts === "sample" || /sample/.test(r.row_hash || ""));
+  // honest badge. The public static bundle uses a PUBLISHED sample HMAC key, so its
+  // chain is reproducible by anyone and is NOT tamper-evident — never show green
+  // "CHAIN VERIFIED" there. Only the live backend (secret per-machine key) does.
+  const isStatic = STATIC_MODE || !!STATIC;
   if (!v.ok) {
     vd.textContent = "BROKEN AT ROW " + v.broken_index; vd.className = "verdict bad";
-  } else if (sampleAppend) {
-    vd.textContent = "SAMPLE · NOT VERIFIED"; vd.className = "verdict warn";
-  } else if (STATIC_MODE) {
+  } else if (isStatic) {
     vd.textContent = "SAMPLE · PUBLIC KEY"; vd.className = "verdict warn";
-    vd.title = "public demo only: the sample HMAC key is published in source, so this chain is illustrative, not tamper-evident. The real local app keys the chain with a secret per-machine key.";
+    vd.title = "public demo only: the sample HMAC key is published in source, so this chain is reproducible by anyone — illustrative, not tamper-evident. The local app keys the chain with a secret per-machine key.";
   } else {
     vd.textContent = "CHAIN VERIFIED"; vd.className = "verdict ok";
   }
   const tb = $("#lrows");
   tb.innerHTML = a.rows.map((r) => `<tr class="${(!v.ok && r.seq >= v.broken_index) ? "broken" : ""}">
-    <td class="tabnum">${r.seq}</td><td class="ch tabnum">${(r.ts || "").replace("T", " ").replace("Z", "")}</td>
+    <td class="tabnum">${r.seq}</td><td class="ch tabnum">${esc((r.ts || "").replace("T", " ").replace("Z", ""))}</td>
     <td>${esc(r.change_id)}</td><td class="tabnum">${(r.blast_radius_set || []).length}</td>
-    <td>${esc(r.actor)}</td><td class="dec ${esc(r.decision)}">${esc(r.decision)}</td>
-    <td class="hash tabnum">${(r.prev_hash || "").slice(0, 8)}… → ${(r.row_hash || "").slice(0, 8)}…</td></tr>`).join("");
+    <td>${esc(r.actor)}</td><td class="dec ${r.decision === "approve" ? "approve" : "reject"}">${r.decision === "approve" ? "✓" : "✕"} ${esc(r.decision)}</td>
+    <td class="hash tabnum">${esc((r.prev_hash || "").slice(0, 8))}… → ${esc((r.row_hash || "").slice(0, 8))}…</td></tr>`).join("");
   // re-sync the chain chip in topbar
   try { paintStatus(await api("/api/status")); } catch (e) {}
 }
