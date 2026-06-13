@@ -33,25 +33,36 @@ class Impact:
     signature: str           # blast_radius_signature_hash
     owners: list             # [{"id","ring","name","file","dir"}] for epicenter + each affected def
     names: dict              # {def_id: name} for epicenter + every affected def
+    parents: dict            # {child_def_id: parent_def_id} real BFS edges within the blast set
+    epicenter_fqn: str = ""  # fully-qualified name, to disambiguate same-short-name symbols
+    epicenter_file: str = "" # owning file path of the epicenter
 
     def to_dict(self) -> dict:
         return {
-            "epicenter": {"id": self.epicenter_id, "name": self.epicenter_name},
+            "epicenter": {"id": self.epicenter_id, "name": self.epicenter_name,
+                          "fqn": self.epicenter_fqn, "file": self.epicenter_file},
             "rings": {str(k): v for k, v in self.rings.items()},
             "affected_ids": self.affected_ids,
             "counts": self.counts,
             "signature": self.signature,
             "owners": self.owners,
             "names": {str(k): v for k, v in self.names.items()},
+            "parents": {str(k): v for k, v in self.parents.items()},
         }
 
 
-def blast_radius_signature(affected_ids) -> str:
-    """Stable sha256 over the sorted, de-duplicated affected definition id set.
-    Two changes with the same dependent set share a signature, which is what the
-    Precedent Panel matches on."""
+def blast_radius_signature(affected_ids, epicenter_id=None) -> str:
+    """Stable sha256 over the epicenter plus the sorted, de-duplicated affected id
+    set. Including the epicenter means two DIFFERENT symbols that both happen to
+    have no dependents (empty affected set) no longer collide on sha256(json([])),
+    which previously caused phantom contradictions between unrelated leaf symbols.
+    Two changes to the SAME symbol with the SAME dependent set still share a
+    signature, which is what the Precedent Panel matches on."""
     ordered = sorted(set(int(x) for x in affected_ids))
-    payload = json.dumps(ordered, separators=(",", ":"))
+    payload = json.dumps(
+        {"epicenter": int(epicenter_id) if epicenter_id is not None else None, "affected": ordered},
+        separators=(",", ":"), sort_keys=True,
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -61,9 +72,10 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
         return None
     epi_id = epi["id"]
 
-    # Bounded reverse-BFS: ring distance from the epicenter along reverse 'calls' edges.
+    # Bounded reverse-BFS: ring distance from the epicenter along reverse CALLS edges.
     ring_of = {epi_id: 0}
     rings = {0: [epi_id]}
+    parents = {}              # child -> the caller-graph parent that first reached it
     q = deque([(epi_id, 0)])
     while q:
         node, dist = q.popleft()
@@ -72,6 +84,7 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
         for caller in graph.direct_callers(node):
             if caller not in ring_of:
                 ring_of[caller] = dist + 1
+                parents[caller] = node
                 rings.setdefault(dist + 1, []).append(caller)
                 q.append((caller, dist + 1))
 
@@ -99,7 +112,10 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
         rings=rings,
         affected_ids=affected,
         counts=counts,
-        signature=blast_radius_signature(affected),
+        signature=blast_radius_signature(affected, epicenter_id=epi_id),
         owners=owners,
         names=names,
+        parents={c: p for c, p in parents.items()},
+        epicenter_fqn=epi.get("fqn", "") or "",
+        epicenter_file=epi.get("file", "") or "",
     )

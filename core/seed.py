@@ -34,6 +34,7 @@ def seed_rows_for(graph) -> list:
                 "actor": "h.okafor",
                 "change_id": "MR-118",
                 "target_symbols": [second],
+                "epicenter_id": imp2.epicenter_id,
                 "blast_radius_set": imp2.affected_ids,
                 "decision": "approve",
                 "rationale": f"Internal refactor of {second}; public signature unchanged, "
@@ -50,6 +51,7 @@ def seed_rows_for(graph) -> list:
             "actor": "s.castellano",
             "change_id": "MR-203",
             "target_symbols": [top],
+            "epicenter_id": imp.epicenter_id,
             "blast_radius_set": imp.affected_ids,
             "decision": "reject",
             "rationale": f"{top} sits under {n} dependents across the graph; changing it shifts "

@@ -25,8 +25,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: pip install --quiet pytest duckdb fastapi "uvicorn[standard]"
+      - run: pip install --quiet -r requirements.txt
       - run: python -m pytest -q
+      # enforceable governance gate (in-process): a clean symbol passes; a symbol
+      # with a prior identical-blast-radius rejection would exit non-zero and block.
+      - run: python skills/keystone/run_review.py metrics --local --fail-on-contradiction
 
   deploy:
     needs: test

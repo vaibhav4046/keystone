@@ -3,14 +3,40 @@
 # a green test badge AND a judge-clickable live link at the Pages URL.
 stages:
   - test
+  - gate
   - deploy
 
 test:
   stage: test
   image: python:3.13-slim
   script:
-    - pip install --quiet pytest duckdb fastapi "uvicorn[standard]"
+    - pip install --quiet -r requirements.txt
     - python -m pytest -q
+  rules:
+    - when: always
+
+# Enforceable governance gate: fails the pipeline (exit non-zero) when a touched
+# symbol carries a prior identical-blast-radius rejection. Run in-process, no server.
+# This turns the review from voluntary tooling into a real CI control. Point the
+# symbol at what an MR actually changes (here a clean symbol keeps the demo green).
+governance-gate:
+  stage: gate
+  image: python:3.13-slim
+  script:
+    - pip install --quiet -r requirements.txt
+    - python skills/keystone/run_review.py metrics --local --fail-on-contradiction
+  rules:
+    - when: always
+
+# Demonstration that the gate BLOCKS a contradicted change (allowed to fail so the
+# pipeline still goes green; in a real setup this job would block the merge).
+governance-gate-demo:
+  stage: gate
+  image: python:3.13-slim
+  allow_failure: true
+  script:
+    - pip install --quiet -r requirements.txt
+    - python skills/keystone/run_review.py tokenize --local --fail-on-contradiction
   rules:
     - when: always
 

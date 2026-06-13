@@ -14,24 +14,39 @@ A staff engineer about to approve a risky refactor needs to see what the change 
 
 Today those questions go unanswered. A merge silently breaks a dozen transitive callers. An approval is recorded with no rationale. A post-incident audit cannot be reconstructed because the log was editable. And increasingly a change proposed by an autonomous coding agent reaches main with no human-auditable gate at all. Keystone is the gate.
 
+Concretely: a ten-person platform team inside a 500-engineer company merges a change to a shared utility that quietly breaks twelve transitive callers; it ships, pages on-call at 2am, and becomes a P2 that burns roughly forty engineer-hours across triage, rollback, and the post-incident review reconstructing who approved what and why. At a loaded 100 dollars an hour that single incident is about four thousand dollars, before the trust cost. Keystone puts the twelve-caller blast radius and the prior rejection in front of the reviewer at the moment of approval, and leaves a record the audit can trust afterward. It is for teams where a change can break code nobody in the review owns; it is not for a solo project where the author already holds the whole graph in their head.
+
 ## What it does
 
-Pick a symbol that is about to change. Keystone reads the GitLab Orbit Local code graph and computes the deterministic blast radius: the direct callers, the transitive dependents to a bounded depth, the owning files and directories, ranked as severity rings out from the epicenter. Every number is computed from the graph by a pure-Python engine and is reproducible; the model never invents a figure. A Precedent Panel surfaces prior governance on the same symbol or the same blast signature, including a contradiction when a pending approval conflicts with a past rejection. A reviewer approves or rejects with a written reason, and the decision is appended to a sha256 hash-chained audit ledger whose integrity is recomputed live, showing a green verified badge only when every link checks out.
+Pick a symbol that is about to change. Keystone reads the GitLab Orbit Local code graph and computes the deterministic blast radius: the direct callers, the transitive dependents to a bounded depth, the owning files and directories, ranked as severity rings out from the epicenter. Every number is computed from the graph by a pure-Python engine and is reproducible; the model never invents a figure. A Precedent Panel surfaces prior governance on the same symbol or the same blast signature, including a contradiction when a pending approval conflicts with a past rejection. A reviewer approves or rejects with a written reason, and the decision is appended to an HMAC-keyed, sha256 hash-chained audit ledger whose integrity is recomputed live, showing a green verified badge only when every link checks out.
 
 ## Why this is not branch protection, signed commits, or a CI check
 
-Branch protection enforces who clicked approve. Signed commits and GPG git-notes, Sigstore, and in-toto attest who authored or signed code. None of them bind the computed impact of a change and the human rationale and the decision together into one tamper-evident record at the moment of decision, and none surface a contradicting prior rejection while you are about to approve. That binding, plus precedent at the moment of choice, is Keystone.
+Branch protection enforces who clicked approve. Signed commits and GPG git-notes, Sigstore, and in-toto attest who authored or signed code. None of them bind the computed impact of a change and the human rationale and the decision together into one tamper-evident record at the moment of decision, and none surface a contradicting prior rejection while you are about to approve. That binding, plus precedent at the moment of choice, is Keystone. It is complementary to Sigstore and in-toto, not a replacement: they attest the artifact, Keystone attests the decision.
+
+## Integrity model, stated honestly
+
+What the ledger guarantees and what it does not, so the claim is precise rather than marketing:
+
+- Each row's hash is an HMAC over the previous hash plus the canonical payload, keyed by a secret taken from `KEYSTONE_LEDGER_KEY` or generated once and stored outside the repo at `~/.keystone/ledger.key`. Because the key is secret, a party who can read or append to the ledger file still cannot forge a valid tail; recomputing the chain detects both an in-place edit and a forged append. A plain published sha256 chain would not stop a forged append, which is why the HMAC matters. A test (`test_forged_append_with_public_sha256_is_rejected`) proves it.
+- Appends are serialised by a process lock, so two concurrent approvals cannot share a previous hash and break the chain. A multi-worker or multi-host deployment needs an external mutex or a database-backed ledger; the single-process server is correct as shipped.
+- Reviewer identity is self-asserted unless you set `KEYSTONE_APPROVE_TOKEN`, in which case `POST /api/approve` requires a matching `X-Keystone-Token` header. Binding identity to real GitLab SSO is future work; the README does not claim cryptographic identity it does not have.
+- The blast-radius signature is computed over the epicenter plus the sorted affected id set, so two unrelated symbols with no dependents do not collide and produce a phantom contradiction. A prior rejection on the same symbol with a different blast radius is shown as a weaker advisory, not a full contradiction.
+
+## Current limitations
+
+The ledger is a per-instance append-only file: one shared store per deployment, not a multi-tenant service, and a change id maps to a single symbol rather than a multi-symbol merge request. The public deploy serves a labeled sample fixture because no free static host can open a local Orbit DuckDB. None of these are hidden in the UI; the status panel always says whether the data is LIVE or FALLBACK.
 
 ## Run it
 
-Requirements: Python 3.11+, then `pip install duckdb fastapi "uvicorn[standard]"`.
+Requirements: Python 3.11+, then `pip install -r requirements.txt`.
 
 ```
 python scripts/build_fixture.py          # build the sample graph + seed the ledger
 python -m uvicorn backend.app:app --port 8787
 ```
 
-Open http://127.0.0.1:8787 and select a symbol. Run the test suite with `python -m pytest -q` (28 tests: exact-result blast radius, independent recompute, hash-chain tamper detection, precedent contradiction, and the skill workflow).
+Open http://127.0.0.1:8787 and select a symbol. Run the test suite with `python -m pytest -q` (32 tests: exact-result blast radius, independent recompute, hash-chain tamper detection, forged-append rejection, epicenter-bound signatures, precedent contradiction strength, and the skill workflow).
 
 ## Run it on a real Orbit graph
 

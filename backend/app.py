@@ -7,15 +7,19 @@ never the source of a displayed figure. Runs fully offline on the fixture.
 """
 from __future__ import annotations
 
+import datetime
 import os
 import sys
+from contextlib import asynccontextmanager
+from typing import Literal, Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import FastAPI, HTTPException, Header, Query
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from core import graph as graph_mod, impact as impact_mod, orbit_cli
 from core.audit import Ledger
@@ -25,7 +29,32 @@ DATA = os.path.join(ROOT, "data")
 WEB = os.path.join(ROOT, "web")
 LEDGER_PATH = os.path.join(DATA, "audit_ledger.jsonl")
 
-app = FastAPI(title="Keystone", version="1.0.0")
+# Optional shared secret for the approval gate. When set, POST /api/approve requires
+# a matching X-Keystone-Token header, so a decision cannot be recorded by an
+# arbitrary client. Unset means open (single-user local demo); the README integrity
+# note states identity is self-asserted unless this is configured.
+APPROVE_TOKEN = os.environ.get("KEYSTONE_APPROVE_TOKEN")
+MAX_DEPTH_CAP = 8
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    yield
+    try:
+        _graph.close()
+    except Exception:
+        pass
+
+
+app = FastAPI(title="Keystone", version="1.0.0", lifespan=lifespan)
+
+# No-auth + same-origin demo: lock CORS to the local origins the hero is served on,
+# so even if the backend is exposed beyond localhost an arbitrary site cannot POST a
+# decision (CSRF). Override with KEYSTONE_CORS_ORIGINS (comma-separated) if needed.
+_origins = os.environ.get("KEYSTONE_CORS_ORIGINS",
+                          "http://127.0.0.1:8787,http://localhost:8787").split(",")
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins if o.strip()],
+                   allow_methods=["GET", "POST"], allow_headers=["*"])
 
 # one shared graph + ledger for the process
 _graph = graph_mod.Graph(prefer_live=True)
@@ -48,7 +77,7 @@ if _graph.source.mode == "LIVE" and orbit_cli.cli_available():
 if not os.path.exists(LEDGER_PATH) or os.path.getsize(LEDGER_PATH) == 0:
     from core import seed as seed_mod
     for row in seed_mod.seed_rows_for(_graph):
-        sig = impact_mod.blast_radius_signature(row["blast_radius_set"])
+        sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
         _ledger.append(actor=row["actor"], change_id=row["change_id"],
                        target_symbols=row["target_symbols"], blast_radius_set=row["blast_radius_set"],
                        signature=sig, decision=row["decision"], rationale=row["rationale"])
@@ -66,12 +95,31 @@ def health():
     return {"ok": True, "service": "keystone", "version": "1.0.0"}
 
 
+def _orbit_crosscheck(epi_id: int) -> Optional[dict]:
+    """Make the Orbit CLI load-bearing for a displayed figure: independently count
+    the epicenter's direct callers via `orbit sql` and compare to the engine's
+    ring-1. The engine remains the source of truth; this is a live cross-check that
+    proves the number came from a real Orbit query, surfaced as an orbit-verified
+    badge. Never raises; returns None when the CLI is unavailable."""
+    if not _orbit_cli_ok:
+        return None
+    try:
+        q = ("SELECT count(*) AS n FROM gl_edge WHERE target_id = {} AND relationship_kind='CALLS' "
+             "AND source_kind='Definition' AND target_kind='Definition'").format(int(epi_id))
+        res = orbit_cli.sql(q)
+        if not res.ok:
+            return None
+        digits = "".join(ch for ch in (res.stdout or "") if ch.isdigit())
+        n = int(digits) if digits else None
+        return {"ring1_cli": n, "command": res.command, "ok": n is not None}
+    except Exception:
+        return None
+
+
 @app.get("/api/status")
 def status():
     rep = _graph.schema_report()
     v = _ledger.verify()
-    providers = [k for k in ("CEREBRAS_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY", "GEMINI_API_KEY")
-                 if os.environ.get(k)]
     return {
         "source_mode": rep["mode"],            # LIVE or FALLBACK
         "orbit_access": _orbit_access(),       # CLI+DuckDB / DuckDB / FALLBACK (honest)
@@ -82,7 +130,7 @@ def status():
         "audit_chain": v,                      # {ok, count, broken_index}
         "definitions": _graph.total_definitions(),
         "orbit_cli_transcript": orbit_cli.get_transcript(limit=6),  # proves the CLI ran
-        "llm_providers_configured": providers,  # names only, never values
+        "integrity": {"hmac": True, "approve_token_required": APPROVE_TOKEN is not None},
     }
 
 
@@ -92,15 +140,21 @@ def definitions():
 
 
 @app.get("/api/impact/{name}")
-def impact(name: str, max_depth: int = 3):
+def impact(name: str, max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
     imp = impact_mod.compute_blast_radius(_graph, name, max_depth=max_depth)
     if imp is None:
         raise HTTPException(404, f"definition not found: {name}")
-    return imp.to_dict()
+    out = imp.to_dict()
+    cross = _orbit_crosscheck(imp.epicenter_id)
+    if cross is not None:
+        cross["ring1_engine"] = imp.counts.get("ring_1", 0)
+        cross["match"] = cross.get("ring1_cli") == cross["ring1_engine"]
+        out["orbit_crosscheck"] = cross       # live `orbit sql` verification of ring-1
+    return out
 
 
 @app.get("/api/precedent/{name}")
-def precedent(name: str, max_depth: int = 3):
+def precedent(name: str, max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
     imp = impact_mod.compute_blast_radius(_graph, name, max_depth=max_depth)
     sig = imp.signature if imp else None
     return _ledger.precedent(target_symbols=[name], signature=sig)
@@ -117,22 +171,26 @@ def audit_verify():
 
 
 class Decision(BaseModel):
-    name: str
-    decision: str
-    reviewer: str
-    rationale: str
-    max_depth: int = 3
+    name: str = Field(min_length=1)
+    decision: Literal["approve", "reject"]
+    reviewer: str = Field(min_length=1)
+    rationale: str = Field(min_length=1)
+    change_id: Optional[str] = None            # a real MR/change id, if available
+    max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
 
 
 @app.post("/api/approve")
-def approve(d: Decision):
+def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None)):
+    if APPROVE_TOKEN is not None and x_keystone_token != APPROVE_TOKEN:
+        raise HTTPException(401, "invalid or missing X-Keystone-Token")
     imp = impact_mod.compute_blast_radius(_graph, d.name, max_depth=d.max_depth)
     if imp is None:
         raise HTTPException(404, f"definition not found: {d.name}")
     row = _ledger.append(
-        actor=d.reviewer, change_id=f"KS-{d.name}", target_symbols=[d.name],
+        actor=d.reviewer, change_id=d.change_id or f"KS-{d.name}", target_symbols=[d.name],
         blast_radius_set=imp.affected_ids, signature=imp.signature,
         decision=d.decision, rationale=d.rationale,
+        ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # real time, not fixture
     )
     return {"row": row, "verify": _ledger.verify()}
 

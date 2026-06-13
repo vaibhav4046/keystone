@@ -56,6 +56,7 @@ def governed_review(symbol, get_json, post_json=None, *, decide=None, reviewer=N
         "rejected": prec.get("rejected", 0),
         "contradiction": prec.get("contradiction"),
         "contradiction_same_signature": prec.get("contradiction_same_signature", False),
+        "contradiction_strength": prec.get("contradiction_strength"),
     }
 
     if decide:
@@ -99,18 +100,68 @@ def _print_report(rep):
     print()
 
 
+def _local_callables():
+    """Wire get/post directly to the in-process core (no server), so the gate runs
+    in CI with nothing to start. Used by --local."""
+    import os
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, os.path.abspath(os.path.join(here, "..", "..")))
+    from core import graph as graph_mod, impact as impact_mod, seed as seed_mod
+    from core.audit import Ledger
+    g = graph_mod.Graph(prefer_live=True)
+    led = Ledger(os.path.join(os.path.expanduser("~"), ".keystone", "gate_ledger.jsonl"))
+    if not led.rows():
+        for row in seed_mod.seed_rows_for(g):
+            sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
+            led.append(actor=row["actor"], change_id=row["change_id"], target_symbols=row["target_symbols"],
+                       blast_radius_set=row["blast_radius_set"], signature=sig,
+                       decision=row["decision"], rationale=row["rationale"])
+
+    def get_json(path):
+        if path.startswith("/api/impact/"):
+            imp = impact_mod.compute_blast_radius(g, parse.unquote(path.rsplit("/", 1)[-1]))
+            return imp.to_dict() if imp else {}
+        if path.startswith("/api/precedent/"):
+            name = parse.unquote(path.rsplit("/", 1)[-1])
+            imp = impact_mod.compute_blast_radius(g, name)
+            return led.precedent(target_symbols=[name], signature=imp.signature if imp else None)
+        if path == "/api/audit/verify":
+            return led.verify()
+        raise AssertionError("unexpected GET " + path)
+
+    def post_json(path, body):
+        imp = impact_mod.compute_blast_radius(g, body["name"])
+        row = led.append(actor=body["reviewer"], change_id="KS-" + body["name"], target_symbols=[body["name"]],
+                         blast_radius_set=imp.affected_ids, signature=imp.signature,
+                         decision=body["decision"], rationale=body["rationale"])
+        return {"row": row, "verify": led.verify()}
+
+    return get_json, post_json
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Keystone governed-review workflow")
     ap.add_argument("symbol")
     ap.add_argument("--base", default="http://127.0.0.1:8787")
+    ap.add_argument("--local", action="store_true",
+                    help="run against the in-process core, no server (for CI gating)")
     ap.add_argument("--decide", choices=["approve", "reject"])
     ap.add_argument("--reviewer")
     ap.add_argument("--reason")
+    ap.add_argument("--fail-on-contradiction", action="store_true",
+                    help="exit non-zero when a prior identical-signature rejection exists (enforceable gate)")
     a = ap.parse_args(argv)
-    rep = governed_review(a.symbol, _urllib_get(a.base), _urllib_post(a.base),
+    get_json, post_json = _local_callables() if a.local else (_urllib_get(a.base), _urllib_post(a.base))
+    rep = governed_review(a.symbol, get_json, post_json,
                           decide=a.decide, reviewer=a.reviewer, reason=a.reason)
     _print_report(rep)
-    return 0 if not rep.get("error") else 1
+    if rep.get("error"):
+        return 1
+    if a.fail_on_contradiction and rep.get("precedent", {}).get("contradiction_same_signature"):
+        print(f"GATE BLOCKED: {a.symbol} has a prior identical-blast-radius rejection. "
+              f"Resolve the precedent (RFC / explicit override) before merging.")
+        return 2
+    return 0
 
 
 if __name__ == "__main__":

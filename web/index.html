@@ -14,24 +14,25 @@
 
 <header class="topbar">
   <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">governed change review</span></div>
-  <div class="status" id="status">
+  <div class="status" id="status" aria-live="polite">
     <span class="chip" id="src-chip">source ...</span>
     <span class="chip" id="orbit-chip">orbit ...</span>
     <span class="chip" id="chain-chip">chain ...</span>
-    <span class="chip" id="llm-chip">llm ...</span>
+    <span class="chip" id="integ-chip">integrity ...</span>
   </div>
 </header>
 
 <main class="grid">
   <!-- left rail -->
   <section class="rail panel">
-    <div class="rail-h">SYMBOLS</div>
-    <input id="search" class="search" placeholder="filter symbols..." autocomplete="off" />
-    <ul class="deflist" id="deflist"></ul>
+    <div class="rail-h" id="symbols-h">SYMBOLS</div>
+    <input id="search" class="search" placeholder="filter symbols..." autocomplete="off" aria-label="filter symbols" />
+    <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
     <div class="rail-foot">
       <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
       <div class="kv"><span>defs</span><b id="def-count">...</b></div>
       <div class="kv"><span>db</span><b id="db-path" title="">...</b></div>
+      <div class="kv"><span>orbit cli</span><b id="orbit-cli" title="">—</b></div>
     </div>
   </section>
 
@@ -58,24 +59,24 @@
   <section class="side">
     <div class="panel impact">
       <div class="p-h">IMPACT</div>
-      <div id="rings" class="rings"><div class="muted">No symbol selected.</div></div>
+      <div id="rings" class="rings" aria-live="polite"><div class="muted">No symbol selected.</div></div>
     </div>
 
     <div class="panel precedent">
       <div class="p-h">PRECEDENT <span class="hint">prior decisions on this symbol</span></div>
-      <div id="precedent" class="prec"><div class="muted">—</div></div>
+      <div id="precedent" class="prec" aria-live="polite"><div class="muted">—</div></div>
     </div>
 
     <div class="panel gate">
       <div class="p-h">APPROVAL GATE</div>
       <div class="gate-body">
-        <input id="reviewer" class="ip" placeholder="reviewer" value="vaibhav" />
-        <input id="reason" class="ip" placeholder="reason (required)" />
+        <input id="reviewer" class="ip" placeholder="reviewer (your name)" aria-label="reviewer name" />
+        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" />
         <div class="gate-btns">
           <button id="approve" class="btn approve" disabled>APPROVE</button>
           <button id="reject" class="btn reject" disabled>REJECT</button>
         </div>
-        <div class="gate-note">writes a sha256 hash-linked ledger row. Nothing else changes.</div>
+        <div class="gate-note">appends one HMAC-keyed hash-linked ledger row. Nothing else changes.</div>
         <div id="sample-note" class="gate-note" style="opacity:0;color:var(--gold);transition:opacity .3s"></div>
       </div>
     </div>
@@ -86,7 +87,7 @@
 <section class="ledger panel">
   <div class="p-h">
     AUDIT LEDGER
-    <span id="chain-verdict" class="verdict">...</span>
+    <span id="chain-verdict" class="verdict" role="status" aria-live="assertive">...</span>
     <button id="verify" class="btn ghost">VERIFY CHAIN</button>
     <button id="tamper" class="btn ghost danger-ghost" title="demo: prove tamper-evidence (in-memory only)">SIMULATE TAMPER</button>
   </div>

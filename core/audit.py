@@ -15,11 +15,52 @@ genesis prev_hash = 64 zeros.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
+import threading
 from typing import Optional
 
 GENESIS_PREV = "0" * 64
+
+# Integrity key. When a key is available the chain is HMAC-keyed, so a party that
+# can append rows still cannot forge a valid tail without the key (plain sha256
+# would let anyone recompute the chain). The key is taken from KEYSTONE_LEDGER_KEY
+# if set, otherwise a random key is generated once and persisted OUTSIDE the repo
+# at ~/.keystone/ledger.key, so it is never committed and a repo-only attacker
+# cannot forge appends. Identity of the reviewer is a separate concern (see the
+# README integrity note and the optional approve token in the backend).
+_KEY_LOCK = threading.Lock()
+_CACHED_KEY: Optional[bytes] = None
+
+
+def _ledger_key() -> bytes:
+    global _CACHED_KEY
+    if _CACHED_KEY is not None:
+        return _CACHED_KEY
+    with _KEY_LOCK:
+        if _CACHED_KEY is not None:
+            return _CACHED_KEY
+        env = os.environ.get("KEYSTONE_LEDGER_KEY")
+        if env:
+            _CACHED_KEY = env.encode("utf-8")
+            return _CACHED_KEY
+        key_dir = os.path.join(os.path.expanduser("~"), ".keystone")
+        key_path = os.path.join(key_dir, "ledger.key")
+        try:
+            if os.path.exists(key_path):
+                with open(key_path, "rb") as f:
+                    _CACHED_KEY = f.read().strip()
+            if not _CACHED_KEY:
+                os.makedirs(key_dir, exist_ok=True)
+                _CACHED_KEY = os.urandom(32).hex().encode("utf-8")
+                with open(key_path, "wb") as f:
+                    f.write(_CACHED_KEY)
+        except OSError:
+            # Last resort: a process-local key. Chain still verifies within the
+            # process; persistence across restarts needs a writable home or env key.
+            _CACHED_KEY = os.urandom(32).hex().encode("utf-8")
+        return _CACHED_KEY
 
 
 def _canonical(payload: dict) -> str:
@@ -27,7 +68,15 @@ def _canonical(payload: dict) -> str:
 
 
 def _row_hash(prev_hash: str, payload: dict) -> str:
-    return hashlib.sha256((prev_hash + _canonical(payload)).encode("utf-8")).hexdigest()
+    return hmac.new(_ledger_key(), (prev_hash + _canonical(payload)).encode("utf-8"),
+                    hashlib.sha256).hexdigest()
+
+
+# Serialises append's read-prev-hash-then-write across threads in one process, so
+# two concurrent POST /api/approve calls cannot share a prev_hash and break the
+# chain. Multi-worker/multi-host deployments need an external mutex or a DB-backed
+# ledger (documented in the README integrity note).
+_APPEND_LOCK = threading.Lock()
 
 
 class Ledger:
@@ -54,24 +103,25 @@ class Ledger:
                signature: str, decision: str, rationale: str, ts: Optional[str] = None) -> dict:
         if decision not in ("approve", "reject"):
             raise ValueError("decision must be approve or reject")
-        existing = self._read_raw()
-        prev_hash = existing[-1]["row_hash"] if existing else GENESIS_PREV
-        seq = len(existing)
-        payload = {
-            "seq": seq,
-            "ts": ts or _fixed_ts(seq),
-            "actor": actor,
-            "change_id": change_id,
-            "target_symbols": list(target_symbols),
-            "blast_radius_set": sorted(int(x) for x in blast_radius_set),
-            "signature": signature,
-            "decision": decision,
-            "rationale": rationale,
-            "prev_hash": prev_hash,
-        }
-        payload["row_hash"] = _row_hash(prev_hash, payload)
-        with open(self.path, "a", encoding="utf-8") as f:
-            f.write(_canonical(payload) + "\n")
+        with _APPEND_LOCK:
+            existing = self._read_raw()
+            prev_hash = existing[-1]["row_hash"] if existing else GENESIS_PREV
+            seq = len(existing)
+            payload = {
+                "seq": seq,
+                "ts": ts or _fixed_ts(seq),
+                "actor": actor,
+                "change_id": change_id,
+                "target_symbols": list(target_symbols),
+                "blast_radius_set": sorted(int(x) for x in blast_radius_set),
+                "signature": signature,
+                "decision": decision,
+                "rationale": rationale,
+                "prev_hash": prev_hash,
+            }
+            payload["row_hash"] = _row_hash(prev_hash, payload)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(_canonical(payload) + "\n")
         return payload
 
     def verify(self) -> dict:
@@ -117,6 +167,17 @@ class Ledger:
         contradiction_same_signature = bool(
             contradiction and signature and contradiction.get("signature") == signature
         )
+        # Strength: an identical blast signature is the strong "you are about to
+        # approve the exact thing that was rejected" beat; a same-symbol match with
+        # a DIFFERENT blast radius is a weaker advisory (the symbol was rejected
+        # before, but for a different impact), which the UI shows as a warning, not
+        # a full contradiction. Prevents phantom contradictions on unrelated changes.
+        if contradiction is None:
+            contradiction_strength = None
+        elif contradiction_same_signature:
+            contradiction_strength = "identical"
+        else:
+            contradiction_strength = "symbol"
         return {
             "match_count": len(matches),
             "approved": len(approvals),
@@ -124,6 +185,7 @@ class Ledger:
             "most_recent": most_recent,
             "contradiction": contradiction,
             "contradiction_same_signature": contradiction_same_signature,
+            "contradiction_strength": contradiction_strength,
             "matched_rows": [{"seq": m["seq"], "row_hash": m["row_hash"],
                               "decision": m["decision"], "actor": m["actor"],
                               "rationale": m["rationale"]} for m in matches],

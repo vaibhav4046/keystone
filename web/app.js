@@ -38,8 +38,8 @@ const api = async (p) => {
 
 let STATE = { defs: [], selected: null, impact: null };
 
-const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#caa94a" };
-function ringColor(r) { return RING_COLOR[r] || "#5C6672"; }
+const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
+function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
 
 async function boot() {
   try {
@@ -50,22 +50,33 @@ async function boot() {
   STATE.defs = d.names;
   renderDefList(STATE.defs);
   await refreshLedger();
-  // auto-select the demo symbol
-  if (STATE.defs.includes("tokenize")) select("tokenize");
+  // auto-select the scripted demo symbol on the fixture, else the top real symbol
+  if (STATE.defs.length) select(STATE.defs.includes("tokenize") ? "tokenize" : STATE.defs[0]);
   wire();
 }
 
 function paintStatus(st) {
-  const src = $("#src-chip"), orbit = $("#orbit-chip"), chain = $("#chain-chip"), llm = $("#llm-chip");
+  const src = $("#src-chip"), orbit = $("#orbit-chip"), chain = $("#chain-chip"), integ = $("#integ-chip");
   const live = st.source_mode === "LIVE";
-  src.innerHTML = `<span class="dot ${live ? "g" : "a"}"></span>source <b>${st.source_mode}</b>`;
+  src.innerHTML = `<span class="dot ${live ? "g" : "a"}"></span>source <b>${esc(st.source_mode)}</b>`;
   src.className = "chip " + (live ? "ok" : "warn");
-  orbit.innerHTML = `orbit <b>${st.orbit_access}</b>`;
+  orbit.innerHTML = `orbit <b>${esc(st.orbit_access)}</b>`;
+  orbit.className = "chip " + (st.orbit_access === "CLI+DuckDB" ? "ok" : "");
   const ok = st.audit_chain && st.audit_chain.ok;
   chain.innerHTML = `<span class="dot ${ok ? "g" : "r"}"></span>chain <b>${ok ? "verified" : "broken@" + st.audit_chain.broken_index}</b>`;
   chain.className = "chip " + (ok ? "ok" : "bad");
-  const n = (st.llm_providers_configured || []).length;
-  llm.innerHTML = `llm <b>${n ? n + " ready" : "none (deterministic)"}</b>`;
+  if (integ) {
+    const hmac = st.integrity && st.integrity.hmac;
+    integ.innerHTML = `integrity <b>${hmac ? "HMAC" : "sha256"}</b>`;
+    integ.title = "ledger row hashes are " + (hmac ? "HMAC-keyed (forged appends fail without the server key)" : "sha256-chained (detects edits)");
+  }
+  const oc = $("#orbit-cli");
+  if (oc) {
+    const tx = (st.orbit_cli_transcript || []).filter((e) => e.ok);
+    const last = tx[tx.length - 1];
+    if (last) { oc.textContent = last.subcommand + " ✓" + (st.orbit_cli_recorded ? " (rec)" : ""); oc.title = last.command || ""; }
+    else { oc.textContent = "—"; }
+  }
   $("#db-mode").textContent = st.source_mode === "LIVE" ? "Orbit Local (live)" : "fixture (FALLBACK)";
   $("#def-count").textContent = st.definitions;
   $("#db-path").textContent = (st.duckdb_path || "").split(/[\\/]/).slice(-2).join("/");
@@ -79,8 +90,12 @@ function renderDefList(names) {
   names.forEach((n) => {
     const li = document.createElement("li");
     li.dataset.name = n;
-    li.innerHTML = `<span>${n}</span>`;
+    li.textContent = n;                 // textContent, not innerHTML: no injection from symbol names
+    li.setAttribute("role", "option");
+    li.setAttribute("tabindex", "0");
+    li.setAttribute("aria-selected", n === STATE.selected ? "true" : "false");
     li.onclick = () => select(n);
+    li.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n); } };
     if (n === STATE.selected) li.classList.add("sel");
     ul.appendChild(li);
   });
@@ -88,7 +103,11 @@ function renderDefList(names) {
 
 async function select(name) {
   STATE.selected = name;
-  document.querySelectorAll("#deflist li").forEach((li) => li.classList.toggle("sel", li.dataset.name === name));
+  document.querySelectorAll("#deflist li").forEach((li) => {
+    const on = li.dataset.name === name;
+    li.classList.toggle("sel", on);
+    li.setAttribute("aria-selected", on ? "true" : "false");
+  });
   $("#epi").textContent = name;
   const imp = await api("/api/impact/" + encodeURIComponent(name));
   STATE.impact = imp;
@@ -135,14 +154,16 @@ function drawBlast(imp) {
     c.setAttribute("fill", "none"); c.setAttribute("stroke", "#1c1e24"); c.setAttribute("stroke-dasharray", "3 5");
     svg.appendChild(c);
   }
-  // edges epicenter->ring1->...
+  // edges follow the REAL BFS parent (who actually calls whom), not an arbitrary hub,
+  // so the diagram's topology matches the graph. parents = {childId: parentId}.
+  const parents = imp.parents || {};
   const edges = [];
   Object.keys(rings).map(Number).sort((a, b) => a - b).forEach((r) => {
     if (r === 0) return;
     rings[r].forEach((id) => {
-      // connect to nearest inner node (epicenter for r1, else first of r-1)
-      const inner = r === 1 ? imp.epicenter.id : rings[r - 1][0];
-      if (pos[inner]) edges.push([inner, id, Math.max(r, (pos[inner].r || 0))]);
+      let inner = parents[String(id)];
+      if (inner === undefined || inner === null) inner = (r === 1 ? imp.epicenter.id : rings[r - 1][0]);
+      if (pos[inner]) edges.push([inner, id, r]);
     });
   });
   const eEls = edges.map(([a, b]) => {
@@ -207,16 +228,25 @@ function nameOf(imp, id) { return (imp._names && imp._names[id]) || (imp.names &
 function renderRings(imp) {
   const box = $("#rings");
   const c = imp.counts;
-  const rows = [["0", "EPICENTER", 1, imp.epicenter.name]];
+  const epiSub = imp.epicenter.fqn || imp.epicenter.file || "";
+  const rows = [["0", "EPICENTER", 1, esc(imp.epicenter.name) + (epiSub ? ` <span class="rn-sub">${esc(epiSub)}</span>` : "")]];
   Object.keys(imp.rings).map(Number).sort((a, b) => a - b).forEach((r) => {
     if (r === 0) return;
     rows.push([String(r), r === 1 ? "DIRECT" : (r === 2 ? "TRANSITIVE" : "AT RISK"), imp.rings[r].length,
-      imp.rings[r].map((id) => nameOf(imp, id)).join(", ")]);
+      imp.rings[r].map((id) => esc(nameOf(imp, id))).join(", ")]);
   });
   rows.push(["U", "UNAFFECTED", c.unaffected, ""]);
-  box.innerHTML = rows.map(([r, label, n, names]) =>
+  let html = rows.map(([r, label, n, names]) =>
     `<div class="ringrow r${r}"><span class="rl">${label}</span><span class="rc tabnum">${n}</span><span class="rn">${names || "—"}</span></div>`
-  ).join("") + `<div class="sig">blast signature <b>${imp.signature.slice(0, 16)}…</b> · computed from the sorted affected id set</div>`;
+  ).join("");
+  const cc = imp.orbit_crosscheck;
+  if (cc && cc.ok) {
+    html += `<div class="orbit-verified" title="${esc(cc.command || "")}"><span class="ov-dot"></span>` +
+      `orbit-verified · ring-1 = <b>${cc.ring1_cli}</b> via live <code>orbit sql</code>` +
+      (cc.match ? " · matches engine" : " · differs (engine wins)") + `</div>`;
+  }
+  html += `<div class="sig">blast signature <b>${esc(imp.signature.slice(0, 16))}…</b> · sha256 over the epicenter + sorted affected id set</div>`;
+  box.innerHTML = html;
 }
 
 function renderPrecedent(p) {
@@ -225,15 +255,21 @@ function renderPrecedent(p) {
   let html = `<div class="counts"><span class="ap">approved <b class="tabnum">${p.approved}</b></span><span class="rj">rejected <b class="tabnum">${p.rejected}</b></span><span>matches <b class="tabnum">${p.match_count}</b></span></div>`;
   if (p.contradiction) {
     const c = p.contradiction;
-    html += `<div class="contradiction"><span class="ttl">${p.contradiction_same_signature ? "CONTRADICTION · identical blast signature" : "CONTRADICTION · prior rejection"}</span>
-      ${c.actor} rejected change ${c.change_id} on this blast radius.
+    const strong = p.contradiction_strength === "identical";   // identical blast signature = the strong beat
+    const cls = strong ? "contradiction" : "contradiction weak";
+    const ttl = strong ? "CONTRADICTION · identical blast signature"
+                       : "PRIOR REJECTION · same symbol, different blast radius";
+    const line = strong ? "rejected this exact blast radius."
+                        : "rejected a change to this symbol with a different blast radius. Review before approving.";
+    html += `<div class="${cls}" role="alert"><span class="ttl">${ttl}</span>
+      ${esc(c.actor)} ${esc(c.change_id)} ${line}
       <div class="quote">"${esc(c.rationale)}"</div>
-      <div class="rowref">ledger row #${c.seq} · ${c.row_hash.slice(0, 12)}…</div></div>`;
+      <div class="rowref">ledger row #${c.seq} · ${esc((c.row_hash || "").slice(0, 12))}…</div></div>`;
   }
   if (p.most_recent) {
     const m = p.most_recent;
-    html += `<div>most recent: <b style="color:${m.decision === "approve" ? "var(--green)" : "var(--danger)"}">${m.decision}</b> by ${m.actor}
-      <div class="quote">"${esc(m.rationale)}"</div><div class="rowref">row #${m.seq} · ${m.row_hash.slice(0, 12)}…</div></div>`;
+    html += `<div>most recent: <b style="color:${m.decision === "approve" ? "var(--green)" : "var(--danger)"}">${esc(m.decision)}</b> by ${esc(m.actor)}
+      <div class="quote">"${esc(m.rationale)}"</div><div class="rowref">row #${m.seq} · ${esc((m.row_hash || "").slice(0, 12))}…</div></div>`;
   }
   box.innerHTML = html;
 }
@@ -243,8 +279,14 @@ async function refreshLedger() {
   // names for blast columns are ids; show count
   const v = a.verify;
   const vd = $("#chain-verdict");
-  vd.textContent = v.ok ? "CHAIN VERIFIED" : ("BROKEN AT ROW " + v.broken_index);
-  vd.className = "verdict " + (v.ok ? "ok" : "bad");
+  // honest badge: in the public static sample, in-browser appends are not chain-verified
+  const sampleAppend = STATIC_MODE && (a.rows || []).some((r) => r.ts === "sample" || /sample/.test(r.row_hash || ""));
+  if (sampleAppend) {
+    vd.textContent = "SAMPLE · NOT VERIFIED"; vd.className = "verdict warn";
+  } else {
+    vd.textContent = v.ok ? "CHAIN VERIFIED" : ("BROKEN AT ROW " + v.broken_index);
+    vd.className = "verdict " + (v.ok ? "ok" : "bad");
+  }
   const tb = $("#lrows");
   tb.innerHTML = a.rows.map((r) => `<tr class="${(!v.ok && r.seq >= v.broken_index) ? "broken" : ""}">
     <td class="tabnum">${r.seq}</td><td class="ch tabnum">${(r.ts || "").replace("T", " ").replace("Z", "")}</td>
