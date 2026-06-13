@@ -35,7 +35,11 @@ What the ledger guarantees and what it does not, so the claim is precise rather 
 
 ## Current limitations
 
-The ledger is a per-instance append-only file: one shared store per deployment, not a multi-tenant service, and a change id maps to a single symbol rather than a multi-symbol merge request. The public deploy serves a labeled sample fixture because no free static host can open a local Orbit DuckDB. None of these are hidden in the UI; the status panel always says whether the data is LIVE or FALLBACK.
+The ledger is a per-instance append-only file: one shared store per deployment, not a multi-tenant service, and a change id maps to a single symbol rather than a multi-symbol merge request. Precedent matches on the fully-qualified name when one is recorded and otherwise on the exact short symbol name, so a rename is a new identity and would not match a decision made under the old name; tying precedent to a stable symbol id is future work. Reviewer identity is self-asserted unless `KEYSTONE_APPROVE_TOKEN` is set; the intended production path is a short-lived GitLab OIDC token with the reviewer taken from the verified `sub` claim, which would replace the shared token. The HMAC integrity key lives at `~/.keystone/ledger.key` (or `KEYSTONE_LEDGER_KEY`); back it up, because losing it makes an existing chain unverifiable, and rotating it re-keys only rows written after the change. The public deploy serves a labeled sample fixture because no free static host can open a local Orbit DuckDB. None of these are hidden in the UI; the status panel always says whether the data is LIVE or FALLBACK.
+
+## How big is the problem
+
+Take it as a disclosed estimate, not a measured market: a 500-engineer org running a few hundred merge requests a week will see a handful of change-failure incidents a quarter (DORA puts elite change-failure rates in the 0 to 15 percent band, and most orgs are not elite). If even a few of those each quarter are a silent breaking change to shared code that a blast-radius view would have caught, at tens of engineer-hours each, the recurring cost is real money and real trust, every quarter, per org. That is the wedge Keystone aims at; the precise figure depends on the org and is stated here as an assumption, not a citation.
 
 ## Run it
 

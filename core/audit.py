@@ -100,7 +100,8 @@ class Ledger:
         return list(reversed(self._read_raw()))
 
     def append(self, *, actor: str, change_id: str, target_symbols, blast_radius_set,
-               signature: str, decision: str, rationale: str, ts: Optional[str] = None) -> dict:
+               signature: str, decision: str, rationale: str, ts: Optional[str] = None,
+               target_fqns=None) -> dict:
         if decision not in ("approve", "reject"):
             raise ValueError("decision must be approve or reject")
         with _APPEND_LOCK:
@@ -119,6 +120,11 @@ class Ledger:
                 "rationale": rationale,
                 "prev_hash": prev_hash,
             }
+            # Fully-qualified names, when known, so precedent survives same-short-name
+            # symbols in different namespaces (e.g. two parse functions). Only stored
+            # when provided, so older rows are unaffected.
+            if target_fqns:
+                payload["target_fqns"] = [f for f in target_fqns if f]
             payload["row_hash"] = _row_hash(prev_hash, payload)
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(_canonical(payload) + "\n")
@@ -138,21 +144,22 @@ class Ledger:
             prev = stored
         return {"ok": True, "count": len(rows), "broken_index": None}
 
-    def precedent(self, *, target_symbols=None, signature: str = None, owner: str = None) -> dict:
+    def precedent(self, *, target_symbols=None, signature: str = None, target_fqns=None) -> dict:
         """Deterministic recall: prior rows matching the current change by exact
-        symbol overlap OR same blast-radius signature OR same owner. Counts
-        approvals/rejections, returns the most recent matching rationale, and
-        flags a contradiction (a prior REJECT on the same signature)."""
+        fully-qualified name, exact short symbol overlap, OR same blast-radius
+        signature. Counts approvals/rejections, returns the most recent matching
+        rationale, and flags a contradiction (a prior REJECT on a match)."""
         target_symbols = set(target_symbols or [])
+        target_fqns = set(target_fqns or [])
         rows = self._read_raw()
         matches = []
         for row in rows:
             hit = False
             if signature and row.get("signature") == signature:
                 hit = True
-            if target_symbols and target_symbols.intersection(set(row.get("target_symbols", []))):
+            if target_fqns and target_fqns.intersection(set(row.get("target_fqns", []))):
                 hit = True
-            if owner and owner == row.get("owner"):
+            if target_symbols and target_symbols.intersection(set(row.get("target_symbols", []))):
                 hit = True
             if hit:
                 matches.append(row)

@@ -43,7 +43,8 @@
       <span class="epi" id="epi">select a symbol</span>
     </div>
     <div class="canvas-wrap">
-      <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+      <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="bsvg-title"><title id="bsvg-title">Blast-radius graph; the exact rings and names are listed in the IMPACT panel.</title></svg>
+      <p class="visually-hidden">The blast radius is also listed as text in the IMPACT panel to the right.</p>
       <div class="counter"><span id="counter">0000</span><small>affected</small></div>
     </div>
     <div class="legend">
@@ -70,8 +71,9 @@
     <div class="panel gate">
       <div class="p-h">APPROVAL GATE</div>
       <div class="gate-body">
-        <input id="reviewer" class="ip" placeholder="reviewer (your name)" aria-label="reviewer name" />
-        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" />
+        <input id="reviewer" class="ip" placeholder="reviewer (your name)" aria-label="reviewer name" maxlength="120" />
+        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" />
+        <div class="gate-note id-note">identity is self-asserted in this demo; production binds it to GitLab SSO (see README).</div>
         <div class="gate-btns">
           <button id="approve" class="btn approve" disabled>APPROVE</button>
           <button id="reject" class="btn reject" disabled>REJECT</button>

@@ -12,6 +12,9 @@ test:
   script:
     - pip install --quiet -r requirements.txt
     - python -m pytest -q
+    # committed static bundle must equal a fresh build (no silent drift)
+    - python scripts/build_static.py
+    - git diff --exit-code -- web/data.json web/orbit_sample_transcript.json
   rules:
     - when: always
 
@@ -24,7 +27,7 @@ governance-gate:
   image: python:3.13-slim
   script:
     - pip install --quiet -r requirements.txt
-    - python skills/keystone/run_review.py metrics --local --fail-on-contradiction
+    - python skills/keystone/run_review.py metrics --local --fixture --fail-on-contradiction
   rules:
     - when: always
 
@@ -36,7 +39,7 @@ governance-gate-demo:
   allow_failure: true
   script:
     - pip install --quiet -r requirements.txt
-    - python skills/keystone/run_review.py tokenize --local --fail-on-contradiction
+    - python skills/keystone/run_review.py tokenize --local --fixture --fail-on-contradiction
   rules:
     - when: always
 

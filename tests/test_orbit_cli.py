@@ -15,6 +15,20 @@ from unittest import mock
 
 from core import orbit_cli
 
+_SAVED_ORBIT_BINARY = None
+
+
+def setUpModule():
+    # These tests assert the documented `glab orbit local ...` driver form; pin it
+    # so they pass regardless of a KEYSTONE_ORBIT_BINARY set in the environment.
+    global _SAVED_ORBIT_BINARY
+    _SAVED_ORBIT_BINARY = orbit_cli.ORBIT_BINARY
+    orbit_cli.ORBIT_BINARY = None
+
+
+def tearDownModule():
+    orbit_cli.ORBIT_BINARY = _SAVED_ORBIT_BINARY
+
 
 def _completed(argv, returncode=0, stdout="", stderr=""):
     return subprocess.CompletedProcess(argv, returncode, stdout=stdout, stderr=stderr)
@@ -69,6 +83,23 @@ class CommandFormTests(unittest.TestCase):
             captured["argv"],
             [orbit_cli.GLAB_BINARY, "orbit", "local", "schema", "gl_definition"],
         )
+
+    def test_direct_orbit_binary_driver(self):
+        """With KEYSTONE_ORBIT_BINARY set, drive the orbit binary directly as
+        `orbit <sub>` (fast, offline), not via glab."""
+        captured = {}
+
+        def fake_run(argv, **kwargs):
+            captured["argv"] = argv
+            return _completed(argv, 0, stdout="[]")
+
+        with mock.patch.object(orbit_cli, "ORBIT_BINARY", "/opt/orbit"), \
+                mock.patch.object(orbit_cli, "cli_available", return_value=True), \
+                mock.patch.object(orbit_cli.subprocess, "run", side_effect=fake_run):
+            res = orbit_cli.sql("SELECT 1")
+        self.assertEqual(captured["argv"], ["/opt/orbit", "sql", "SELECT 1"])
+        self.assertEqual(res.source, "orbit local")
+        self.assertTrue(res.ok)
 
 
 class ExecutionResultTests(unittest.TestCase):
