@@ -71,8 +71,18 @@ function paintStatus(st) {
   orbit.className = "chip " + (/CLI/.test(st.orbit_access || "") ? "ok" : "");
   orbit.title = /recorded/i.test(st.orbit_access || "") ? "a real orbit CLI run is recorded in the status transcript (public sample reads the fixture)" : "";
   const ok = st.audit_chain && st.audit_chain.ok;
-  chain.innerHTML = `<span class="dot ${ok ? "g" : "r"}"></span>chain <b>${ok ? "verified" : "broken@" + st.audit_chain.broken_index}</b>`;
-  chain.className = "chip " + (ok ? "ok" : "bad");
+  const staticChain = STATIC_MODE || !!STATIC;       // public bundle uses a published key
+  if (!ok) {
+    chain.innerHTML = `<span class="dot r"></span>chain <b>broken@${st.audit_chain.broken_index}</b>`;
+    chain.className = "chip bad";
+  } else if (staticChain) {
+    chain.innerHTML = `<span class="dot a"></span>chain <b>sample</b>`;   // honest: not live-verified
+    chain.className = "chip warn";
+    chain.title = "public sample uses a published HMAC key; tamper-evidence requires the local secret key";
+  } else {
+    chain.innerHTML = `<span class="dot g"></span>chain <b>verified</b>`;
+    chain.className = "chip ok";
+  }
   if (integ) {
     const hmac = st.integrity && st.integrity.hmac;
     integ.innerHTML = `integrity <b>${hmac ? "HMAC" : "sha256"}</b>`;
@@ -117,8 +127,13 @@ async function select(name) {
     li.setAttribute("aria-selected", on ? "true" : "false");
   });
   $("#epi").textContent = name;
+  const wrap = $(".canvas-wrap"), rings = $("#rings");
+  if (wrap) wrap.classList.add("loading");
+  if (rings) rings.setAttribute("aria-busy", "true");
   const imp = await api("/api/impact/" + encodeURIComponent(name));
   STATE.impact = imp;
+  if (wrap) wrap.classList.remove("loading");
+  if (rings) rings.removeAttribute("aria-busy");
   drawBlast(imp);
   renderRings(imp);
   const prec = await api("/api/precedent/" + encodeURIComponent(name));
@@ -385,12 +400,29 @@ function wire() {
     const q = e.target.value.toLowerCase();
     renderDefList(STATE.defs.filter((n) => n.toLowerCase().includes(q)));
   });
+  // arrow-key navigation across the symbol listbox (WCAG keyboard support)
+  $("#deflist").addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const items = [...document.querySelectorAll("#deflist li")];
+    if (!items.length) return;
+    let idx = items.indexOf(document.activeElement);
+    if (idx < 0) idx = items.findIndex((li) => li.classList.contains("sel"));
+    const next = Math.max(0, Math.min(items.length - 1, idx + (e.key === "ArrowDown" ? 1 : -1)));
+    items[next].focus(); select(items[next].dataset.name);
+  });
   $("#approve").onclick = () => decide("approve");
   $("#reject").onclick = () => decide("reject");
   $("#verify").onclick = refreshLedger;
   $("#tamper").onclick = tamperDemo;
   const ex = $("#export-att"); if (ex) ex.onclick = exportAttestation;
   const ov = $("#override"); if (ov) ov.onchange = applyGatePolicy;
+  // premium keyboard layer: "/" focuses symbol search, Escape clears it
+  document.addEventListener("keydown", (e) => {
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (e.key === "/" && !typing) { e.preventDefault(); $("#search").focus(); }
+    else if (e.key === "Escape" && document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(STATE.defs); }
+  });
 }
 
 async function decide(decision) {
