@@ -1,8 +1,12 @@
 # Keystone
 
+[![ci](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml)
+
 Governed change review on the GitLab Orbit code knowledge graph. Keystone shows the real blast radius of a change, requires a human approval with a recorded reason, and keeps a tamper-evident memory that proves it was never edited.
 
 Built for the GitLab Transcend Hackathon, Showcase track.
+
+Live demo: https://vaibhav4046.github.io/keystone/ (the public sample, labeled FALLBACK; the live local-graph run is in the demo video).
 
 ## Who it is for, and what breaks today
 
