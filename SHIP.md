@@ -8,39 +8,35 @@ your credentials or your hands. Each step below is exact and was checked against
 These are listed because they require sign-in, a payment-free account action, or a screen
 recording — things an assistant must not do for you. Do them in order.
 
-## 1. Push to GitLab (needs your auth)
+## 1. Repository — DONE on GitHub
 
-glab is already installed. Open a NEW terminal (so glab is on PATH), then:
+Already created, public, MIT, pushed, with green CI:
+
+    https://github.com/vaibhav4046/keystone
+
+This is a valid public repo for the Devpost gate. GitHub was used because that is the auth
+present on this machine; GitLab had no token, so the GitLab push needs your one-time login.
+
+### Optional but on-theme: also put it on GitLab
+
+The GitLab Transcend judges live on GitLab, so a GitLab-hosted mirror is worth the two
+minutes. glab is installed; open a NEW terminal (so glab is on PATH), then:
 
 ```
 glab auth login                 # choose gitlab.com, authenticate in your browser
 cd D:\project\keystone
-git branch -M main
-glab repo create keystone --public --source . --remote origin --push
+glab repo create keystone --public --source . --remote gitlab --push
 ```
 
-`glab repo create ... --push` creates the public project and pushes in one step. If the
-project already exists, instead run:
+The committed `.gitlab-ci.yml` then runs the tests and publishes GitLab Pages automatically.
 
-```
-git remote add origin https://gitlab.com/<your-namespace>/keystone.git
-git push -u origin main
-```
+## 2. Live link — DONE on GitHub Pages
 
-Verify the repo page shows the files and the visibility is Public.
+    https://vaibhav4046.github.io/keystone/
 
-## 2. Live link (no extra accounts)
-
-The committed `.gitlab-ci.yml` runs the tests on every push and publishes the web hero to
-GitLab Pages. After the first push to `main`, watch the pipeline under Build > Pipelines.
-When the `pages` job is green, the live link appears under Deploy > Pages, usually:
-
-```
-https://<your-namespace>.gitlab.io/keystone
-```
-
-That is your judge-clickable link. No Cloudflare, no wrangler, no paid services. (Optional
-alternative: `npx wrangler pages deploy web` if you prefer Cloudflare and want to log in.)
+Serves the self-contained hero (live-API-first, FALLBACK sample bundle when no backend is
+reachable). Judge-clickable, no paid services. If you also push to GitLab, you additionally
+get `https://<namespace>.gitlab.io/keystone` from the GitLab pipeline.
 
 ## 3. Demo video (under 3 minutes, you record)
 
