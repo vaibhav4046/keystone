@@ -9,7 +9,7 @@ test:
   stage: test
   image: python:3.13-slim
   script:
-    - pip install --quiet duckdb fastapi "uvicorn[standard]"
+    - pip install --quiet pytest duckdb fastapi "uvicorn[standard]"
     - python -m pytest -q
   rules:
     - when: always
