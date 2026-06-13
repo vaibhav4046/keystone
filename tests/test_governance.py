@@ -80,6 +80,35 @@ def test_attestation_rejects_absent_row(graph, tmp_path):
     assert v["ok"] is False and v["row_present"] is False
 
 
+def test_agent_scope_matches_relative_paths():
+    """A real Orbit graph stores relative paths (src/...) while the manifest may use
+    /src/**; the forbidden rule must still fire (the bug was a silent in_scope=True)."""
+    reg = {"agents": {"bot": {"allowed_paths": ["src/parser/**"], "forbidden_paths": ["src/cli/**"],
+                              "max_blast_radius": 99}}}
+    bot = agents_mod.resolve_author("bot", declared_kind="agent", registry=reg)
+    imp = {"owners": [{"ring": 0, "file": "src/cli/config.py"}], "counts": {"total_affected": 0}}
+    assert agents_mod.check_scope(bot, imp)["in_scope"] is False
+    ok = {"owners": [{"ring": 0, "file": "src/parser/lexer.py"}], "counts": {"total_affected": 0}}
+    assert agents_mod.check_scope(bot, ok)["in_scope"] is True
+
+
+def test_review_window_blocks_fast_close(graph, tmp_path):
+    """With window_enforced, a CROSS_TEAM change cannot be closed by the second
+    approver before the window elapses; the open-time is read from the ledger."""
+    import datetime
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    pol = dict(policy_mod.DEFAULT_POLICY); pol["window_enforced"] = True
+    imp = impact_mod.compute_blast_radius(graph, "serialize")
+    sig = imp.signature
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    led.append(actor="a", change_id="MR-X", target_symbols=["serialize"], blast_radius_set=imp.affected_ids,
+               signature=sig, decision="approve", rationale="first", ts=now)
+    res = gate_mod.evaluate(graph, led, name="serialize", decision="approve", reviewer="b",
+                            change_id="MR-X", policy=pol)
+    assert res["ok"] is False and res["error"] == "REVIEW_WINDOW_PENDING"
+
+
 def test_public_sample_key_is_forgeable(monkeypatch):
     """Honest documentation: the PUBLIC static bundle uses a published HMAC key, so
     its chain is illustrative only — anyone holding the published key reproduces a

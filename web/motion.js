@@ -170,6 +170,9 @@
       c.style.width = r.width + "px"; c.style.height = r.height + "px";
     }
     resize(); addEventListener("resize", resize);
+    // resize when the container itself changes (responsive grid collapse, initial
+    // narrow render) — window 'resize' alone misses these
+    if ("ResizeObserver" in window) { try { new ResizeObserver(resize).observe(wrap); } catch (e) {} }
     return true;
   }
 

@@ -71,6 +71,15 @@ def _change_files(impact_dict: dict) -> list:
     return sorted(files)
 
 
+def _matches(path: str, pattern: str) -> bool:
+    """fnmatch that is robust to the leading-slash mismatch between the fixture
+    (/src/**) and a real Orbit graph (relative src/...). Both sides are normalised
+    so a forbidden pattern is never silently skipped on a real graph."""
+    p = (path or "").lstrip("/")
+    pat = (pattern or "").lstrip("/")
+    return fnmatch.fnmatch(p, pat) or fnmatch.fnmatch("/" + p, pattern) or fnmatch.fnmatch(path or "", pattern)
+
+
 def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
     """For a registered agent, check the change against its scope manifest.
     Returns {in_scope, violations[]}. Non-agents / unregistered have no manifest,
@@ -83,9 +92,9 @@ def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
     forbidden = scope.get("forbidden_paths") or []
     violations = []
     for f in files:
-        if any(fnmatch.fnmatch(f, pat) for pat in forbidden):
+        if any(_matches(f, pat) for pat in forbidden):
             violations.append(f"{f} matches a forbidden path for this agent")
-        elif allowed and not any(fnmatch.fnmatch(f, pat) for pat in allowed):
+        elif allowed and not any(_matches(f, pat) for pat in allowed):
             violations.append(f"{f} is outside this agent's allowed paths")
     cap = scope.get("max_blast_radius")
     defs = int(impact_dict.get("counts", {}).get("total_affected", 0))
