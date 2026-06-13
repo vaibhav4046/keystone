@@ -107,7 +107,10 @@ def seed_ledger_rows():
             "actor": "s.castellano",
             "change_id": "MR-203",
             "target_symbols": ["tokenize"],
-            "blast_radius_set": [2, 3, 4, 5, 6, 7],
+            # Same affected set the engine computes for tokenize at the default depth,
+            # so the contradiction fires on a SIGNATURE-IDENTICAL prior rejection,
+            # the strongest form of the precedent beat.
+            "blast_radius_set": [2, 3, 4, 6, 7],
             "decision": "reject",
             "rationale": "Changes token boundary semantics; breaks parse and every downstream caller. Needs an RFC first.",
         },

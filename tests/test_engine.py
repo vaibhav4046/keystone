@@ -107,10 +107,21 @@ def test_precedent_surfaces_contradiction(tmp_path):
         led.append(actor=row["actor"], change_id=row["change_id"],
                    target_symbols=row["target_symbols"], blast_radius_set=row["blast_radius_set"],
                    signature=sig, decision=row["decision"], rationale=row["rationale"])
-    prec = led.precedent(target_symbols=["tokenize"],
-                         signature=impact_mod.blast_radius_signature([2, 3, 4, 5, 6, 7]))
+    # use the SAME signature the engine computes for tokenize at default depth
+    live_sig = impact_mod.blast_radius_signature([2, 3, 4, 6, 7])
+    prec = led.precedent(target_symbols=["tokenize"], signature=live_sig)
     assert prec["match_count"] >= 1
     assert prec["rejected"] >= 1
     assert prec["contradiction"] is not None
     assert prec["contradiction"]["actor"] == "s.castellano"
     assert "RFC" in prec["contradiction"]["rationale"]
+    # the strongest form: the prior rejection has the IDENTICAL blast signature
+    assert prec["contradiction_same_signature"] is True
+
+
+def test_contradiction_signature_matches_live_blast(graph):
+    """End-to-end: the engine-computed signature for tokenize equals the seeded
+    rejection's signature, so the signature-identical contradiction genuinely fires."""
+    imp = impact_mod.compute_blast_radius(graph, "tokenize", max_depth=3)
+    seed = [r for r in fixtures.seed_ledger_rows() if r["change_id"] == "MR-203"][0]
+    assert impact_mod.blast_radius_signature(seed["blast_radius_set"]) == imp.signature
