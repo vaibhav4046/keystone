@@ -81,6 +81,7 @@
           <option value="agent">AI agent (enforce scope)</option>
         </select>
         <input id="reviewer" class="ip" placeholder="reviewer / agent id" aria-label="reviewer or agent id" maxlength="120" />
+        <input id="changeauthor" class="ip" placeholder="change author (four-eyes, optional)" aria-label="change author" maxlength="120" />
         <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" aria-describedby="reason-err" />
         <div id="reason-err" class="gate-err" role="alert"></div>
         <div class="gate-note id-note">identity is token-gated in this deployment; production binds it to a GitLab OIDC sub claim (see README). The chain proves the text was not edited, not who typed it.</div>

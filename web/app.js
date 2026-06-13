@@ -122,6 +122,9 @@ function renderDefList(names) {
 
 async function select(name) {
   STATE.selected = name;
+  // a fresh change id per selection = one MR; quorum accumulates across approvers
+  // of this same change, and is separate from any other change on the same symbol
+  STATE.changeId = (window.crypto && crypto.randomUUID) ? "MR-" + crypto.randomUUID().slice(0, 8) : "MR-" + (STATE._n = (STATE._n || 0) + 1);
   document.querySelectorAll("#deflist li").forEach((li) => {
     const on = li.dataset.name === name;
     li.classList.toggle("sel", on);
@@ -447,7 +450,8 @@ async function decide(decision) {
     try {
       const r = await fetch("/api/approve", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason, author_kind: authorKind, override }),
+        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason, author_kind: authorKind, override,
+          change_id: STATE.changeId, change_author: (($("#changeauthor") && $("#changeauthor").value.trim()) || undefined) }),
       });
       if (r.ok) {
         const body = await r.json().catch(() => ({}));
@@ -458,8 +462,10 @@ async function decide(decision) {
       }
       const b = await r.json().catch(() => ({}));
       const det = (b && b.detail) || {};
-      if (r.status === 403) {                       // agent acting outside its scope manifest
-        if (err) err.textContent = "SCOPE VIOLATION (agent blocked): " + ((det.violations || ["out of scope"]).join("; "));
+      if (r.status === 403) {                       // scope / unregistered agent / self-approval
+        const code = (det.error || "BLOCKED").replace(/_/g, " ");
+        const why = det.violations ? det.violations.join("; ") : (det.hint || "");
+        if (err) err.textContent = code + (why ? ": " + why : "");
         return;
       }
       if (r.status === 409) {                       // policy BLOCK, no override

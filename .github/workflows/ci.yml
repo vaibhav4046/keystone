@@ -27,9 +27,12 @@ jobs:
           python-version: '3.13'
       - run: pip install --quiet -r requirements.txt
       - run: python -m pytest -q
-      # enforceable governance gate (in-process): a clean symbol passes; a symbol
-      # with a prior identical-blast-radius rejection would exit non-zero and block.
-      - run: python skills/keystone/run_review.py metrics --local --fixture --fail-on-contradiction
+      # enforceable governance gate (in-process, SAME gate as the API): a clean
+      # symbol passes; a BLOCKed symbol exits non-zero.
+      - run: python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
+      # prove the gate BLOCKS a contradicted change (must exit non-zero); inverted so
+      # the pipeline stays green while demonstrating the block.
+      - run: "! python skills/keystone/run_review.py tokenize --local --fixture --fail-on-block"
       # committed static bundle must equal a fresh build (no silent drift)
       - run: python scripts/build_static.py
       - run: git diff --exit-code -- web/data.json web/orbit_sample_transcript.json

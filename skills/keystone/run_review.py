@@ -69,8 +69,13 @@ def governed_review(symbol, get_json, post_json=None, *, decide=None, reviewer=N
         res = post_json("/api/approve", {"name": symbol, "decision": decide,
                                          "reviewer": reviewer, "rationale": reason})
         report["steps"].append("approve")
+        if res.get("blocked"):
+            report["blocked"] = res["blocked"]
+            report["error"] = f"decision refused by gate: {res['blocked']}"
+            return report
         report["recorded"] = res.get("row")
         report["chain_after"] = res.get("verify")
+        report["quorum"] = res.get("quorum")
     else:
         report["chain"] = get_json("/api/audit/verify")
         report["steps"].append("verify")
@@ -138,14 +143,25 @@ def _local_callables(prefer_live=True):
             return led.verify()
         raise AssertionError("unexpected GET " + path)
 
-    def post_json(path, body):
-        imp = impact_mod.compute_blast_radius(g, body["name"])
-        row = led.append(actor=body["reviewer"], change_id="KS-" + body["name"], target_symbols=[body["name"]],
-                         blast_radius_set=imp.affected_ids, signature=imp.signature,
-                         decision=body["decision"], rationale=body["rationale"])
-        return {"row": row, "verify": led.verify()}
+    from core import gate as gate_mod
 
-    return get_json, post_json
+    def post_json(path, body):
+        # route through the SAME enforcement gate the API uses (no weaker CLI path)
+        res = gate_mod.evaluate(g, led, name=body["name"], decision=body["decision"],
+                                reviewer=body["reviewer"], change_id=body.get("change_id"),
+                                change_author=body.get("change_author"), author_kind=body.get("author_kind"),
+                                override=bool(body.get("override")))
+        if not res["ok"]:
+            return {"blocked": res["error"], "detail": res.get("detail")}
+        row = led.append(actor=body["reviewer"], change_id=res["change_id"], target_symbols=[body["name"]],
+                         target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"], signature=res["sig"],
+                         decision=body["decision"], rationale=body["rationale"], extra=res["row_extra"])
+        return {"row": row, "verify": led.verify(), "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status")}}
+
+    def gate_check(symbol):
+        return gate_mod.evaluate(g, led, name=symbol, decision="approve", reviewer="ci-gate")
+
+    return get_json, post_json, gate_check
 
 
 def main(argv=None):
@@ -161,14 +177,26 @@ def main(argv=None):
     ap.add_argument("--reason")
     ap.add_argument("--fail-on-contradiction", action="store_true",
                     help="exit non-zero when a prior identical-signature rejection exists (enforceable gate)")
+    ap.add_argument("--fail-on-block", action="store_true",
+                    help="exit non-zero when the shared policy gate would BLOCK an approval (real CI gate)")
     a = ap.parse_args(argv)
-    get_json, post_json = (_local_callables(prefer_live=not a.fixture) if a.local
-                           else (_urllib_get(a.base), _urllib_post(a.base)))
+    gate_check = None
+    if a.local:
+        get_json, post_json, gate_check = _local_callables(prefer_live=not a.fixture)
+    else:
+        get_json, post_json = _urllib_get(a.base), _urllib_post(a.base)
     rep = governed_review(a.symbol, get_json, post_json,
                           decide=a.decide, reviewer=a.reviewer, reason=a.reason)
     _print_report(rep)
     if rep.get("error"):
         return 1
+    # the authoritative CI gate: run the SAME policy gate the API uses
+    if a.fail_on_block and gate_check is not None:
+        res = gate_check(a.symbol)
+        if not res["ok"]:
+            print(f"GATE BLOCKED ({res['error']}): {a.symbol} is refused by policy. "
+                  f"Resolve the precedent / scope / quorum before merging.")
+            return 2
     if a.fail_on_contradiction and rep.get("precedent", {}).get("contradiction_same_signature"):
         print(f"GATE BLOCKED: {a.symbol} has a prior identical-blast-radius rejection. "
               f"Resolve the precedent (RFC / explicit override) before merging.")

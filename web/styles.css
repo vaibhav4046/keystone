@@ -59,7 +59,6 @@ body{min-height:100vh;position:relative}
 .deflist li:hover{background:var(--bg-raised);color:var(--text-hi)}
 .deflist li.sel{background:rgba(255,138,43,.12);color:var(--text-hi);box-shadow:inset 2px 0 0 var(--orange)}
 .deflist li:focus-visible{outline:2px solid var(--orange);outline-offset:-2px}
-.deflist li .knd{color:var(--text-dim);font-size:11px}
 .rail-foot{border-top:1px solid var(--bg-line);padding:10px 14px;display:flex;flex-direction:column;gap:5px}
 .kv{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)}
 .kv b{color:var(--text-hi);font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
