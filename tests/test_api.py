@@ -85,6 +85,13 @@ def test_quorum_requires_distinct_approvers():
     assert diff["quorum"]["confirmed"] == base + 1               # a distinct actor advances it
 
 
+def test_unregistered_agent_cannot_self_approve():
+    r = client.post("/api/approve", json={"name": "serialize", "decision": "approve",
+                                          "reviewer": "mystery-bot", "rationale": "auto-fix",
+                                          "author_kind": "agent"})
+    assert r.status_code == 403 and r.json()["detail"]["error"] == "UNREGISTERED_AGENT"
+
+
 def test_approve_records_and_chain_verifies():
     before = client.get("/api/audit").json()["verify"]["count"]
     r = client.post("/api/approve", json={"name": "parse", "decision": "approve",

@@ -32,6 +32,7 @@ DEFAULT_POLICY = {
     ],
     "block_on_identical_contradiction": True,   # a prior identical-signature rejection blocks merge
     "max_blast_radius_defs": None,              # optional hard cap on total affected definitions
+    "window_enforced": False,                   # when True, the review_window_hours is a real time gate
 }
 
 
