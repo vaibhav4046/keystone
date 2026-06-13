@@ -12,9 +12,31 @@ The caller appends the ledger row (so the append stays under the ledger's lock).
 """
 from __future__ import annotations
 
+import datetime
+import time
 from typing import Optional
 
 from . import impact as impact_mod, policy as policy_mod, attest as attest_mod, agents as agents_mod
+
+
+def _parse_ts(ts: str):
+    try:
+        return datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc).timestamp()
+    except Exception:
+        return None
+
+
+def opened_at(ledger, name: str, signature: str, change_id: str):
+    """Earliest review timestamp for a change, reconstructed from the LEDGER (not an
+    in-process dict), so the review-window gate survives a server restart."""
+    epochs = []
+    for r in ledger.rows():
+        if (not r.get("seeded") and r.get("change_id") == change_id
+                and name in (r.get("target_symbols") or []) and r.get("signature") == signature):
+            e = _parse_ts(r.get("ts") or "")
+            if e is not None:
+                epochs.append(e)
+    return min(epochs) if epochs else None
 
 
 def prior_approvers(ledger, name: str, signature: str, change_id: str) -> list:
@@ -73,6 +95,18 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
         quorum_status = "APPROVED"
     else:
         quorum_status = "PENDING_APPROVAL"
+
+    # Time-window gate (restart-safe): enforced only when the active policy opts in.
+    active = policy or policy_mod.load_policy()
+    window_h = pol.get("review_window_hours")
+    if (decision == "approve" and quorum_status == "APPROVED" and not override
+            and window_h and active.get("window_enforced")):
+        opened = opened_at(ledger, name, imp.signature, cid)
+        if opened is not None and (time.time() - opened) < window_h * 3600:
+            remaining = round((window_h * 3600 - (time.time() - opened)) / 3600, 2)
+            return {"ok": False, "status": 409, "error": "REVIEW_WINDOW_PENDING",
+                    "detail": {"error": "REVIEW_WINDOW_PENDING", "time_remaining_hours": remaining,
+                               "review_window_hours": window_h}}
 
     row_extra = {
         "tier": pol["tier"], "governance_action": pol["action"],

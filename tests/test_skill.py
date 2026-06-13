@@ -50,11 +50,18 @@ def wired(tmp_path):
 
     def post_json(path, body):
         assert path == "/api/approve"
-        imp = impact_mod.compute_blast_radius(g, body["name"])
-        row = led.append(actor=body["reviewer"], change_id="KS-" + body["name"],
-                         target_symbols=[body["name"]], blast_radius_set=imp.affected_ids,
-                         signature=imp.signature, decision=body["decision"], rationale=body["rationale"])
-        return {"row": row, "verify": led.verify()}
+        # exercise the SAME enforcement gate the API + CLI use, so the skill test
+        # covers BLOCK / SCOPE / quorum and writes governance fields into the row
+        from core import gate as gate_mod
+        res = gate_mod.evaluate(g, led, name=body["name"], decision=body["decision"],
+                                reviewer=body["reviewer"], change_id=body.get("change_id"),
+                                change_author=body.get("change_author"), override=bool(body.get("override")))
+        if not res["ok"]:
+            return {"blocked": res["error"], "detail": res.get("detail")}
+        row = led.append(actor=body["reviewer"], change_id=res["change_id"], target_symbols=[body["name"]],
+                         target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"], signature=res["sig"],
+                         decision=body["decision"], rationale=body["rationale"], extra=res["row_extra"])
+        return {"row": row, "verify": led.verify(), "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status")}}
 
     yield get_json, post_json
     g.close()

@@ -41,6 +41,9 @@ _PREFER_LIVE = os.environ.get("KEYSTONE_PREFER_LIVE", "1") != "0"
 # arbitrary client. Unset means open (single-user local demo); the README integrity
 # note states identity is self-asserted unless this is configured.
 APPROVE_TOKEN = os.environ.get("KEYSTONE_APPROVE_TOKEN")
+# A policy-BLOCK override is a privileged action: when this is set it must be
+# separately credentialed (X-Keystone-Override-Token), not the shared approve token.
+OVERRIDE_TOKEN = os.environ.get("KEYSTONE_OVERRIDE_TOKEN")
 MAX_DEPTH_CAP = 8
 
 
@@ -237,8 +240,6 @@ class Decision(BaseModel):
 _RATE = {"window": 0, "count": 0}
 _RATE_LOCK = threading.Lock()
 _RATE_MAX_PER_MIN = int(os.environ.get("KEYSTONE_APPROVE_RATE_PER_MIN", "30"))
-# first-review timestamp per (change_id, signature), for the optional time-window gate
-_change_opened_at: dict = {}
 
 
 def _rate_ok() -> bool:
@@ -252,9 +253,12 @@ def _rate_ok() -> bool:
 
 
 @app.post("/api/approve")
-def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None)):
+def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
+            x_keystone_override_token: Optional[str] = Header(default=None)):
     if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
         raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
+    if d.override and OVERRIDE_TOKEN is not None and not hmac.compare_digest(x_keystone_override_token or "", OVERRIDE_TOKEN):
+        raise HTTPException(401, "override requires a valid X-Keystone-Override-Token")
     if not _rate_ok():
         raise HTTPException(429, "too many approvals; slow down")
     # one shared enforcement decision (identical to the CLI gate, core/gate.py)
@@ -265,15 +269,6 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
         raise HTTPException(res["status"], res.get("detail") or res["error"])
 
     sig, change_id, pol, out = res["sig"], res["change_id"], res["policy"], res["impact"]
-    # Optional time gate (backend-only state): enforced only when the policy opts in.
-    if (d.decision == "approve" and res["quorum"]["status"] == "APPROVED"
-            and pol.get("review_window_hours") and policy_mod.load_policy().get("window_enforced")):
-        opened = _change_opened_at.get((change_id, sig))
-        if opened is not None and (time.time() - opened) < pol["review_window_hours"] * 3600:
-            remaining = round((pol["review_window_hours"] * 3600 - (time.time() - opened)) / 3600, 2)
-            raise HTTPException(409, {"error": "REVIEW_WINDOW_PENDING", "time_remaining_hours": remaining})
-    _change_opened_at.setdefault((change_id, sig), time.time())
-
     row = _ledger.append(
         actor=d.reviewer, change_id=change_id, target_symbols=[d.name], target_fqns=res["target_fqns"],
         blast_radius_set=res["blast_set"], signature=sig, decision=d.decision, rationale=d.rationale,
