@@ -70,6 +70,14 @@ def _orbit_transcript():
 
 
 def main():
+    # The PUBLIC sample bundle uses a fixed, non-secret HMAC key so the committed
+    # web/data.json is byte-identical on every machine (CI drift check) — the sample
+    # is a build-time artifact labeled "verified at build time" in the UI, not a real
+    # audit trail. Real deployments use a secret per-machine key (see core/audit.py).
+    os.environ["KEYSTONE_LEDGER_KEY"] = "keystone-public-sample-v1"
+    import core.audit as _audit
+    _audit._CACHED_KEY = None  # force re-read with the fixed sample key
+
     fixtures.build_fixture_duckdb(FIXTURE)
     # fresh seeded ledger
     if os.path.exists(LEDGER):
