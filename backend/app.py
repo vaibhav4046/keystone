@@ -15,7 +15,7 @@ from typing import Literal, Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from fastapi import FastAPI, HTTPException, Header, Query
+from fastapi import FastAPI, HTTPException, Header, Path, Query
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -27,7 +27,10 @@ from core.audit import Ledger
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA = os.path.join(ROOT, "data")
 WEB = os.path.join(ROOT, "web")
-LEDGER_PATH = os.path.join(DATA, "audit_ledger.jsonl")
+# Env overrides keep the app testable in-process: KEYSTONE_LEDGER_PATH points the
+# ledger at a temp file, KEYSTONE_PREFER_LIVE=0 forces the committed fixture.
+LEDGER_PATH = os.environ.get("KEYSTONE_LEDGER_PATH") or os.path.join(DATA, "audit_ledger.jsonl")
+_PREFER_LIVE = os.environ.get("KEYSTONE_PREFER_LIVE", "1") != "0"
 
 # Optional shared secret for the approval gate. When set, POST /api/approve requires
 # a matching X-Keystone-Token header, so a decision cannot be recorded by an
@@ -57,7 +60,7 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins if
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 
 # one shared graph + ledger for the process
-_graph = graph_mod.Graph(prefer_live=True)
+_graph = graph_mod.Graph(prefer_live=_PREFER_LIVE)
 _ledger = Ledger(LEDGER_PATH)
 
 # When running on a LIVE Orbit graph and glab is resolvable, drive Orbit's OWN CLI
@@ -140,7 +143,7 @@ def definitions():
 
 
 @app.get("/api/impact/{name}")
-def impact(name: str, max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
+def impact(name: str = Path(max_length=256), max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
     imp = impact_mod.compute_blast_radius(_graph, name, max_depth=max_depth)
     if imp is None:
         raise HTTPException(404, f"definition not found: {name}")
@@ -154,10 +157,11 @@ def impact(name: str, max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP))
 
 
 @app.get("/api/precedent/{name}")
-def precedent(name: str, max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
+def precedent(name: str = Path(max_length=256), max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
     imp = impact_mod.compute_blast_radius(_graph, name, max_depth=max_depth)
     sig = imp.signature if imp else None
-    return _ledger.precedent(target_symbols=[name], signature=sig)
+    fqns = [imp.epicenter_fqn] if (imp and imp.epicenter_fqn) else None
+    return _ledger.precedent(target_symbols=[name], signature=sig, target_fqns=fqns)
 
 
 @app.get("/api/audit")
@@ -171,11 +175,11 @@ def audit_verify():
 
 
 class Decision(BaseModel):
-    name: str = Field(min_length=1)
+    name: str = Field(min_length=1, max_length=256)
     decision: Literal["approve", "reject"]
-    reviewer: str = Field(min_length=1)
-    rationale: str = Field(min_length=1)
-    change_id: Optional[str] = None            # a real MR/change id, if available
+    reviewer: str = Field(min_length=1, max_length=120)
+    rationale: str = Field(min_length=1, max_length=2048)
+    change_id: Optional[str] = Field(default=None, max_length=120)  # a real MR/change id, if available
     max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
 
 
@@ -188,6 +192,7 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
         raise HTTPException(404, f"definition not found: {d.name}")
     row = _ledger.append(
         actor=d.reviewer, change_id=d.change_id or f"KS-{d.name}", target_symbols=[d.name],
+        target_fqns=[imp.epicenter_fqn] if imp.epicenter_fqn else None,
         blast_radius_set=imp.affected_ids, signature=imp.signature,
         decision=d.decision, rationale=d.rationale,
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # real time, not fixture

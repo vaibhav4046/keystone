@@ -182,24 +182,40 @@ def seed_ledger_rows():
     blast_radius_set is the set of affected definition ids for that decision."""
     return [
         {
-            "actor": "h.okafor",
-            "change_id": "MR-118",
-            "target_symbols": ["parse"],
-            "epicenter_id": 2,                 # parse
-            "blast_radius_set": [3, 4, 5, 6, 7],
-            "decision": "approve",
+            "actor": "h.okafor", "change_id": "MR-118", "target_symbols": ["parse"], "epicenter_id": 2,
+            "blast_radius_set": [3, 4, 5, 6, 7], "decision": "approve",
             "rationale": "Signature unchanged, added an optional kwarg with a default. Low risk.",
         },
         {
-            "actor": "s.castellano",
-            "change_id": "MR-203",
-            "target_symbols": ["tokenize"],
-            "epicenter_id": 1,                 # tokenize
+            "actor": "d.nguyen", "change_id": "MR-140", "target_symbols": ["build_ast"], "epicenter_id": 3,
+            "blast_radius_set": [4, 5, 7], "decision": "approve",
+            "rationale": "Adds an AST node type; existing nodes untouched, dependents unchanged.",
+        },
+        {
+            "actor": "h.okafor", "change_id": "MR-152", "target_symbols": ["serialize"], "epicenter_id": 11,
+            "blast_radius_set": [13, 14, 15, 16, 17, 18, 19, 20, 21], "decision": "approve",
+            "rationale": "Pure-internal buffer reuse; output bytes identical, all nine dependents recompute the same.",
+        },
+        {
+            "actor": "s.castellano", "change_id": "MR-161", "target_symbols": ["compile_unit"], "epicenter_id": 4,
+            "blast_radius_set": [5], "decision": "reject",
+            "rationale": "Changes the compile cache key; main would silently use stale artifacts. Needs a cache-bust first.",
+        },
+        {
+            "actor": "a.silva", "change_id": "MR-177", "target_symbols": ["to_json"], "epicenter_id": 13,
+            "blast_radius_set": [15, 17, 18, 19, 23], "decision": "approve",
+            "rationale": "Field ordering only; consumers parse by key. Five dependents, no behavioural change.",
+        },
+        {
+            "actor": "s.castellano", "change_id": "MR-203", "target_symbols": ["tokenize"], "epicenter_id": 1,
             # Same affected set the engine computes for tokenize at the default depth,
-            # so the contradiction fires on a SIGNATURE-IDENTICAL prior rejection,
-            # the strongest form of the precedent beat.
-            "blast_radius_set": [2, 3, 4, 6, 7],
-            "decision": "reject",
+            # so the contradiction fires on a SIGNATURE-IDENTICAL prior rejection.
+            "blast_radius_set": [2, 3, 4, 6, 7], "decision": "reject",
             "rationale": "Changes token boundary semantics; breaks parse and every downstream caller. Needs an RFC first.",
+        },
+        {
+            "actor": "d.nguyen", "change_id": "MR-205", "target_symbols": ["handle_post"], "epicenter_id": 18,
+            "blast_radius_set": [19, 23], "decision": "approve",
+            "rationale": "Adds request validation; route and healthcheck unaffected. Low blast radius.",
         },
     ]

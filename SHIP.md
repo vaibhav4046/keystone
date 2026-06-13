@@ -17,10 +17,11 @@ Already created, public, MIT, pushed, with green CI:
 This is a valid public repo for the Devpost gate. GitHub was used because that is the auth
 present on this machine; GitLab had no token, so the GitLab push needs your one-time login.
 
-### Optional but on-theme: also put it on GitLab
+### Required for this track: also put it on GitLab
 
-The GitLab Transcend judges live on GitLab, so a GitLab-hosted mirror is worth the two
-minutes. glab is installed; open a NEW terminal (so glab is on PATH), then:
+This is the GitLab Transcend hackathon, so judges expect a GitLab-hosted repo, a GitLab
+pipeline, and ideally a published AI Catalog agent. Treat the GitLab push as required, not
+optional. glab is installed; open a NEW terminal (so glab is on PATH), then:
 
 ```
 glab auth login                 # choose gitlab.com, authenticate in your browser
@@ -51,6 +52,10 @@ embed Loom reliably, so use YouTube. One take, screen plus mic. Shot list:
    glab orbit local index D:\project\keystone
    ```
    Point at the JSON: 262 definitions, 689 relationships, database_path ~/.orbit/graph.duckdb.
+   The SYMBOLS rail is filtered to callable definitions (functions, methods, classes), so it
+   shows real symbols, not file entries. For the cleanest possible rail you can instead index a
+   small well-known OSS repo (for example a clone of psf/requests) and pick one of its functions;
+   either works, but indexing Keystone itself gives the nice "it reviews its own engine" beat.
 3. (0:40) Start Keystone on the live graph:
    ```
    $env:KEYSTONE_ORBIT_BINARY = "$env:LOCALAPPDATA\glab-cli\bin\orbit.exe"
@@ -84,7 +89,8 @@ Devpost: gitlab-transcend.devpost.com. Submit at least a day before the deadline
 (step 2), video URL (step 3). After saving, re-open the submission and confirm it reads
 SUBMITTED, not DRAFT, and screenshot it. (This is the one that bit the last hackathon.)
 
-## 6. After the hackathon
+## 6. Key rotation
 
-Rotate the four API keys in `.env` (Cerebras, Groq, OpenRouter, Gemini). They were pasted in
-chat during setup, so treat them as exposed and regenerate them once judging is done.
+Rotate the four API keys in `.env` (Cerebras, Groq, OpenRouter, Gemini) before or soon after
+submission as routine hygiene. `.env` is gitignored and never committed; the governance path
+uses no LLM, so the keys are not required for the demo to run.

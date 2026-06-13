@@ -100,15 +100,16 @@ def _print_report(rep):
     print()
 
 
-def _local_callables():
+def _local_callables(prefer_live=True):
     """Wire get/post directly to the in-process core (no server), so the gate runs
-    in CI with nothing to start. Used by --local."""
+    in CI with nothing to start. Used by --local. prefer_live=False forces the
+    committed fixture so the gate is deterministic on any machine (use in CI)."""
     import os
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.abspath(os.path.join(here, "..", "..")))
     from core import graph as graph_mod, impact as impact_mod, seed as seed_mod
     from core.audit import Ledger
-    g = graph_mod.Graph(prefer_live=True)
+    g = graph_mod.Graph(prefer_live=prefer_live)
     led = Ledger(os.path.join(os.path.expanduser("~"), ".keystone", "gate_ledger.jsonl"))
     if not led.rows():
         for row in seed_mod.seed_rows_for(g):
@@ -145,13 +146,16 @@ def main(argv=None):
     ap.add_argument("--base", default="http://127.0.0.1:8787")
     ap.add_argument("--local", action="store_true",
                     help="run against the in-process core, no server (for CI gating)")
+    ap.add_argument("--fixture", action="store_true",
+                    help="with --local, force the committed fixture (deterministic; for CI)")
     ap.add_argument("--decide", choices=["approve", "reject"])
     ap.add_argument("--reviewer")
     ap.add_argument("--reason")
     ap.add_argument("--fail-on-contradiction", action="store_true",
                     help="exit non-zero when a prior identical-signature rejection exists (enforceable gate)")
     a = ap.parse_args(argv)
-    get_json, post_json = _local_callables() if a.local else (_urllib_get(a.base), _urllib_post(a.base))
+    get_json, post_json = (_local_callables(prefer_live=not a.fixture) if a.local
+                           else (_urllib_get(a.base), _urllib_post(a.base)))
     rep = governed_review(a.symbol, get_json, post_json,
                           decide=a.decide, reviewer=a.reviewer, reason=a.reason)
     _print_report(rep)

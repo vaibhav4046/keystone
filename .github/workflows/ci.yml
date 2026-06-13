@@ -29,7 +29,10 @@ jobs:
       - run: python -m pytest -q
       # enforceable governance gate (in-process): a clean symbol passes; a symbol
       # with a prior identical-blast-radius rejection would exit non-zero and block.
-      - run: python skills/keystone/run_review.py metrics --local --fail-on-contradiction
+      - run: python skills/keystone/run_review.py metrics --local --fixture --fail-on-contradiction
+      # committed static bundle must equal a fresh build (no silent drift)
+      - run: python scripts/build_static.py
+      - run: git diff --exit-code -- web/data.json web/orbit_sample_transcript.json
 
   deploy:
     needs: test
