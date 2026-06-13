@@ -24,6 +24,18 @@ Pick a symbol that is about to change. Keystone reads the GitLab Orbit Local cod
 
 Branch protection enforces who clicked approve. Signed commits and GPG git-notes, Sigstore, and in-toto attest who authored or signed code. None of them bind the computed impact of a change and the human rationale and the decision together into one tamper-evident record at the moment of decision, and none surface a contradicting prior rejection while you are about to approve. That binding, plus precedent at the moment of choice, is Keystone. It is complementary to Sigstore and in-toto, not a replacement: they attest the artifact, Keystone attests the decision.
 
+## Governance as code, attestations, and agent gating
+
+The blast radius is not just shown, it is the enforcement decision. A versioned policy committed at `.keystone/policy.json` maps the engine-computed blast radius (distinct affected files) to a severity tier (ISOLATED, LOCAL, CROSS-TEAM, ORG-WIDE), and each tier deterministically sets a required approver count, a review window, and an ALLOW / HOLD / BLOCK action. A prior identical-blast-radius rejection forces BLOCK. The raw counts are always shown next to the tier label, and the policy's canonical sha256 is pinned into every decision, so an auditor can reconstruct the exact policy in force at any historical approval. This is something CODEOWNERS, a branch-protection rule, or an OPA policy structurally cannot do, because none of them have a code knowledge graph to compute the tier from. Same graph snapshot plus same policy always yields the same tier; no model is on the decision path.
+
+Every decision mints an attestation: an in-toto Statement carrying a SLSA Verification-Summary-style predicate, whose subject digest is the `orbit_snapshot_sha256` of the exact graph context the reviewer saw (epicenter, rings, affected set, owners, signature). That binding closes a gap SLSA and in-toto leave open: they attest the build, Keystone attests the reviewed impact. It is downloadable from the UI and at `GET /api/attestation/{symbol}`, with an offline verifier. The attestation is honest about what it is: Keystone-issued, not a SLSA conformance body; tamper-evident via the HMAC chain, not a cryptographic signature; Sigstore/Rekor keyless signing is named as a future step and explicitly marked false, never claimed.
+
+Agent gating answers the 2026 "who wrote this" problem. A repo-committed registry at `.keystone/agents.json` gives each autonomous coding agent a scope manifest (allowed and forbidden path globs plus a maximum blast radius). A registered agent that opens a change outside its scope is hard-refused at `POST /api/approve` with a SCOPE-VIOLATION; a human reviewer can still decide. Matching is literal fnmatch and set membership, with no ML and no fuzzy matching, and a registry miss is reported as detected-not-proven (AGENT-UNREGISTERED), never as a verified identity.
+
+## Roadmap, and what is deliberately not faked
+
+Three further graph-driven gates are designed but not shipped, because they require Orbit Remote data the free local graph does not contain, and faking them on the sample fixture would be dishonest: a dependency-depth quarantine that blocks an agent-authored lockfile change reaching a known-vulnerable package node; an ownership-entropy gate that joins file diffs against CODEOWNERS and 90-day commit recency to catch stale owners; and a pipeline-health risk multiplier from the CI history recipe. Each is one Orbit Remote query away and is documented rather than mocked.
+
 ## Integrity model, stated honestly
 
 What the ledger guarantees and what it does not, so the claim is precise rather than marketing:

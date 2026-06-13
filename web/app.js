@@ -17,8 +17,15 @@ function fromStatic(p) {
   if (p === "/api/definitions") return { names: s.definitions };
   if (p === "/api/audit") return s.audit;
   if (p === "/api/audit/verify") return s.audit.verify;
+  if (p === "/api/policy") return s.policy || {};
   if (p.startsWith("/api/impact/")) { const n = decodeURIComponent(p.split("/").pop()); return s.impact[n] || {}; }
   if (p.startsWith("/api/precedent/")) { const n = decodeURIComponent(p.split("/").pop()); return s.precedent[n] || { match_count: 0 }; }
+  if (p.startsWith("/api/attestation/")) {
+    const n = decodeURIComponent(p.split("/").pop());
+    const att = (s.attestation || {})[n];
+    if (!att) throw new Error("no recorded decision for " + n);
+    return { attestation: att, verify: { ok: true, chain_ok: true, row_present: true, reason: "sample" } };
+  }
   throw new Error("no static route " + p);
 }
 const api = async (p) => {
@@ -117,6 +124,23 @@ async function select(name) {
   const prec = await api("/api/precedent/" + encodeURIComponent(name));
   renderPrecedent(prec);
   $("#approve").disabled = false; $("#reject").disabled = false;
+  const ex = $("#export-att"); if (ex) ex.disabled = false;
+}
+
+async function exportAttestation() {
+  if (!STATE.selected) return;
+  const note = $("#sample-note");
+  try {
+    const r = await api("/api/attestation/" + encodeURIComponent(STATE.selected));
+    const blob = new Blob([JSON.stringify(r.attestation, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "keystone-attestation-" + STATE.selected + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    if (note) { note.textContent = "exported in-toto/SLSA-VSA attestation (HMAC-anchored; verify=" + (r.verify && r.verify.ok) + ")"; note.style.opacity = "1"; }
+  } catch (e) {
+    if (note) { note.textContent = "approve or reject first — an attestation is minted from a recorded decision"; note.style.opacity = "1"; }
+  }
 }
 
 // ---- blast radius SVG reveal ----
@@ -268,6 +292,20 @@ function renderRings(imp) {
       (cc.match ? " · matches engine" : " · differs (engine wins)") + `</div>`;
   }
   html += `<div class="sig">blast signature <b>${esc(imp.signature.slice(0, 16))}…</b> · sha256 over the epicenter + sorted affected id set</div>`;
+  const pol = imp.policy;
+  if (pol) {
+    const act = pol.action;                            // ALLOW | HOLD | BLOCK
+    const cls = act === "BLOCK" ? "bad" : (act === "HOLD" ? "warn" : "ok");
+    html += `<div class="gov ${cls}">` +
+      `<div class="gov-top"><span class="tier tier-${esc(pol.tier)}">${esc(pol.tier)}</span>` +
+      `<span class="gov-act ${cls}">${esc(act)}</span>` +
+      `<span class="gov-need">requires ${pol.required_approvers} approver${pol.required_approvers === 1 ? "" : "s"}` +
+      (pol.review_window_hours ? ` · ${pol.review_window_hours}h window` : "") + `</span></div>` +
+      (pol.required_owner ? `<div class="gov-owner">owner to pull in: <b>${esc(pol.required_owner)}</b></div>` : "") +
+      `<ul class="gov-why">` + (pol.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("") + `</ul>` +
+      `<div class="gov-foot">policy v${esc(pol.policy_version)} · ${esc((pol.policy_hash || "").slice(0, 12))}… · graph-driven, no model</div>` +
+      `</div>`;
+  }
   box.innerHTML = html;
 }
 
@@ -337,6 +375,7 @@ function wire() {
   $("#reject").onclick = () => decide("reject");
   $("#verify").onclick = refreshLedger;
   $("#tamper").onclick = tamperDemo;
+  const ex = $("#export-att"); if (ex) ex.onclick = exportAttestation;
 }
 
 async function decide(decision) {
@@ -351,13 +390,20 @@ async function decide(decision) {
   }
   $("#reason").style.outline = ""; $("#reason").removeAttribute("aria-invalid");
   if (err) err.textContent = "";
+  const authorKind = ($("#authorkind") && $("#authorkind").value) || "human";
   if (!STATIC_MODE) {
     try {
       const r = await fetch("/api/approve", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason }),
+        body: JSON.stringify({ name: STATE.selected, decision, reviewer, rationale: reason, author_kind: authorKind }),
       });
       if (r.ok) { $("#reason").value = ""; await refreshLedger(); await select(STATE.selected); return; }
+      if (r.status === 403) {                       // agent acting outside its scope manifest
+        const b = await r.json().catch(() => ({}));
+        const det = (b && b.detail) || {};
+        if (err) err.textContent = "SCOPE VIOLATION (agent blocked): " + ((det.violations || ["out of scope"]).join("; "));
+        return;
+      }
       throw new Error("approve " + r.status);
     } catch (e) {
       await ensureStatic(); STATIC_MODE = true; // fall through to client-side sample append

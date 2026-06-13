@@ -101,7 +101,7 @@ class Ledger:
 
     def append(self, *, actor: str, change_id: str, target_symbols, blast_radius_set,
                signature: str, decision: str, rationale: str, ts: Optional[str] = None,
-               target_fqns=None) -> dict:
+               target_fqns=None, extra: Optional[dict] = None) -> dict:
         if decision not in ("approve", "reject"):
             raise ValueError("decision must be approve or reject")
         with _APPEND_LOCK:
@@ -125,6 +125,13 @@ class Ledger:
             # when provided, so older rows are unaffected.
             if target_fqns:
                 payload["target_fqns"] = [f for f in target_fqns if f]
+            # governance context (tier, policy hash, orbit snapshot, author kind) is
+            # part of the signed payload, so the decision and the policy that judged
+            # it are bound together and tamper-evident as one row.
+            if extra:
+                for k, v in extra.items():
+                    if k not in payload:
+                        payload[k] = v
             payload["row_hash"] = _row_hash(prev_hash, payload)
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(_canonical(payload) + "\n")

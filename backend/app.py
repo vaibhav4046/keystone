@@ -24,7 +24,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from core import graph as graph_mod, impact as impact_mod, orbit_cli
+from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
+                  policy as policy_mod, attest as attest_mod, agents as agents_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -145,18 +146,47 @@ def definitions():
     return {"names": _graph.all_definition_names()}
 
 
-@app.get("/api/impact/{name}")
-def impact(name: str = Path(max_length=256), max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
+def _impact_with_governance(name: str, max_depth: int):
+    """Shared: compute impact, the precedent, and the deterministic policy/tier
+    decision the Orbit blast radius drives. Returns (imp, dict) or (None, None)."""
     imp = impact_mod.compute_blast_radius(_graph, name, max_depth=max_depth)
     if imp is None:
-        raise HTTPException(404, f"definition not found: {name}")
+        return None, None
     out = imp.to_dict()
+    prec = _ledger.precedent(target_symbols=[name], signature=imp.signature,
+                             target_fqns=[imp.epicenter_fqn] if imp.epicenter_fqn else None)
+    pol = policy_mod.evaluate(out, prec)
+    out["policy"] = pol                                   # tier / action / required approvers / reasons
+    out["orbit_snapshot_sha256"] = attest_mod.orbit_snapshot_sha256(out)
     cross = _orbit_crosscheck(imp.epicenter_id)
     if cross is not None:
         cross["ring1_engine"] = imp.counts.get("ring_1", 0)
         cross["match"] = cross.get("ring1_cli") == cross["ring1_engine"]
-        out["orbit_crosscheck"] = cross       # live `orbit sql` verification of ring-1
+        out["orbit_crosscheck"] = cross
+    return imp, out
+
+
+@app.get("/api/impact/{name}")
+def impact(name: str = Path(max_length=256), max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP)):
+    _imp, out = _impact_with_governance(name, max_depth)
+    if out is None:
+        raise HTTPException(404, f"definition not found: {name}")
     return out
+
+
+@app.get("/api/policy")
+def policy():
+    p = policy_mod.load_policy()
+    return {"policy": p, "policy_hash": policy_mod.policy_hash(p)}
+
+
+@app.get("/api/agent-scope/{name}")
+def agent_scope(name: str = Path(max_length=256), author: str = Query(...), kind: str = Query(default="agent")):
+    _imp, out = _impact_with_governance(name, 3)
+    if out is None:
+        raise HTTPException(404, f"definition not found: {name}")
+    ctx = agents_mod.resolve_author(author, declared_kind=kind)
+    return {"author": ctx, "scope_check": agents_mod.check_scope(ctx, out)}
 
 
 @app.get("/api/precedent/{name}")
@@ -183,6 +213,7 @@ class Decision(BaseModel):
     reviewer: str = Field(min_length=1, max_length=120)
     rationale: str = Field(min_length=1, max_length=2048)
     change_id: Optional[str] = Field(default=None, max_length=120)  # a real MR/change id, if available
+    author_kind: Optional[str] = Field(default=None, max_length=16)  # "agent" enforces an agent scope manifest
     max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
 
 
@@ -209,17 +240,43 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None))
         raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
     if not _rate_ok():
         raise HTTPException(429, "too many approvals; slow down")
-    imp = impact_mod.compute_blast_radius(_graph, d.name, max_depth=d.max_depth)
-    if imp is None:
+    imp, out = _impact_with_governance(d.name, d.max_depth)
+    if out is None:
         raise HTTPException(404, f"definition not found: {d.name}")
+    # agent governance: a registered agent acting outside its committed scope manifest
+    # is hard-refused (it cannot self-approve out of bounds); a human can still decide.
+    author = agents_mod.resolve_author(d.reviewer, declared_kind=d.author_kind)
+    scope = agents_mod.check_scope(author, out)
+    if not scope["in_scope"]:
+        raise HTTPException(403, {"error": "SCOPE_VIOLATION", "author": author, "violations": scope["violations"]})
+    pol = out["policy"]
+    extra = {
+        "tier": pol["tier"], "governance_action": pol["action"],
+        "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
+        "orbit_snapshot_sha256": out["orbit_snapshot_sha256"], "author_kind": author["badge"],
+    }
     row = _ledger.append(
         actor=d.reviewer, change_id=d.change_id or f"KS-{d.name}", target_symbols=[d.name],
         target_fqns=[imp.epicenter_fqn] if imp.epicenter_fqn else None,
         blast_radius_set=imp.affected_ids, signature=imp.signature,
-        decision=d.decision, rationale=d.rationale,
+        decision=d.decision, rationale=d.rationale, extra=extra,
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # real time, not fixture
     )
-    return {"row": row, "verify": _ledger.verify()}
+    att = attest_mod.build_attestation(impact_dict=out, policy_eval=pol, row=row, source_mode=_graph.source.mode)
+    return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": author, "attestation": att}
+
+
+@app.get("/api/attestation/{name}")
+def attestation(name: str = Path(max_length=256)):
+    _imp, out = _impact_with_governance(name, 3)
+    if out is None:
+        raise HTTPException(404, f"definition not found: {name}")
+    rows = [r for r in _ledger.rows() if name in (r.get("target_symbols") or [])]
+    if not rows:
+        raise HTTPException(404, f"no recorded decision for {name}")
+    att = attest_mod.build_attestation(impact_dict=out, policy_eval=out["policy"],
+                                       row=rows[0], source_mode=_graph.source.mode)
+    return {"attestation": att, "verify": attest_mod.verify_attestation(att, _ledger)}
 
 
 # static web hero (mounted last so /api/* wins)
