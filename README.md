@@ -29,6 +29,26 @@ python -m uvicorn backend.app:app --port 8787
 
 Open http://127.0.0.1:8787 and select a symbol. Run the test suite with `python -m pytest -q` (28 tests: exact-result blast radius, independent recompute, hash-chain tamper detection, precedent contradiction, and the skill workflow).
 
+## Run it on a real Orbit graph
+
+Keystone is not a mock. To point it at a real GitLab Orbit Local graph of any repository:
+
+```
+winget install GLab.GLab                 # GitLab CLI (or your platform's package)
+glab orbit local --install --yes         # downloads + verifies the Orbit Local binary
+glab orbit local index <path-to-a-repo>  # writes ~/.orbit/graph.duckdb
+```
+
+Then start Keystone with the Orbit binary wired so the product drives Orbit's own CLI directly (faster and offline; glab adds a per-call network check):
+
+```
+# Windows PowerShell
+$env:KEYSTONE_ORBIT_BINARY = "$env:LOCALAPPDATA\glab-cli\bin\orbit.exe"
+python -m uvicorn backend.app:app --port 8787
+```
+
+On startup the status panel flips to `source LIVE` and `orbit CLI+DuckDB`, meaning Keystone ran `orbit schema` and a live `orbit sql` query against the real graph this session, captured in the status transcript. This repository was indexed exactly this way: 262 definitions, 689 relationships, and the engine computes a real blast radius of 12 dependents for its own `compute_blast_radius` function.
+
 Run the governed-review workflow from the command line, which is the Skill's runnable action:
 
 ```
@@ -38,9 +58,9 @@ python skills/keystone/run_review.py parse --decide approve --reviewer you --rea
 
 ## Live data versus sample data
 
-The live engine reads a real GitLab Orbit Local graph at `~/.orbit/graph.duckdb` and drives Orbit's own CLI (`glab orbit local schema` and `glab orbit local sql`) for live introspection and queries. When no live graph is present, Keystone runs on a committed sample fixture and labels the source FALLBACK in the UI. A public deployment serves that labeled fixture; the live local-graph run is shown in the demo video. Keystone never presents fixture data as live.
+The live engine reads a real GitLab Orbit Local graph at `~/.orbit/graph.duckdb` and drives Orbit's own CLI (`orbit schema` and `orbit sql`, the binary `glab orbit local` installs) for live introspection and at least one live query per session. When no live graph is present, Keystone runs on a committed sample fixture and labels the source FALLBACK in the UI. The fixture is built to the exact real Orbit schema (verified against `glab orbit local schema`), so the same engine queries run unchanged on both. A public deployment serves the labeled fixture. Keystone never presents fixture data as live, and the model never produces a displayed number; every figure is computed by the deterministic engine over graph rows.
 
-The web command center is also a self-contained static site. `python scripts/build_static.py` precomputes `web/data.json` from the engine, and the frontend tries the live API first and falls back to that bundle when no backend is reachable. So `web/` deploys to any static host with no server: `npx wrangler pages deploy web` (Cloudflare Pages), or commit `web/` as a GitLab Pages artifact. The deployed gate stays interactive; it records decisions in the browser only and says so, while the local app persists to the hash-chained ledger.
+The web command center is also a self-contained static site. `python scripts/build_static.py` precomputes `web/data.json` from the engine, and the frontend tries the live API first and falls back to that bundle when no backend is reachable. So `web/` deploys to any static host with no server. The committed `.gitlab-ci.yml` runs the tests on every push and publishes the hero to GitLab Pages automatically, so the repository alone yields a green test badge and a live link with no extra accounts. The deployed gate stays interactive; it records decisions in the browser only and says so, while the local app persists to the hash-chained ledger.
 
 ## How it is built
 
