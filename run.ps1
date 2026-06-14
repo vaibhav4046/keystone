@@ -1,4 +1,4 @@
-# Keystone — one-command local launcher (Windows / PowerShell).
+# Keystone - one-command local launcher (Windows / PowerShell).
 #
 #   ./run.ps1
 #

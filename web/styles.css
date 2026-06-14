@@ -3,7 +3,7 @@
   --bg-void:#0D0D0D; --bg-base:#111114; --bg-raised:#16171C; --bg-line:#23252B;
   --text-hi:#EDEDED; --text-mid:#9BA3AE; --text-dim:#7A8494;
   --orange:#FF8A2B; --green:#3BE081; --gold:#F5C542; --amber:#FFB02E; --danger:#FF5C66; --danger-2:#FF8088; --cyan:#5BBFD6;
-  /* system monospace only — no external font request (offline, fast, reliable) */
+  /* system monospace only - no external font request (offline, fast, reliable) */
   --mono:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Menlo,Consolas,'Courier New',monospace;
   --display:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
   --r:10px;
@@ -137,7 +137,7 @@ body{min-height:100vh;position:relative}
 .assistant-ask .ip{flex:1;margin:0}
 @media (max-width:560px){.agent-step{grid-template-columns:auto 1fr;row-gap:2px}.as-res{grid-column:1 / -1}}
 
-/* HAZARD X-RAY: the lead section — risk the Orbit graph reveals that Git cannot */
+/* HAZARD X-RAY: the lead section - risk the Orbit graph reveals that Git cannot */
 .hazard{margin:14px 18px 0}
 .hazard-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:1px;background:var(--bg-line)}
 .hz-col{padding:12px 14px;background:var(--bg-panel,#0f1116)}
@@ -246,7 +246,7 @@ body{min-height:100vh;position:relative}
 .gov-why{margin:6px 0 0;padding-left:16px;color:var(--text-mid);line-height:1.5}
 .gov-why li{margin:2px 0}
 .gov-foot{margin-top:6px;color:var(--text-dim);font-size:10.5px}
-/* tablet (1081–1280px): the 3-column command center was cramped and pushed the
+/* tablet (1081-1280px): the 3-column command center was cramped and pushed the
    APPROVAL GATE far down the side column. Reflow to 2 columns with named areas so the
    side panel (impact -> precedent -> brief -> assistant -> gate) sits BESIDE the graph
    and stays reachable, with the rail above the stage on the left. */

@@ -198,9 +198,9 @@ class Graph:
         """Deterministic 'review debt' candidates: callable symbols ranked by blast size
         (distinct direct callers) that have ZERO direct callers coming from a test file.
 
-        This is a genuine, graph-derived hazard — a high-consequence symbol that nothing in
+        This is a genuine, graph-derived hazard - a high-consequence symbol that nothing in
         the test suite directly exercises is exactly the change that is both impactful and
-        unverified — and it is honest: 'untested' here means strictly 'no test file directly
+        unverified - and it is honest: 'untested' here means strictly 'no test file directly
         calls it in the Orbit call graph', not a claim about transitive or runtime coverage.
         Test definitions themselves are excluded from the ranked set."""
         type_list = ",".join("'%s'" % t for t in CALLABLE_TYPES)

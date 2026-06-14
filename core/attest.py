@@ -8,7 +8,7 @@ Honesty rules (no overclaiming):
     keyless signing is a documented future step and is explicitly marked false here.
   - orbit_snapshot_sha256 binds the decision to the precise graph-derived context
     (epicenter, rings, affected set, owners, signature), so the attestation proves
-    which Orbit picture drove the approval — the gap SLSA/in-toto leave open.
+    which Orbit picture drove the approval - the gap SLSA/in-toto leave open.
   - Read-only serialization of already-committed deterministic facts. No model.
 
 Standard library only.

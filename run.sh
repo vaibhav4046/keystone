@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Keystone — one-command local launcher (macOS / Linux).
+# Keystone - one-command local launcher (macOS / Linux).
 #
 #   ./run.sh
 #

@@ -2,7 +2,7 @@
 
 Git's merge-conflict detection is TEXTUAL: two merge requests collide only if they edit
 overlapping lines. But two MRs can be semantically entangled while touching entirely
-different files — MR A changes a function that MR B's change depends on. There is no text
+different files - MR A changes a function that MR B's change depends on. There is no text
 conflict, both pass review independently, and merging them in the wrong order (or at all)
 silently breaks something neither reviewer could see. This is a real, recurring incident
 class ("our two changes were fine alone and broke together"), and nothing in the standard
@@ -12,14 +12,14 @@ Keystone can, because Orbit gives it the call graph. This module computes, for a
 OPEN merge requests, where their blast radii COLLIDE on the graph, classifies each
 collision by how dangerous it is, ranks the MRs by collision risk, and proposes a safe
 merge order (a topological order of "A changes what B depends on" edges; a cycle means
-"these cannot be safely ordered — coordinate"). Every figure is deterministic graph
+"these cannot be safely ordered - coordinate"). Every figure is deterministic graph
 computation. No model.
 
 Collision kinds, strongest first:
   - same_change : both MRs change the SAME symbol (A.touched ∩ B.touched).
   - change_in_blast : one MR CHANGES a symbol that is inside the OTHER MR's blast radius
-                      (A.touched ∩ B.affected) — the directional, most insidious case.
-  - blast_overlap : their blast radii share dependents (A.affected ∩ B.affected) — both
+                      (A.touched ∩ B.affected) - the directional, most insidious case.
+  - blast_overlap : their blast radii share dependents (A.affected ∩ B.affected) - both
                     perturb code that leans on the same things.
 """
 from __future__ import annotations
@@ -161,9 +161,9 @@ def detect_collisions(graph, mrs: list, max_depth: int = 3) -> Optional[dict]:
 
     n_coll = len(collisions)
     if cycle:
-        verdict = f"{len(cycle)} MRs form a dependency cycle and cannot be safely ordered — coordinate them."
+        verdict = f"{len(cycle)} MRs form a dependency cycle and cannot be safely ordered - coordinate them."
     elif n_coll == 0:
-        verdict = "No blast-radius collisions — these MRs are independent and any merge order is safe."
+        verdict = "No blast-radius collisions - these MRs are independent and any merge order is safe."
     else:
         verdict = (f"{n_coll} collision(s) across {len(ids)} MRs. Suggested safe merge order avoids "
                    f"merging a dependent before the change it relies on.")

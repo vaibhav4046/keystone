@@ -195,7 +195,7 @@ def test_identical_rejection_not_masked_by_later_different_signature(tmp_path):
 
 def test_precedent_suppresses_cross_namespace_collision(tmp_path):
     """A prior reject on mod_a.parse must NOT contradict a review of mod_b.parse
-    (same short name, different fqn) — fqn is authoritative when both sides have one."""
+    (same short name, different fqn) - fqn is authoritative when both sides have one."""
     led = Ledger(str(tmp_path / "ledger.jsonl"))
     led.append(actor="r", change_id="MR-A", target_symbols=["parse"], target_fqns=["mod_a.parse"],
                blast_radius_set=[2, 3], signature="sigA", decision="reject", rationale="no")

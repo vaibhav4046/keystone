@@ -78,7 +78,7 @@ function paintStatus(st) {
   src.innerHTML = `<span class="dot ${live ? "g" : (snapshot ? "g" : "a")}"></span>source <b>${esc(st.source_mode)}</b>`;
   src.className = "chip " + (live || snapshot ? "ok" : "warn");
   if (snapshot) src.title = "a committed REAL `orbit index` of this repository (" + (st.definitions || "") +
-    " definitions) — every number is engine-computed and cross-verified by orbit sql; served as a static snapshot (no backend).";
+    " definitions) - every number is engine-computed and cross-verified by orbit sql; served as a static snapshot (no backend).";
   orbit.innerHTML = `orbit <b>${esc(st.orbit_access)}</b>`;
   const cliVerified = /CLI/.test(st.orbit_access || "");
   orbit.className = "chip " + (cliVerified ? "ok" : "");
@@ -106,7 +106,7 @@ function paintStatus(st) {
     const tx = (st.orbit_cli_transcript || []).filter((e) => e.ok);
     const last = tx[tx.length - 1];
     if (last) { oc.textContent = last.subcommand + " ✓" + (st.orbit_cli_recorded ? " (rec)" : ""); oc.title = last.command || ""; }
-    else { oc.textContent = "—"; }
+    else { oc.textContent = "-"; }
   }
   STATE.windowEnforced = !!st.window_enforced;
   const integ2 = st.integrity || {};
@@ -115,7 +115,7 @@ function paintStatus(st) {
   if (banner) {
     if (integ2.open_mode) {
       banner.hidden = false;
-      banner.innerHTML = "OPEN MODE — no approve token is set, so identity is self-asserted: any caller can record a decision under any name. The gate still enforces the contradiction BLOCK, four-eyes, and the approver quorum here; it is the identity binding that is advisory. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment.";
+      banner.innerHTML = "OPEN MODE - no approve token is set, so identity is self-asserted: any caller can record a decision under any name. The gate still enforces the contradiction BLOCK, four-eyes, and the approver quorum here; it is the identity binding that is advisory. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment.";
     } else { banner.hidden = true; }
   }
   const modeLabel = st.source_mode === "LIVE" ? "Orbit Local (live)"
@@ -192,8 +192,8 @@ function applyGatePolicy() {
   if (!blocked && ov) ov.checked = false;
   $("#approve").disabled = !!(blocked && !(ov && ov.checked));
   if (status) {
-    if (blocked) { status.textContent = "Policy action is BLOCK — approval is not permitted without an override."; status.style.color = "var(--danger-2)"; }
-    else if (pol && pol.action === "HOLD") { status.textContent = "Policy action is HOLD — " + pol.required_approvers + " approvers required."; status.style.color = "var(--amber)"; }
+    if (blocked) { status.textContent = "Policy action is BLOCK - approval is not permitted without an override."; status.style.color = "var(--danger-2)"; }
+    else if (pol && pol.action === "HOLD") { status.textContent = "Policy action is HOLD - " + pol.required_approvers + " approvers required."; status.style.color = "var(--amber)"; }
     else { status.textContent = ""; }
   }
 }
@@ -210,7 +210,7 @@ async function exportAttestation() {
     document.body.appendChild(a); a.click(); a.remove();
     if (note) { note.textContent = "exported in-toto/SLSA-VSA attestation (HMAC-anchored; verify=" + (r.verify && r.verify.ok) + ")"; note.style.opacity = "1"; }
   } catch (e) {
-    if (note) { note.textContent = "approve or reject first — an attestation is minted from a recorded decision"; note.style.opacity = "1"; }
+    if (note) { note.textContent = "approve or reject first - an attestation is minted from a recorded decision"; note.style.opacity = "1"; }
   }
 }
 
@@ -367,10 +367,10 @@ function renderRings(imp) {
   });
   rows.push(["U", "UNAFFECTED", c.unaffected, ""]);
   let html = rows.map(([r, label, n, names]) =>
-    `<div class="ringrow r${r}"><span class="rl">${label}</span><span class="rc tabnum">${n}</span><span class="rn">${names || "—"}</span></div>`
+    `<div class="ringrow r${r}"><span class="rl">${label}</span><span class="rc tabnum">${n}</span><span class="rn">${names || "-"}</span></div>`
   ).join("");
   if (c.total_affected === 0) {
-    html += `<div class="leaf-note">leaf symbol — nothing depends on it, so changing it is contained by design. Try <b>compute_blast_radius</b> (a BLOCK from prior precedent) or <b>append</b> (a 3-ring blast) to see a real radius and a recorded decision.</div>`;
+    html += `<div class="leaf-note">leaf symbol - nothing depends on it, so changing it is contained by design. Try <b>compute_blast_radius</b> (a BLOCK from prior precedent) or <b>append</b> (a 3-ring blast) to see a real radius and a recorded decision.</div>`;
   }
   const cc = imp.orbit_crosscheck;
   if (cc && cc.ok) {
@@ -425,7 +425,7 @@ function renderPrecedent(p) {
 function renderBrief(b) {
   const box = $("#brief"), src = $("#brief-src");
   if (!box) return;
-  box.innerHTML = `<div class="ai-brief">${esc(b.brief || "—")}</div>` +
+  box.innerHTML = `<div class="ai-brief">${esc(b.brief || "-")}</div>` +
     `<div class="brief-note">advisory prose · every number is engine-computed · the verdict is the human's</div>`;
   if (src) {
     src.textContent = b.deterministic ? "deterministic summary" : ("AI · " + (b.provider || "llm"));
@@ -445,7 +445,7 @@ const DEMO_MRS = [
 
 // Client-side collision engine: mirrors core/collision.py over the bundled per-symbol
 // impact data, so a judge can build their OWN set of open MRs and watch the hazard compute
-// in-browser on the static deploy — no backend required. The live backend uses the Python
+// in-browser on the static deploy - no backend required. The live backend uses the Python
 // engine; both produce the same shape.
 const KIND_WEIGHT = { same_change: 5, change_in_blast: 3, blast_overlap: 1 };
 function _inter(a, b) { const o = new Set(); a.forEach((x) => { if (b.has(x)) o.add(x); }); return o; }
@@ -570,11 +570,11 @@ function renderCollision(col) {
   // the MRs in play
   let html = `<div class="hz-mrs">` + mrs.map((m) =>
     `<div class="hz-mr"><span class="hz-mrid">${esc(m.id)}</span>` +
-    `<span class="hz-mrmeta">changes ${esc((m.changes || []).join(", ") || "—")} · blast ${m.blast_size}</span></div>`
+    `<span class="hz-mrmeta">changes ${esc((m.changes || []).join(", ") || "-")} · blast ${m.blast_size}</span></div>`
   ).join("") + `</div>`;
   // the collisions
   if (!col.collisions.length) {
-    html += `<div class="hz-ok">No blast-radius collisions — these MRs are independent.</div>`;
+    html += `<div class="hz-ok">No blast-radius collisions - these MRs are independent.</div>`;
   } else {
     html += col.collisions.map((c) => {
       const shared = (c.shared || []).slice(0, 5).join(", ");
@@ -594,7 +594,7 @@ function renderCollision(col) {
   }
   // safe merge order / cycle
   if (cyc.length) {
-    html += `<div class="hz-order bad">cannot be safely ordered — ${cyc.length} MRs form a dependency cycle; coordinate them</div>`;
+    html += `<div class="hz-order bad">cannot be safely ordered - ${cyc.length} MRs form a dependency cycle; coordinate them</div>`;
   } else if (order.length) {
     html += `<div class="hz-order">safe merge order: ` +
       order.map((o) => `<span class="hz-ord">${esc(o.split("·")[0].trim())}</span>`).join(' <span class="hz-arrow">→</span> ') + `</div>`;
@@ -620,7 +620,7 @@ function renderGraphAudit(ga) {
 // ---- AI assistant (bounded tool-using agent) ----
 // Live backend runs a fresh agent loop (POST); the static deploy serves the baked
 // plan (and a REAL recorded run for headline symbols). The agent PROPOSES; the
-// deterministic gate DECIDES — so this never touches the trust path.
+// deterministic gate DECIDES - so this never touches the trust path.
 async function callAssistant(symbol, question) {
   if (!STATIC_MODE) {
     try {
@@ -641,7 +641,7 @@ async function callAssistant(symbol, question) {
 
 // a compact one-line summary of an engine tool result for the trace
 function toolResultSummary(tool, r) {
-  if (!r || r.error) return r && r.error ? esc(r.error) : "—";
+  if (!r || r.error) return r && r.error ? esc(r.error) : "-";
   if (tool === "blast_radius") return `${esc(r.tier)} · ${esc(r.action)} · ${r.total_affected} affected (${r.direct_callers} direct) · ${r.required_approvers} approver(s)`;
   if (tool === "precedent") return `${r.approved} approved / ${r.rejected} rejected` + (r.has_identical_contradiction ? ` · identical-signature rejection by ${esc(r.contradiction_actor)}` : "");
   if (tool === "propose_reviewers") return (r.prior_approvers && r.prior_approvers.length ? `prior: ${esc(r.prior_approvers.join(", "))}` : "no prior approvers") + (r.required_owner ? ` · owner ${esc(r.required_owner)}` : "");
@@ -662,7 +662,7 @@ function renderAssistant(res) {
       ).join("") + `</div>`;
   }
   box.innerHTML = trace +
-    `<div class="agent-answer">${esc(res.answer || "—")}</div>` +
+    `<div class="agent-answer">${esc(res.answer || "-")}</div>` +
     `<div class="brief-note">${steps.length ? steps.length + " engine tool call(s) · " : ""}the agent proposes; the deterministic gate decides</div>`;
   if (src) {
     const real = res.deterministic === false;
@@ -677,14 +677,14 @@ async function refreshLedger() {
   const v = a.verify;
   const vd = $("#chain-verdict");
   // honest badge. The public static bundle uses a PUBLISHED sample HMAC key, so its
-  // chain is reproducible by anyone and is NOT tamper-evident — never show green
+  // chain is reproducible by anyone and is NOT tamper-evident - never show green
   // "CHAIN VERIFIED" there. Only the live backend (secret per-machine key) does.
   const isStatic = STATIC_MODE || !!STATIC;
   if (!v.ok) {
     vd.textContent = "BROKEN AT ROW " + v.broken_index; vd.className = "verdict bad";
   } else if (isStatic) {
     vd.textContent = "SAMPLE · PUBLIC KEY"; vd.className = "verdict warn";
-    vd.title = "public demo only: the sample HMAC key is published in source, so this chain is reproducible by anyone — illustrative, not tamper-evident. The local app keys the chain with a secret per-machine key.";
+    vd.title = "public demo only: the sample HMAC key is published in source, so this chain is reproducible by anyone - illustrative, not tamper-evident. The local app keys the chain with a secret per-machine key.";
   } else {
     vd.textContent = "CHAIN VERIFIED"; vd.className = "verdict ok";
   }
@@ -832,7 +832,7 @@ function clientGate(name, decision, reviewer, changeAuthor, override, authorKind
              reasons: pol.reasons || ["a prior identical-blast-radius rejection forces BLOCK"] };
   const rows = (STATIC && STATIC.audit && STATIC.audit.rows) || [];
   // distinct prior approvers for THIS change: non-seeded, same change id + signature, and only
-  // approvals after the most recent rejection (a rejection resets the count) — mirrors gate.py.
+  // approvals after the most recent rejection (a rejection resets the count) - mirrors gate.py.
   const rel = rows.filter((r) => !r.seeded && r.change_id === cid &&
     (r.target_symbols || []).includes(name) && r.signature === sig);
   let lastReject = -1;
@@ -891,7 +891,7 @@ async function decide(decision) {
         return;
       }
       if (r.status === 409) {                       // policy BLOCK, no override
-        if (err) err.textContent = "GOVERNANCE BLOCK: " + ((det.reasons || ["blocked by policy"]).join("; ")) + " — tick override to record an accountable override.";
+        if (err) err.textContent = "GOVERNANCE BLOCK: " + ((det.reasons || ["blocked by policy"]).join("; ")) + " - tick override to record an accountable override.";
         if ($("#override-row")) $("#override-row").style.display = "block";
         return;
       }
@@ -901,7 +901,7 @@ async function decide(decision) {
     }
   }
   // STATIC deploy: run the FULL governance gate in-browser (mirrors core/gate.py), so the demo
-  // enforces four-eyes, the contradiction BLOCK, and a real quorum — not just records a row.
+  // enforces four-eyes, the contradiction BLOCK, and a real quorum - not just records a row.
   const changeAuthor = ($("#changeauthor") && $("#changeauthor").value.trim()) || "";
   const g = clientGate(STATE.selected, decision, reviewer, changeAuthor, override, authorKind);
   if (!g.ok) {
@@ -912,7 +912,7 @@ async function decide(decision) {
     } else if (g.error === "SELF_APPROVAL") {
       if (err) err.textContent = "SELF APPROVAL refused: " + g.hint;
     } else if (g.error === "GOVERNANCE_BLOCK") {
-      if (err) err.textContent = "GOVERNANCE BLOCK: " + (g.reasons || []).join("; ") + " — tick override to record an accountable override.";
+      if (err) err.textContent = "GOVERNANCE BLOCK: " + (g.reasons || []).join("; ") + " - tick override to record an accountable override.";
       if ($("#override-row")) $("#override-row").style.display = "block";
     }
     return;
@@ -936,7 +936,7 @@ async function decide(decision) {
     st.style.color = g.quorum.closed ? "var(--green)" : "var(--text-mid)";
   }
   const note = $("#sample-note");
-  if (note) { note.textContent = "recorded in this browser only — the live local app persists to the hash-chained ledger"; note.style.opacity = "1"; }
+  if (note) { note.textContent = "recorded in this browser only - the live local app persists to the hash-chained ledger"; note.style.opacity = "1"; }
 }
 
 // in-memory tamper demo: re-render the ledger as if a row were edited, flip the badge red.

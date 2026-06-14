@@ -2,8 +2,8 @@
 
 The public deploy is static (GitHub Pages), so a remote judge never reaches a
 backend. To make the displayed numbers verifiable rather than illustrative, this
-build runs the deterministic engine over data/keystone_self_graph.duckdb — a REAL
-`orbit index` of THIS repository (262 definitions) — and bakes, per symbol, the
+build runs the deterministic engine over data/keystone_self_graph.duckdb - a REAL
+`orbit index` of THIS repository (262 definitions) - and bakes, per symbol, the
 exact `orbit sql` command Orbit itself ran plus the count it returned for that
 symbol's direct callers (web/orbit_provenance.json, captured by
 scripts/capture_orbit_provenance.py). The frontend shows each as an "orbit-verified"
@@ -74,7 +74,7 @@ def _load_provenance() -> dict:
 def _orbit_transcript(prov: dict, sample_symbol: str | None) -> list:
     """Build a status-panel transcript from the captured provenance: the real
     `orbit schema`, the real `orbit sql` probe, and one representative per-symbol
-    ring-1 query — each is a real invocation that ran against the committed graph."""
+    ring-1 query - each is a real invocation that ran against the committed graph."""
     tx = []
     for key in ("schema", "probe"):
         e = prov.get(key)

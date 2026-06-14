@@ -6,7 +6,7 @@ remaining API-model gap. It computes, deterministically and with no model:
 
   - the UNION of collateral dependents across all touched symbols (each touched symbol is
     a change, not collateral, so the touched set is excluded from "affected"),
-  - the STRICTEST governance outcome — because the union's affected-file count is at least
+  - the STRICTEST governance outcome - because the union's affected-file count is at least
     as large as any single symbol's, evaluating policy on the union yields a tier no weaker
     than any symbol's, which is exactly the conservative MR rule,
   - a per-symbol breakdown so a reviewer still sees which change drives the tier,
@@ -52,7 +52,7 @@ def compute_mr_impact(graph, target_names, max_depth: int = 3) -> Optional[dict]
       2. an explicit FLOOR clamps the union tier / action / approver count up to the
          strictest single-symbol value, so even a non-monotonic custom policy cannot relax
          the gate by adding a touched symbol. (A prior version subtracted touched epicenters
-         from the count, which could DROP a sole-def file and weaken the union — fixed.)"""
+         from the count, which could DROP a sole-def file and weaken the union - fixed.)"""
     seen, names_in = set(), []
     for n in target_names:                       # dedup, preserve order
         if n not in seen:
