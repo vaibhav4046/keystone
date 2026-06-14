@@ -96,6 +96,16 @@ function paintStatus(st) {
     if (last) { oc.textContent = last.subcommand + " ✓" + (st.orbit_cli_recorded ? " (rec)" : ""); oc.title = last.command || ""; }
     else { oc.textContent = "—"; }
   }
+  STATE.windowEnforced = !!st.window_enforced;
+  const integ2 = st.integrity || {};
+  if (integ) integ.innerHTML = `integrity <b>${integ2.hmac ? "HMAC" : "sha256"}</b>` + (integ2.reviewer_verified ? "" : ` · <span class="adv">id advisory</span>`);
+  const banner = $("#open-banner");
+  if (banner) {
+    if (integ2.open_mode) {
+      banner.hidden = false;
+      banner.innerHTML = "OPEN MODE — no approve token is set, so any caller can record a decision and identity is self-asserted (four-eyes and agent gating are advisory). Set KEYSTONE_APPROVE_TOKEN / bind GitLab OIDC for an enforced deployment.";
+    } else { banner.hidden = true; }
+  }
   $("#db-mode").textContent = st.source_mode === "LIVE" ? "Orbit Local (live)" : "fixture (FALLBACK)";
   $("#def-count").textContent = st.definitions;
   $("#db-path").textContent = (st.duckdb_path || "").split(/[\\/]/).slice(-2).join("/");
@@ -338,7 +348,7 @@ function renderRings(imp) {
       `<div class="gov-top"><span class="tier tier-${esc(pol.tier)}">${esc(pol.tier)}</span>` +
       `<span class="gov-act ${cls}">${esc(act)}</span>` +
       `<span class="gov-need">requires ${pol.required_approvers} approver${pol.required_approvers === 1 ? "" : "s"}` +
-      (pol.review_window_hours ? ` · ${pol.review_window_hours}h window` : "") + `</span></div>` +
+      (pol.review_window_hours ? ` · ${pol.review_window_hours}h window${STATE.windowEnforced ? "" : " [advisory]"}` : "") + `</span></div>` +
       (pol.required_owner ? `<div class="gov-owner">owner to pull in: <b>${esc(pol.required_owner)}</b></div>` : "") +
       `<ul class="gov-why">` + (pol.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("") + `</ul>` +
       `<div class="gov-foot">policy v${esc(pol.policy_version)} · ${esc((pol.policy_hash || "").slice(0, 12))}… · graph-driven, no model</div>` +

@@ -94,6 +94,12 @@ if not os.path.exists(LEDGER_PATH) or os.path.getsize(LEDGER_PATH) == 0:
                        extra={"seeded": True})   # historical precedent, excluded from live quorum counts
 
 
+if APPROVE_TOKEN is None:
+    print("KEYSTONE: OPEN MODE - no KEYSTONE_APPROVE_TOKEN set; any reachable caller can "
+          "record decisions. Set KEYSTONE_APPROVE_TOKEN (and KEYSTONE_OVERRIDE_TOKEN) for a gated deployment.",
+          file=sys.stderr)
+
+
 def _orbit_access() -> str:
     """Honest label: only claim CLI when the CLI actually ran this session."""
     if _graph.source.mode != "LIVE":
@@ -153,7 +159,11 @@ def status():
         "integrity": {"hmac": True, "approve_token_required": APPROVE_TOKEN is not None,
                       # honest: a token proves possession, not identity. Cryptographic
                       # identity binding (GitLab OIDC sub claim) is future work.
-                      "reviewer_verified": False},
+                      "reviewer_verified": False,
+                      # fail-loud: no token => any reachable caller can record decisions
+                      "open_mode": APPROVE_TOKEN is None,
+                      "override_token_required": OVERRIDE_TOKEN is not None},
+        "window_enforced": bool(policy_mod.load_policy().get("window_enforced")),
     }
 
 
