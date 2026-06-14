@@ -26,7 +26,8 @@ from pydantic import BaseModel, Field
 
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
-                  llm as llm_mod, agent as agent_mod, mr as mr_mod)
+                  llm as llm_mod, agent as agent_mod, mr as mr_mod, collision as collision_mod,
+                  graph_audit as graph_audit_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -248,6 +249,38 @@ def impact_mr(q: MRQuery):
     if out is None:
         raise HTTPException(404, "none of the given symbols were found in the graph")
     return out
+
+
+class MROpen(BaseModel):
+    id: str = Field(min_length=1, max_length=120)
+    symbols: list[str] = Field(min_length=1, max_length=40)
+
+
+class CollisionQuery(BaseModel):
+    mrs: list[MROpen] = Field(min_length=1, max_length=20)
+    max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
+
+
+@app.post("/api/collisions")
+def collisions(q: CollisionQuery):
+    """Cross-MR blast-collision detection (core/collision.py): given several OPEN merge
+    requests, find where their blast radii collide on the Orbit call graph — the semantic
+    merge hazard that has NO textual conflict, so Git and GitLab are blind to it — and
+    propose a safe merge order. Pure deterministic graph computation; reveals a capability
+    the standard review surface does not."""
+    out = collision_mod.detect_collisions(
+        _graph, [{"id": m.id, "symbols": m.symbols} for m in q.mrs], max_depth=q.max_depth)
+    if out is None:
+        raise HTTPException(404, "none of the MRs' symbols were found in the graph")
+    return out
+
+
+@app.get("/api/graph-audit")
+def graph_audit(limit: int = Query(default=14, ge=1, le=50)):
+    """Review-debt hazard (core/graph_audit.py): high-blast symbols that NO test file
+    directly exercises in the Orbit call graph — a change that is both high-impact and
+    unverified. The second graph-revealed hazard the standard review surface hides."""
+    return graph_audit_mod.review_debt_report(_graph, limit=limit)
 
 
 class AssistantQuery(BaseModel):

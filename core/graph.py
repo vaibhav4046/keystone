@@ -185,6 +185,51 @@ class Graph:
     def total_definitions(self) -> int:
         return self._con.execute("SELECT count(*) FROM gl_definition").fetchone()[0]
 
+    def _is_test_path(self, col: str) -> str:
+        """SQL predicate matching a test file path for the given column expression.
+        Conservative: a tests/ or test/ directory, or a file named test_*."""
+        return (f"({col} LIKE 'tests/%' OR {col} LIKE 'test/%' OR {col} LIKE '%/tests/%' "
+                f"OR lower({col}) LIKE '%/test\\_%' ESCAPE '\\' OR lower({col}) LIKE 'test\\_%' ESCAPE '\\')")
+
+    def review_debt(self, limit: int = 14, min_blast: int = 2) -> list:
+        """Deterministic 'review debt' candidates: callable symbols ranked by blast size
+        (distinct direct callers) that have ZERO direct callers coming from a test file.
+
+        This is a genuine, graph-derived hazard — a high-consequence symbol that nothing in
+        the test suite directly exercises is exactly the change that is both impactful and
+        unverified — and it is honest: 'untested' here means strictly 'no test file directly
+        calls it in the Orbit call graph', not a claim about transitive or runtime coverage.
+        Test definitions themselves are excluded from the ranked set."""
+        type_list = ",".join("'%s'" % t for t in CALLABLE_TYPES)
+        rows = self._con.execute(
+            f"""
+            SELECT d.name, d.fqn, d.file_path,
+              (SELECT COUNT(DISTINCT e.source_id) FROM gl_edge e
+                 WHERE e.target_id = d.id AND e.relationship_kind='CALLS'
+                   AND e.source_kind='Definition' AND e.target_kind='Definition'
+                   AND e.source_id <> d.id) AS blast,
+              (SELECT COUNT(DISTINCT e.source_id) FROM gl_edge e
+                 JOIN gl_definition s ON e.source_id = s.id
+                 WHERE e.target_id = d.id AND e.relationship_kind='CALLS'
+                   AND e.source_kind='Definition' AND e.target_kind='Definition'
+                   AND e.source_id <> d.id AND {self._is_test_path('s.file_path')}) AS test_callers
+            FROM gl_definition d
+            WHERE d.definition_type IN ({type_list}) AND d.name IS NOT NULL AND d.name <> ''
+              AND NOT {self._is_test_path('d.file_path')}
+            ORDER BY blast DESC, d.name ASC
+            """
+        ).fetchall()
+        out = []
+        for name, fqn, fpath, blast, test_callers in rows:
+            if blast is None or blast < min_blast:
+                continue
+            out.append({"name": name, "fqn": fqn or "", "file": fpath or "",
+                        "blast": int(blast), "test_callers": int(test_callers or 0),
+                        "untested": int(test_callers or 0) == 0})
+        # surface the untested-high-blast hazards first, then merely high-blast
+        out.sort(key=lambda r: (0 if r["untested"] else 1, -r["blast"], r["name"]))
+        return out[:limit]
+
     def repo_label(self) -> Optional[str]:
         """Best-effort repo name from the manifest, for the status panel."""
         if "_orbit_manifest" not in self._cols:

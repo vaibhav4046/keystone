@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Keystone — governed change review</title>
+<title>Keystone — X-ray hazards in the Orbit graph, then govern the change</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
 <div class="scanlines" aria-hidden="true"></div>
 
 <header class="topbar">
-  <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">governed change review</span></div>
+  <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">hazard x-ray + governed review</span></div>
   <div class="status" id="status" aria-live="polite">
     <span class="chip" id="src-chip">source ...</span>
     <span class="chip" id="orbit-chip">orbit ...</span>
@@ -24,6 +24,22 @@
 
 <div id="open-banner" class="open-banner" role="note" hidden></div>
 <div id="data-provenance" class="data-prov" role="note" hidden></div>
+
+<!-- HAZARD X-RAY: the lead. Risk the Orbit call graph reveals that Git/GitLab cannot see. -->
+<section class="hazard panel" data-reveal aria-labelledby="hazard-h">
+  <div class="p-h" id="hazard-h">HAZARD X-RAY
+    <span class="hint">risk the Orbit graph sees that Git can't</span></div>
+  <div class="hazard-grid">
+    <div class="hz-col hz-collision">
+      <div class="hz-title">CROSS-MR BLAST COLLISION <span class="hz-sub">two MRs that silently break together</span></div>
+      <div id="collision" class="hz-body" aria-live="polite"><div class="muted">loading open merge requests…</div></div>
+    </div>
+    <div class="hz-col hz-debt">
+      <div class="hz-title">REVIEW DEBT <span class="hz-sub">high blast, no test directly exercises it</span></div>
+      <div id="graph-audit" class="hz-body" aria-live="polite"><div class="muted">auditing the graph…</div></div>
+    </div>
+  </div>
+</section>
 
 <main class="grid">
   <!-- left rail -->

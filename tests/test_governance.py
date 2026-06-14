@@ -216,3 +216,31 @@ def test_rs256_signature_verification_offline(monkeypatch):
     monkeypatch.setenv("KEYSTONE_OIDC_JWKS", json.dumps({"keys": [jwk]}))
     ci = identity_mod.ci_identity()
     assert ci and ci["signature_verified"] is True and ci["sub"] == claims["sub"]
+
+
+def test_collision_merge_order_is_directional(graph):
+    # if MR-hub changes a symbol and MR-caller changes a DIRECT CALLER of it (the caller
+    # depends on the hub), the safe merge order must put MR-hub FIRST so the caller can be
+    # re-reviewed against the change it relies on. (Regression: the edge direction was once
+    # inverted, which would have told you to merge the dependent first.)
+    from core import collision
+    hub = graph.find_definition("serialize")
+    callers = graph.direct_callers(hub["id"])
+    assert callers, "serialize should have callers in the fixture"
+    caller_name = graph.name_of(callers[0])
+    out = collision.detect_collisions(graph, [
+        {"id": "MR-hub", "symbols": ["serialize"]},
+        {"id": "MR-caller", "symbols": [caller_name]}])
+    assert out is not None and out["collisions"], "a hub and its caller must collide"
+    if not out["uncoordinable_cycle"]:
+        order = out["merge_order"]
+        assert order.index("MR-hub") < order.index("MR-caller"), (caller_name, order)
+
+
+def test_review_debt_untested_flag_is_graph_derived(graph):
+    from core import graph_audit
+    rep = graph_audit.review_debt_report(graph, limit=10)
+    assert rep["hazard"] == "review_debt" and rep["items"]
+    for r in rep["items"]:
+        assert r["untested"] == (r["test_callers"] == 0)
+        assert r["blast"] >= 2
