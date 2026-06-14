@@ -212,6 +212,8 @@
     try {
       if (reduce || !G.ctx || !imp || !imp.epicenter) return;
       document.querySelector(".canvas-wrap").classList.add("has-3d");
+      const svg = document.getElementById("bsvg");
+      if (svg) svg.setAttribute("aria-hidden", "true");   // 3D canvas is the visual; IMPACT panel carries topology for SR
       G.target = layout(imp); G.t0 = 0;
       if (!G.raf) G.raf = requestAnimationFrame(renderFrame);
     } catch (e) {

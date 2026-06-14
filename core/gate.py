@@ -114,12 +114,17 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
         "orbit_snapshot_sha256": out["orbit_snapshot_sha256"], "author_kind": author["badge"],
         "required_approvers": required, "confirmed_approvers": confirmed,
         "quorum_status": quorum_status, "override": bool(override and pol["action"] == "BLOCK"),
+        # honest: the actor is self-asserted unless bound to GitLab OIDC; auditors can
+        # distinguish advisory from cryptographically-bound decisions on this flag.
+        "self_asserted": True,
     }
     if change_author:
         row_extra["change_author"] = change_author
     return {
         "ok": True, "impact": out, "policy": pol, "author": author,
+        "self_asserted": True,
         "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status,
+                   "closed": quorum_status == "APPROVED",   # 200 != closed; check this flag
                    "approvers": confirmed, "change_id": cid},
         "sig": imp.signature, "change_id": cid, "target_fqns": fqns,
         "blast_set": imp.affected_ids, "row_extra": row_extra,
