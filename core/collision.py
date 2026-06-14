@@ -99,10 +99,9 @@ def _merge_order(ids: list, edges: list):
     A cycle means the MRs cannot be safely ordered and must be coordinated."""
     succ = {i: set() for i in ids}
     indeg = {i: 0 for i in ids}
-    seen = set()
     for a, b in edges:
-        if b not in succ[a]:
-            succ[a].add(b); indeg[b] += 1; seen.add((a, b))
+        if b not in succ[a]:               # dedup: only the first A->B edge raises the in-degree
+            succ[a].add(b); indeg[b] += 1
     order, ready = [], sorted([i for i in ids if indeg[i] == 0])
     while ready:
         n = ready.pop(0)
