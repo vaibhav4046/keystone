@@ -17,10 +17,21 @@ import sys
 from urllib import request, parse, error
 
 
+class _Unreachable(Exception):
+    """The Keystone server could not be reached on the live (non --local) path."""
+
+
 def _urllib_get(base):
     def g(path):
-        with request.urlopen(base + path, timeout=8) as r:
-            return json.loads(r.read().decode())
+        try:
+            with request.urlopen(base + path, timeout=8) as r:
+                return json.loads(r.read().decode())
+        except error.HTTPError as e:
+            if e.code == 404:
+                return {}                       # missing symbol -> governed_review reports it cleanly
+            raise _Unreachable(f"{base} returned HTTP {e.code}")
+        except (error.URLError, OSError):       # connection refused / DNS / timeout
+            raise _Unreachable(base)
     return g
 
 
@@ -31,7 +42,10 @@ def _urllib_post(base):
         try:
             with request.urlopen(req, timeout=8) as r:
                 return json.loads(r.read().decode())
-        except error.HTTPError as e:
+        except (error.URLError, OSError) as e:
+            if not isinstance(e, error.HTTPError):
+                raise _Unreachable(base)        # connection refused / DNS / timeout
+            # else fall through to the HTTPError handler below
             # A gate refusal (403 scope/four-eyes/unregistered, 409 BLOCK, 401 token, 429 rate)
             # comes back as an HTTP error whose body carries the detail. Surface it as a clean
             # "blocked" result instead of crashing the skill with a traceback.
@@ -213,8 +227,13 @@ def main(argv=None):
                   f"ref={ci_id.get('ref')}) - pipeline decisions are GitLab-attested, not self-asserted")
     else:
         get_json, post_json = _urllib_get(a.base), _urllib_post(a.base)
-    rep = governed_review(a.symbol, get_json, post_json,
-                          decide=a.decide, reviewer=a.reviewer, reason=a.reason)
+    try:
+        rep = governed_review(a.symbol, get_json, post_json,
+                              decide=a.decide, reviewer=a.reviewer, reason=a.reason)
+    except _Unreachable as e:
+        print(f"ERROR: cannot reach Keystone at {e}. Start the server (./run.ps1) or run "
+              f"server-less with --local (add --fixture for the deterministic sample graph).")
+        return 1
     _print_report(rep)
     if rep.get("error"):
         return 1
