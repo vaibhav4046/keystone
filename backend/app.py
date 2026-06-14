@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
-                  llm as llm_mod, agent as agent_mod)
+                  llm as llm_mod, agent as agent_mod, mr as mr_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -231,6 +231,23 @@ def brief(name: str = Path(max_length=256)):
     res = llm_mod.review_brief(ctx)
     res["providers_configured"] = llm_mod.available_providers()
     return res
+
+
+class MRQuery(BaseModel):
+    symbols: list[str] = Field(min_length=1, max_length=40)
+    max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
+
+
+@app.post("/api/impact-mr")
+def impact_mr(q: MRQuery):
+    """The MR-level blast radius: the UNION across every symbol a merge request touches,
+    with the STRICTEST governance tier applied (core/mr.py). A real MR edits several
+    symbols; this is the conservative composition the single-symbol endpoint can't express."""
+    clean = [s for s in (x.strip() for x in q.symbols) if s][:40]
+    out = mr_mod.compute_mr_impact(_graph, clean, max_depth=q.max_depth)
+    if out is None:
+        raise HTTPException(404, "none of the given symbols were found in the graph")
+    return out
 
 
 class AssistantQuery(BaseModel):

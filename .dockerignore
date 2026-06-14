@@ -1,0 +1,16 @@
+# Keep the deploy image lean: exclude VCS, caches, tests, local scratch, and secrets.
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+**/__pycache__
+*.pyc
+.pytest_cache
+tests
+.env
+.env.*
+!.env.example
+temp_*
+null
+*.log
+desktop

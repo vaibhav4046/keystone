@@ -62,6 +62,42 @@ def test_review_brief_is_deterministic_without_llm():
     assert "providers_configured" in b
 
 
+TIER_RANK = {"ISOLATED": 0, "LOCAL": 1, "CROSS_TEAM": 2, "ORG_WIDE": 3}
+ACTION_RANK = {"ALLOW": 0, "HOLD": 1, "BLOCK": 2}
+
+
+def _assert_union_conservative(symbols):
+    """The union outcome must be NO WEAKER than any constituent symbol — the MR gate's
+    core guarantee. Asserts tier, action, and approver count all dominate every single."""
+    b = client.post("/api/impact-mr", json={"symbols": symbols}).json()
+    u = b["union"]
+    for p in b["per_symbol"]:
+        assert TIER_RANK[u["tier"]] >= TIER_RANK[p["tier"]], (symbols, u, p)
+        assert ACTION_RANK[u["action"]] >= ACTION_RANK[p["action"]], (symbols, u, p)
+        assert u["required_approvers"] >= p["required_approvers"], (symbols, u, p)
+        assert u["counts"]["affected_definitions"] >= p["total_affected"], (symbols, u, p)
+    return b
+
+
+def test_mr_union_blast_is_conservative():
+    # a merge request touching several symbols escalates to a tier no weaker than any
+    # single change: the union blast radius drives the strictest governance outcome.
+    b = _assert_union_conservative(["tokenize", "serialize", "parse"])
+    assert b["resolved"] == ["tokenize", "serialize", "parse"] and not b["unresolved"]
+    assert len(b["union"]["signature"]) == 64 and b["union"]["orbit_snapshot_sha256"]
+    # the dependent-overlap case that previously INVERTED the gate (a touched symbol that is
+    # the sole def in its file, and is itself a dependent of another touched symbol): the
+    # union must still dominate 'encode' (CROSS_TEAM) rather than relax to LOCAL.
+    overlap = _assert_union_conservative(["encode", "cache_put", "export_csv"])
+    assert overlap["union"]["tier"] == "CROSS_TEAM" and overlap["union"]["required_approvers"] >= 2
+    # adding more touched symbols never lowers the gate (monotonic): superset is stricter-or-equal
+    _assert_union_conservative(["build_ast", "main"])
+    # unknown symbols are reported, not silently dropped; all-unknown is a 404
+    mixed = client.post("/api/impact-mr", json={"symbols": ["tokenize", "does_not_exist"]}).json()
+    assert mixed["unresolved"] == ["does_not_exist"] and "tokenize" in mixed["resolved"]
+    assert client.post("/api/impact-mr", json={"symbols": ["nope_a", "nope_b"]}).status_code == 404
+
+
 def test_assistant_is_deterministic_tool_loop_without_llm():
     # no LLM in tests -> the agent runs the deterministic tool plan: a real, ordered
     # trace of engine tool calls (blast_radius -> precedent -> propose_reviewers) plus

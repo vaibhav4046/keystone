@@ -1,0 +1,27 @@
+# One-click LIVE backend on Fly.io (free allowance). Alternative to render.yaml.
+#   fly launch --copy-config --now   (or: fly deploy)
+# Add a free LLM key as a secret to enable real AI:
+#   fly secrets set OPENROUTER_API_KEY=...   (never commit it)
+app = "keystone-demo"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  KEYSTONE_GRAPH_PATH = "data/keystone_self_graph.duckdb"
+  KEYSTONE_PREFER_LIVE = "1"
+  PORT = "8787"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
