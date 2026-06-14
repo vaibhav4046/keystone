@@ -340,6 +340,20 @@ function pad(n) { return String(n).padStart(4, "0"); }
 function idNames(imp) { const m = {}; Object.keys(imp.names || {}).forEach((k) => m[Number(k)] = imp.names[k]); return m; }
 function nameOf(imp, id) { return (imp._names && imp._names[id]) || (imp.names && imp.names[String(id)]) || ("#" + id); }
 
+// when two affected symbols share a short name (several `main`s across files), qualify the
+// duplicates with their owning dir so the ring list reads honestly, not "main, main". The
+// count stays authoritative (every distinct id is still one entry).
+function ringNameList(imp, ids) {
+  const qualById = {};   // qualify by file (distinct), falling back to dir, then nothing
+  (imp.owners || []).forEach((o) => { qualById[o.id] = o.file || o.dir || ""; });
+  const freq = {};
+  ids.forEach((id) => { const n = nameOf(imp, id); freq[n] = (freq[n] || 0) + 1; });
+  return ids.map((id) => {
+    const n = nameOf(imp, id), q = qualById[id];
+    return (freq[n] > 1 && q) ? esc(n) + " (" + esc(q) + ")" : esc(n);
+  }).join(", ");
+}
+
 function renderRings(imp) {
   const box = $("#rings");
   const c = imp.counts;
@@ -349,7 +363,7 @@ function renderRings(imp) {
     if (r === 0) return;
     const tag = r === 1 ? "DIRECT" : (r === 2 ? "TRANSITIVE" : "AT RISK");
     rows.push([String(r), `R${r} ${tag}`, imp.rings[r].length,   // R-prefix: severity not by colour alone
-      imp.rings[r].map((id) => esc(nameOf(imp, id))).join(", ")]);
+      ringNameList(imp, imp.rings[r])]);
   });
   rows.push(["U", "UNAFFECTED", c.unaffected, ""]);
   let html = rows.map(([r, label, n, names]) =>
