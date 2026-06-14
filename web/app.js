@@ -759,16 +759,71 @@ function wire() {
   });
 }
 
+// fnmatch-style path glob, mirroring core/agents._matches (normalise the leading slash, try a
+// few forms). Case-sensitive, matching the Orbit graph paths and the committed manifest.
+function _globRe(pat) {
+  let re = "";
+  for (const c of (pat || "")) {
+    if (c === "*") re += ".*";
+    else if (c === "?") re += ".";
+    else if ("\\^$.|+()[]{}".indexOf(c) >= 0) re += "\\" + c;
+    else re += c;
+  }
+  return new RegExp("^" + re + "$");
+}
+function _matchPath(path, pattern) {
+  const p = (path || "").replace(/^\/+/, ""), pat = (pattern || "").replace(/^\/+/, "");
+  return _globRe(pat).test(p) || _globRe(pattern).test("/" + p) || _globRe(pattern).test(path || "");
+}
+// resolve_author + check_scope mirror core/agents.py, over the registry baked into STATIC.agents.
+function resolveAuthor(author, kind, registry) {
+  const agents = (registry && registry.agents) || {};
+  if (agents[author]) {
+    const a = agents[author];
+    return { id: author, badge: "AGENT_VERIFIED", scope: {
+      allowed_paths: a.allowed_paths || [], forbidden_paths: a.forbidden_paths || [],
+      max_blast_radius: (a.max_blast_radius == null ? null : a.max_blast_radius) } };
+  }
+  if ((kind || "").toLowerCase() === "agent") return { id: author, badge: "AGENT_UNREGISTERED", scope: null };
+  return { id: author, badge: "HUMAN", scope: null };
+}
+function checkScope(authorCtx, imp) {
+  const scope = authorCtx.scope;
+  if (!scope) return { in_scope: true, violations: [] };
+  const owners = (imp && imp.owners) || [];          // path scope governs the ring-0 changed file(s)
+  let files = [...new Set(owners.filter((o) => (o.ring || 0) === 0 && o.file).map((o) => o.file))];
+  if (!files.length) files = [...new Set(owners.filter((o) => o.file).map((o) => o.file))];
+  const allowed = scope.allowed_paths || [], forbidden = scope.forbidden_paths || [], violations = [];
+  files.forEach((f) => {
+    if (forbidden.some((pat) => _matchPath(f, pat))) violations.push(f + " matches a forbidden path for this agent");
+    else if (allowed.length && !allowed.some((pat) => _matchPath(f, pat))) violations.push(f + " is outside this agent's allowed paths");
+  });
+  const cap = scope.max_blast_radius, defs = ((imp && imp.counts) || {}).total_affected || 0;
+  if (cap != null && defs > cap) violations.push("blast radius " + defs + " exceeds this agent's max_blast_radius " + cap);
+  return { in_scope: violations.length === 0, violations };
+}
+
 // Client-side governance gate: mirrors core/gate.py over the in-browser sample ledger so the
-// STATIC deploy ENFORCES the full flow (four-eyes self-approval refusal, contradiction BLOCK +
-// accountable override, and a real per-change quorum that accumulates across distinct approvers),
-// not just records a row. Same deterministic logic the server runs. Identity stays self-asserted
-// on the public demo and is labeled as such, so four-eyes binds an honest name, not a verified one.
-function clientGate(name, decision, reviewer, changeAuthor, override) {
+// STATIC deploy ENFORCES the full flow (agent scope + unregistered-agent refusal, four-eyes
+// self-approval refusal, contradiction BLOCK + accountable override, and a real per-change quorum
+// that accumulates across distinct approvers), not just records a row. Same deterministic logic
+// the server runs. Identity stays self-asserted on the public demo and is labeled as such, so
+// four-eyes and the agent id bind an honest name, not a cryptographically verified one.
+function clientGate(name, decision, reviewer, changeAuthor, override, authorKind) {
   const imp = (STATIC && STATIC.impact && STATIC.impact[name]) || {};
   const pol = imp.policy || {};
   const sig = imp.signature || "";
   const cid = "KS-" + name;                          // stable per-symbol change id on the static demo
+  // agent gating (mirrors core/agents.py + the gate.py order): a registered agent out of scope is
+  // refused for any decision; an unregistered agent cannot self-approve.
+  const author = resolveAuthor(reviewer, authorKind, (typeof STATIC !== "undefined" && STATIC.agents) || null);
+  if (author.scope) {
+    const sc = checkScope(author, imp);
+    if (!sc.in_scope) return { ok: false, error: "SCOPE_VIOLATION", violations: sc.violations };
+  }
+  if (decision === "approve" && author.badge === "AGENT_UNREGISTERED")
+    return { ok: false, error: "UNREGISTERED_AGENT",
+             hint: "this agent id is not in .keystone/agents.json; register it or have a human review" };
   if (decision === "approve" && changeAuthor && reviewer === changeAuthor && !override)
     return { ok: false, error: "SELF_APPROVAL",
              hint: "the change author cannot approve their own change; use a different reviewer or an accountable override" };
@@ -848,9 +903,13 @@ async function decide(decision) {
   // STATIC deploy: run the FULL governance gate in-browser (mirrors core/gate.py), so the demo
   // enforces four-eyes, the contradiction BLOCK, and a real quorum — not just records a row.
   const changeAuthor = ($("#changeauthor") && $("#changeauthor").value.trim()) || "";
-  const g = clientGate(STATE.selected, decision, reviewer, changeAuthor, override);
+  const g = clientGate(STATE.selected, decision, reviewer, changeAuthor, override, authorKind);
   if (!g.ok) {
-    if (g.error === "SELF_APPROVAL") {
+    if (g.error === "SCOPE_VIOLATION") {
+      if (err) err.textContent = "SCOPE VIOLATION (agent out of scope): " + (g.violations || []).join("; ");
+    } else if (g.error === "UNREGISTERED_AGENT") {
+      if (err) err.textContent = "UNREGISTERED AGENT: " + g.hint;
+    } else if (g.error === "SELF_APPROVAL") {
       if (err) err.textContent = "SELF APPROVAL refused: " + g.hint;
     } else if (g.error === "GOVERNANCE_BLOCK") {
       if (err) err.textContent = "GOVERNANCE BLOCK: " + (g.reasons || []).join("; ") + " — tick override to record an accountable override.";
