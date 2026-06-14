@@ -97,3 +97,27 @@ def test_unknown_symbol_is_reported_not_invented(wired):
     get_json, post_json = wired
     rep = run_review.governed_review("nope_not_here", get_json, post_json)
     assert "error" in rep and "not found" in rep["error"]
+
+
+def test_live_post_surfaces_gate_block_without_crashing(monkeypatch):
+    """The live (urllib) skill path must report a gate refusal cleanly. urlopen raises
+    HTTPError on a 4xx BLOCK, and the body carries the detail; the runner must turn that
+    into a 'blocked' result, not a traceback."""
+    import io
+    import json as _json
+    from urllib import error as _error
+
+    def _raise(*_a, **_k):
+        body = io.BytesIO(_json.dumps({"detail": {"error": "GOVERNANCE_BLOCK", "reasons": ["prior rejection"]}}).encode())
+        raise _error.HTTPError("http://x/api/approve", 409, "Conflict", {}, body)
+
+    monkeypatch.setattr(run_review.request, "urlopen", _raise)
+    res = run_review._urllib_post("http://x")("/api/approve",
+                                              {"name": "tokenize", "decision": "approve", "reviewer": "r", "rationale": "x"})
+    assert res["blocked"] == "GOVERNANCE_BLOCK"
+    rep = run_review.governed_review(
+        "tokenize",
+        lambda _p: {"counts": {"total_affected": 1}, "epicenter": {}, "signature": "s"},
+        run_review._urllib_post("http://x"),
+        decide="approve", reviewer="r", reason="x")
+    assert "refused by gate" in rep.get("error", "")

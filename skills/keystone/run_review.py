@@ -14,7 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from urllib import request, parse
+from urllib import request, parse, error
 
 
 def _urllib_get(base):
@@ -28,8 +28,20 @@ def _urllib_post(base):
     def p(path, body):
         data = json.dumps(body).encode()
         req = request.Request(base + path, data=data, headers={"content-type": "application/json"}, method="POST")
-        with request.urlopen(req, timeout=8) as r:
-            return json.loads(r.read().decode())
+        try:
+            with request.urlopen(req, timeout=8) as r:
+                return json.loads(r.read().decode())
+        except error.HTTPError as e:
+            # A gate refusal (403 scope/four-eyes/unregistered, 409 BLOCK, 401 token, 429 rate)
+            # comes back as an HTTP error whose body carries the detail. Surface it as a clean
+            # "blocked" result instead of crashing the skill with a traceback.
+            try:
+                payload = json.loads(e.read().decode())
+            except Exception:
+                payload = {}
+            det = payload.get("detail", payload) if isinstance(payload, dict) else payload
+            err = det.get("error") if isinstance(det, dict) else det
+            return {"blocked": err or f"HTTP {e.code}", "detail": det}
     return p
 
 
