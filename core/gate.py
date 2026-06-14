@@ -114,12 +114,19 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
     # identity is supplied (never by a free-typed reviewer string).
     bound = bool(ci_identity and ci_identity.get("bound"))
     self_asserted = not bound
+    # An override is load-bearing (and must be recorded in the immutable row) when it actually
+    # bypassed a gate: a policy BLOCK, or the four-eyes self-approval check. A gratuitous
+    # override on a clean approval is not recorded, so the flag never overstates or hides.
+    override_used = bool(override) and (
+        pol["action"] == "BLOCK"
+        or (decision == "approve" and bool(change_author) and reviewer == change_author)
+    )
     row_extra = {
         "tier": pol["tier"], "governance_action": pol["action"],
         "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
         "orbit_snapshot_sha256": out["orbit_snapshot_sha256"], "author_kind": author["badge"],
         "required_approvers": required, "confirmed_approvers": confirmed,
-        "quorum_status": quorum_status, "override": bool(override and pol["action"] == "BLOCK"),
+        "quorum_status": quorum_status, "override": override_used,
         # honest: the actor is self-asserted unless bound to GitLab OIDC; auditors can
         # distinguish advisory from cryptographically-bound decisions on this flag.
         "self_asserted": self_asserted,
