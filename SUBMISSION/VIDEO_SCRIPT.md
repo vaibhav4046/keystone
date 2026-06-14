@@ -25,6 +25,29 @@ Two merge requests both passed review and still broke together. Keystone names t
 the safe merge order, then the gate refuses the change that contradicts a prior rejection, and
 leaves a record nobody can quietly edit.
 
+## Beat-by-beat map to the four judging criteria
+
+The four criteria are equally weighted, and a win is top-2 in one category. The script is built so
+every beat scores a criterion and the two strongest categories (Technological Implementation and
+Quality of the Idea) are hit hardest. Keep this in your head while recording; it is why each beat
+is where it is.
+
+| time | beat | primary criterion it scores | also scores |
+|------|------|-----------------------------|-------------|
+| 0:00-0:18 | the 2am-break hook | Potential Impact (the real pain) | Quality of the Idea |
+| 0:18-1:05 | cross-MR collision + safe merge order | **Quality of the Idea** (the new capability) | Technological Implementation |
+| 0:51 | add a live MR, watch it recompute | Design & Usability (interactive, no backend) | Tech |
+| 1:05-1:18 | review-debt hazard | Quality of the Idea (second hazard) | Tech |
+| 1:18-1:40 | blast radius + the `orbit sql` badge | **Technological Implementation** (meaningful Orbit, checkable) | Impact |
+| 1:40-1:58 | precedent contradiction + the BLOCK | Quality of the Idea (binding precedent) | Tech |
+| 1:58-2:18 | the bounded AI agent, off the trust path | **Technological Implementation** (real working AI) | Quality of the Idea |
+| 2:18-2:38 | hash-chained ledger + attestation | Technological Implementation (tamper-evident) | Impact |
+| 2:38-2:50 | close: Orbit-native, the wedge | Tech + Impact | Design |
+
+If a judge watches only the first 45 seconds, they must come away with the one-line idea
+("two MRs broke together and nothing but the call graph could see it") and see it recompute live.
+That is the single most important stretch of the video. Everything after it is proof.
+
 ---
 
 ## 0:00 to 0:18  Hook (screen: the hazard X-ray section at the top of the page)
@@ -38,7 +61,7 @@ depended on. Git can't see that. The review can't see that. The call graph can."
 
 ## 0:18 to 1:05  The novel capability: cross-MR collision + safe merge order
 
-ON SCREEN: point the cursor at the four demo MRs, then at the red collision rows.
+ON SCREEN: point the cursor at the three demo MRs (MR-204, MR-207, MR-211), then at the red collision rows.
 
 SAY:
 "Keystone reads the GitLab Orbit code graph and finds it. MR-204 speeds up the blast engine.
