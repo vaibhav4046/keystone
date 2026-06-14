@@ -45,7 +45,7 @@ const api = async (p) => {
   return fromStatic(p);
 };
 
-let STATE = { defs: [], selected: null, impact: null };
+let STATE = { defs: [], selected: null, impact: null, showAll: false };
 window.STATE = STATE;                       // exposed for the motion layer (motion.js)
 
 const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
@@ -58,7 +58,8 @@ async function boot() {
   } catch (e) { /* status optional */ }
   const d = await api("/api/definitions");
   STATE.defs = d.names;
-  renderDefList(STATE.defs);
+  renderDefList(reviewableDefs());
+  updateShowAllLabel();
   await refreshLedger();
   loadHazards();
   // auto-select the headline demo symbol: compute_blast_radius (Keystone's own engine,
@@ -148,6 +149,43 @@ function renderDefList(names) {
     if (n === STATE.selected) li.classList.add("sel");
     ul.appendChild(li);
   });
+}
+
+// Curate the picker: a cold judge should see the consequential, human-named symbols first, not
+// private internals (_*), test functions/classes, or one-character names. "show all" reveals the
+// rest, and typing in the filter always searches the full set, so nothing is hidden from search.
+function _reviewable(n) {
+  return n.length > 1 && !/^_/.test(n) && !/^test/i.test(n) && !/Tests?$/.test(n) && /[A-Za-z]/.test(n);
+}
+function reviewableDefs() { return STATE.showAll ? STATE.defs : STATE.defs.filter(_reviewable); }
+function currentDefView() {
+  const q = (($("#search") && $("#search").value) || "").trim().toLowerCase();
+  return q ? STATE.defs.filter((n) => n.toLowerCase().includes(q)) : reviewableDefs();
+}
+function updateShowAllLabel() {
+  const b = $("#show-all"); if (!b) return;
+  const nAll = STATE.defs.length, hidden = nAll - STATE.defs.filter(_reviewable).length;
+  b.textContent = STATE.showAll ? "show reviewable only" : ("show all " + nAll + " (" + hidden + " hidden)");
+  b.setAttribute("aria-pressed", STATE.showAll ? "true" : "false");
+}
+
+// The refusal IS the thesis, so make it loud, not a silent red line: flash the gate and put a
+// REFUSED summary on the status line, with the detail underneath.
+function flashRefusal(code, detail) {
+  const st = $("#gate-status");
+  if (st) { st.textContent = "REFUSED - " + code; st.style.color = "var(--danger-2)"; }
+  const err = $("#reason-err");
+  if (err) err.textContent = detail || "";
+  const gate = document.querySelector(".panel.gate");
+  if (gate) { gate.classList.remove("refused"); void gate.offsetWidth; gate.classList.add("refused");
+    setTimeout(() => gate.classList.remove("refused"), 900); }
+}
+
+// A guided CTA should land: briefly pulse the panel it reveals so the payoff is unmistakable.
+function highlightPanel(el) {
+  if (!el) return;
+  el.classList.remove("flash-highlight"); void el.offsetWidth; el.classList.add("flash-highlight");
+  setTimeout(() => el.classList.remove("flash-highlight"), 1700);
 }
 
 async function select(name) {
@@ -701,10 +739,9 @@ async function refreshLedger() {
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
 function wire() {
-  $("#search").addEventListener("input", (e) => {
-    const q = e.target.value.toLowerCase();
-    renderDefList(STATE.defs.filter((n) => n.toLowerCase().includes(q)));
-  });
+  $("#search").addEventListener("input", () => renderDefList(currentDefView()));
+  const showAllBtn = $("#show-all");
+  if (showAllBtn) showAllBtn.onclick = () => { STATE.showAll = !STATE.showAll; renderDefList(currentDefView()); updateShowAllLabel(); };
   // arrow-key navigation across the symbol listbox (WCAG keyboard support)
   $("#deflist").addEventListener("keydown", (e) => {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
@@ -745,7 +782,7 @@ function wire() {
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if (e.key === "/" && !typing) { e.preventDefault(); $("#search").focus(); }
-    else if (e.key === "Escape" && document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(STATE.defs); }
+    else if (e.key === "Escape" && document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(currentDefView()); }
   });
   // guided first-click: a lede chip deep-selects a money-shot symbol and scrolls to the stage
   document.querySelectorAll(".lede-chip[data-pick]").forEach((b) => {
@@ -755,6 +792,8 @@ function wire() {
       select(name);
       const stage = document.getElementById("blast-radius");
       if (stage && stage.scrollIntoView) stage.scrollIntoView({ behavior: "smooth", block: "center" });
+      highlightPanel(stage);                                  // pulse the panel the CTA reveals so the payoff lands
+      const gate = document.querySelector(".panel.gate"); if (gate) setTimeout(() => highlightPanel(gate), 250);
     });
   });
 }
@@ -887,11 +926,11 @@ async function decide(decision) {
       if (r.status === 403) {                       // scope / unregistered agent / self-approval
         const code = (det.error || "BLOCKED").replace(/_/g, " ");
         const why = det.violations ? det.violations.join("; ") : (det.hint || "");
-        if (err) err.textContent = code + (why ? ": " + why : "");
+        flashRefusal(code, why);
         return;
       }
       if (r.status === 409) {                       // policy BLOCK, no override
-        if (err) err.textContent = "GOVERNANCE BLOCK: " + ((det.reasons || ["blocked by policy"]).join("; ")) + " - tick override to record an accountable override.";
+        flashRefusal("POLICY BLOCK", ((det.reasons || ["blocked by policy"]).join("; ")) + " - tick override to record an accountable override.");
         if ($("#override-row")) $("#override-row").style.display = "block";
         return;
       }
@@ -906,13 +945,13 @@ async function decide(decision) {
   const g = clientGate(STATE.selected, decision, reviewer, changeAuthor, override, authorKind);
   if (!g.ok) {
     if (g.error === "SCOPE_VIOLATION") {
-      if (err) err.textContent = "SCOPE VIOLATION (agent out of scope): " + (g.violations || []).join("; ");
+      flashRefusal("SCOPE VIOLATION", "agent out of scope: " + (g.violations || []).join("; "));
     } else if (g.error === "UNREGISTERED_AGENT") {
-      if (err) err.textContent = "UNREGISTERED AGENT: " + g.hint;
+      flashRefusal("UNREGISTERED AGENT", g.hint);
     } else if (g.error === "SELF_APPROVAL") {
-      if (err) err.textContent = "SELF APPROVAL refused: " + g.hint;
+      flashRefusal("FOUR-EYES", g.hint);
     } else if (g.error === "GOVERNANCE_BLOCK") {
-      if (err) err.textContent = "GOVERNANCE BLOCK: " + (g.reasons || []).join("; ") + " - tick override to record an accountable override.";
+      flashRefusal("POLICY BLOCK", (g.reasons || []).join("; ") + " - tick override to record an accountable override.");
       if ($("#override-row")) $("#override-row").style.display = "block";
     }
     return;

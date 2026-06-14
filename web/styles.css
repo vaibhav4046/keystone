@@ -227,6 +227,16 @@ body{min-height:100vh;position:relative}
 .noscript-msg{margin:16px 18px;padding:12px 14px;border:1px solid var(--amber);border-radius:8px;color:var(--amber);background:rgba(255,176,46,.08)}
 .rail-hint{margin:0 10px 8px;font-size:11px;color:var(--text-dim)}
 .rail-hint b{color:var(--orange);font-weight:500}
+.rail-toggle{margin:0 10px 8px;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--text-mid);
+  background:transparent;border:1px solid var(--bg-line);border-radius:6px;padding:4px 9px;cursor:pointer;transition:color .15s,border-color .15s}
+.rail-toggle:hover{color:var(--text-hi);border-color:var(--orange)}
+.rail-toggle:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+/* the refusal IS the thesis: make a blocked approval shake + flash, not a silent red line */
+.panel.gate.refused{animation:ks-shake .42s cubic-bezier(.36,.07,.19,.97);box-shadow:0 0 0 2px var(--danger) inset,0 0 22px rgba(255,92,102,.28)}
+@keyframes ks-shake{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
+/* a guided CTA should land: pulse the panel it reveals */
+.flash-highlight{animation:ks-flash 1.6s ease-out}
+@keyframes ks-flash{0%{box-shadow:0 0 0 2px var(--orange) inset,0 0 26px rgba(255,138,43,.35)}100%{box-shadow:0 0 0 0 transparent,0 0 0 transparent}}
 .gate-err{color:var(--danger-2);font-size:11.5px;min-height:0}
 .gate-err:not(:empty){min-height:16px}
 .leaf-note{margin-top:8px;padding:8px 10px;border-radius:7px;background:var(--bg-raised);color:var(--text-mid);font-size:11.5px;line-height:1.45}
