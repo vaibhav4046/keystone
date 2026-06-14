@@ -455,7 +455,9 @@ function classifyLocal(a, b) {
   const blast = _inter(a.affected, b.affected); [...same, ...cross].forEach((x) => blast.delete(x));
   if (!same.size && !cross.size && !blast.size) return null;
   const names = { ...a.names, ...b.names }, weight = { ...a.weight, ...b.weight };
-  const label = (s) => [...s].map((i) => names[i] || String(i)).sort();
+  // dedup by display name to match core/collision.py's set-of-names label (two distinct
+  // ids that share a short name, e.g. several `main`s, collapse to one entry).
+  const label = (s) => [...new Set([...s].map((i) => names[i] || String(i)))].sort();
   let sev = 0;
   [[same, "same_change"], [cross, "change_in_blast"], [blast, "blast_overlap"]].forEach(([s, k]) =>
     s.forEach((i) => { sev += KIND_WEIGHT[k] * (1 + (weight[i] || 0)); }));
@@ -483,7 +485,7 @@ function computeCollisionsLocal(mrs) {
   const cycle = ids.filter((i) => !order.includes(i)).sort();
   const per_mr = fps.map((f) => {
     const cs = collisions.filter((c) => c.mr_a === f.id || c.mr_b === f.id);
-    return { id: f.id, changes: [...f.fp.touched].map((i) => f.fp.names[i] || String(i)).sort(),
+    return { id: f.id, changes: [...new Set([...f.fp.touched].map((i) => f.fp.names[i] || String(i)))].sort(),
       blast_size: f.fp.affected.size,
       collides_with: [...new Set(cs.map((c) => (c.mr_a === f.id ? c.mr_b : c.mr_a)))].sort(),
       risk: cs.reduce((s, c) => s + c.severity, 0) };
@@ -730,6 +732,16 @@ function wire() {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if (e.key === "/" && !typing) { e.preventDefault(); $("#search").focus(); }
     else if (e.key === "Escape" && document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(STATE.defs); }
+  });
+  // guided first-click: a lede chip deep-selects a money-shot symbol and scrolls to the stage
+  document.querySelectorAll(".lede-chip[data-pick]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const name = b.dataset.pick;
+      if (STATE.defs && !STATE.defs.includes(name)) return;   // never point at a symbol not in this graph
+      select(name);
+      const stage = document.getElementById("blast-radius");
+      if (stage && stage.scrollIntoView) stage.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   });
 }
 
