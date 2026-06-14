@@ -274,6 +274,13 @@ body{min-height:100vh;position:relative}
   .stage{order:-1}            /* keep the blast radius prominent, gate reachable sooner */
   .canvas-wrap{min-height:300px}
 }
+/* wide desktop: the tall side column used to leave the center graph stranded in a blank void
+   as you scrolled. Top-align the columns and pin the blast-radius stage so the graph follows
+   the scroll and stays in view while the side panels and ledger scroll past it. */
+@media (min-width:1281px){
+  .grid{align-items:start}
+  .stage{position:sticky;top:14px;align-self:start}
+}
 @media (max-width:640px){
   .topbar{flex-direction:column;align-items:flex-start;gap:8px}
   .grid{padding:10px}
