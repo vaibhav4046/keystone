@@ -115,7 +115,7 @@ function paintStatus(st) {
   if (banner) {
     if (integ2.open_mode) {
       banner.hidden = false;
-      banner.innerHTML = "OPEN MODE — no approve token is set, so any caller can record a decision and identity is self-asserted (four-eyes and agent gating are advisory). Set KEYSTONE_APPROVE_TOKEN / bind GitLab OIDC for an enforced deployment.";
+      banner.innerHTML = "OPEN MODE — no approve token is set, so identity is self-asserted: any caller can record a decision under any name. The gate still enforces the contradiction BLOCK, four-eyes, and the approver quorum here; it is the identity binding that is advisory. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment.";
     } else { banner.hidden = true; }
   }
   const modeLabel = st.source_mode === "LIVE" ? "Orbit Local (live)"
@@ -759,6 +759,40 @@ function wire() {
   });
 }
 
+// Client-side governance gate: mirrors core/gate.py over the in-browser sample ledger so the
+// STATIC deploy ENFORCES the full flow (four-eyes self-approval refusal, contradiction BLOCK +
+// accountable override, and a real per-change quorum that accumulates across distinct approvers),
+// not just records a row. Same deterministic logic the server runs. Identity stays self-asserted
+// on the public demo and is labeled as such, so four-eyes binds an honest name, not a verified one.
+function clientGate(name, decision, reviewer, changeAuthor, override) {
+  const imp = (STATIC && STATIC.impact && STATIC.impact[name]) || {};
+  const pol = imp.policy || {};
+  const sig = imp.signature || "";
+  const cid = "KS-" + name;                          // stable per-symbol change id on the static demo
+  if (decision === "approve" && changeAuthor && reviewer === changeAuthor && !override)
+    return { ok: false, error: "SELF_APPROVAL",
+             hint: "the change author cannot approve their own change; use a different reviewer or an accountable override" };
+  if (decision === "approve" && pol.action === "BLOCK" && !override)
+    return { ok: false, error: "GOVERNANCE_BLOCK",
+             reasons: pol.reasons || ["a prior identical-blast-radius rejection forces BLOCK"] };
+  const rows = (STATIC && STATIC.audit && STATIC.audit.rows) || [];
+  // distinct prior approvers for THIS change: non-seeded, same change id + signature, and only
+  // approvals after the most recent rejection (a rejection resets the count) — mirrors gate.py.
+  const rel = rows.filter((r) => !r.seeded && r.change_id === cid &&
+    (r.target_symbols || []).includes(name) && r.signature === sig);
+  let lastReject = -1;
+  rel.forEach((r) => { if (r.decision === "reject" && r.seq > lastReject) lastReject = r.seq; });
+  const prior = [...new Set(rel.filter((r) => r.decision === "approve" && r.seq > lastReject).map((r) => r.actor))];
+  const confirmed = decision === "approve" ? [...new Set([...prior, reviewer])] : prior;
+  const required = pol.required_approvers || 1;
+  const status = decision === "reject" ? "REJECTED"
+    : (confirmed.length >= required ? "APPROVED" : "PENDING_APPROVAL");
+  const overrideUsed = !!override &&
+    (pol.action === "BLOCK" || (decision === "approve" && !!changeAuthor && reviewer === changeAuthor));
+  return { ok: true, cid, sig, overrideUsed,
+           quorum: { required, confirmed: confirmed.length, status, closed: status === "APPROVED", approvers: confirmed } };
+}
+
 async function decide(decision) {
   const reviewer = $("#reviewer").value.trim() || "anon";
   const reason = $("#reason").value.trim();
@@ -784,9 +818,14 @@ async function decide(decision) {
       if (r.ok) {
         const body = await r.json().catch(() => ({}));
         $("#reason").value = "";
+        await refreshLedger(); await select(STATE.selected);   // re-render first, then show the result so it persists
         const st = $("#gate-status");
-        if (st && body.quorum) { st.textContent = "recorded · " + body.quorum.status + " (" + body.quorum.confirmed + "/" + body.quorum.required + " approvers)"; st.style.color = "var(--text-mid)"; }
-        await refreshLedger(); await select(STATE.selected); return;
+        if (st && body.quorum) {
+          const closed = body.quorum.status === "APPROVED";
+          st.textContent = "recorded · " + body.quorum.status + " (" + body.quorum.confirmed + "/" + body.quorum.required + " approvers)";
+          st.style.color = closed ? "var(--green)" : "var(--text-mid)";
+        }
+        return;
       }
       const b = await r.json().catch(() => ({}));
       const det = (b && b.detail) || {};
@@ -806,21 +845,37 @@ async function decide(decision) {
       await ensureStatic(); STATIC_MODE = true; // fall through to client-side sample append
     }
   }
-  // static mode: enforce BLOCK in-browser too (the demo must not let you click past a BLOCK)
-  if (decision === "approve" && pol && pol.action === "BLOCK" && !override) {
-    if (err) err.textContent = "Policy action is BLOCK — approval is not permitted without an override.";
+  // STATIC deploy: run the FULL governance gate in-browser (mirrors core/gate.py), so the demo
+  // enforces four-eyes, the contradiction BLOCK, and a real quorum — not just records a row.
+  const changeAuthor = ($("#changeauthor") && $("#changeauthor").value.trim()) || "";
+  const g = clientGate(STATE.selected, decision, reviewer, changeAuthor, override);
+  if (!g.ok) {
+    if (g.error === "SELF_APPROVAL") {
+      if (err) err.textContent = "SELF APPROVAL refused: " + g.hint;
+    } else if (g.error === "GOVERNANCE_BLOCK") {
+      if (err) err.textContent = "GOVERNANCE BLOCK: " + (g.reasons || []).join("; ") + " — tick override to record an accountable override.";
+      if ($("#override-row")) $("#override-row").style.display = "block";
+    }
     return;
   }
-  // Public sample (no backend): append in-browser so the gate stays interactive.
-  // Persisted, server-verified writes happen in the live local app (shown in the video).
-  const imp = STATIC.impact[STATE.selected] || {};
+  // append in-browser so the gate stays interactive (the live local app persists to the
+  // hash-chained ledger). Carry the governance fields so the row mirrors a server-recorded one.
+  const imp = STATIC.impact[STATE.selected] || {}, ip = imp.policy || {};
   STATIC.audit.rows.push({
-    seq: STATIC.audit.rows.length, actor: reviewer, change_id: "KS-" + STATE.selected,
+    seq: STATIC.audit.rows.length, actor: reviewer, change_id: g.cid,
     target_symbols: [STATE.selected], decision, rationale: reason,
-    signature: imp.signature || "", ts: "sample", row_hash: "(in-browser sample)",
+    signature: imp.signature || "", tier: ip.tier, governance_action: ip.action,
+    quorum_status: g.quorum.status, confirmed_approvers: g.quorum.approvers, override: g.overrideUsed,
+    ts: "sample", row_hash: "(in-browser sample)",
   });
   $("#reason").value = "";
-  await refreshLedger(); await select(STATE.selected);
+  await refreshLedger(); await select(STATE.selected);   // re-render first (applyGatePolicy resets the status line)
+  const st = $("#gate-status");                          // then show the recorded quorum result, so it persists
+  if (st) {
+    st.textContent = "recorded · " + g.quorum.status + " (" + g.quorum.confirmed + "/" + g.quorum.required +
+      " approver" + (g.quorum.required === 1 ? "" : "s") + ")" + (g.overrideUsed ? " · override recorded" : "");
+    st.style.color = g.quorum.closed ? "var(--green)" : "var(--text-mid)";
+  }
   const note = $("#sample-note");
   if (note) { note.textContent = "recorded in this browser only — the live local app persists to the hash-chained ledger"; note.style.opacity = "1"; }
 }
