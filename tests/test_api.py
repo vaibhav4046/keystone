@@ -186,6 +186,8 @@ def test_self_approval_is_blocked():
     ovr = client.post("/api/approve", json={"name": "metrics", "decision": "approve", "reviewer": "alice",
                                             "change_author": "alice", "rationale": "solo, accepted", "override": True})
     assert ovr.status_code == 200
+    # the override that bypassed four-eyes must be recorded in the immutable row, not hidden
+    assert ovr.json()["row"]["override"] is True
 
 
 def test_change_id_separates_quorum_buckets():
