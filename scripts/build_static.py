@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from core import (fixtures, graph as graph_mod, impact as impact_mod,
-                  policy as policy_mod, attest as attest_mod)
+                  policy as policy_mod, attest as attest_mod, llm as llm_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -93,6 +93,7 @@ def main():
             "integrity": {"hmac": True, "approve_token_required": False,
                           "reviewer_verified": False, "open_mode": True, "override_token_required": False},
             "window_enforced": bool(pol_active.get("window_enforced")),
+            "llm_providers": [],   # public bundle has no keys; the live backend serves real LLM briefs
             # a real captured `orbit schema` + `orbit sql` transcript (recorded), so the
             # public FALLBACK deploy still shows the product driving Orbit's own CLI
             "orbit_cli_transcript": tx,
@@ -101,6 +102,7 @@ def main():
         "definitions": names,
         "impact": {},
         "precedent": {},
+        "brief": {},
         "policy": {"policy": policy_mod.load_policy(), "policy_hash": policy_mod.policy_hash()},
         "attestation": {},
         "audit": {"rows": led.rows(), "verify": led.verify()},
@@ -117,6 +119,13 @@ def main():
         d["orbit_snapshot_sha256"] = attest_mod.orbit_snapshot_sha256(d)
         bundle["impact"][n] = d
         bundle["precedent"][n] = prec
+        # deterministic brief in the public bundle (no backend/keys); the live backend
+        # serves a real LLM brief at /api/brief when a free key has quota
+        epi = d.get("epicenter", {})
+        ctx = {"symbol": n, "fqn": epi.get("fqn"), "file": epi.get("file"), "counts": pol["counts"],
+               "tier": pol["tier"], "action": pol["action"], "required_approvers": pol["required_approvers"],
+               "precedent": prec, "signature": d["signature"]}
+        bundle["brief"][n] = {"brief": llm_mod._deterministic_brief(ctx), "provider": None, "deterministic": True}
         # precompute an attestation for any symbol that already has a seeded decision
         match = [r for r in rows if n in (r.get("target_symbols") or [])]
         if match:

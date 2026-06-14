@@ -25,7 +25,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
-                  policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod)
+                  policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
+                  llm as llm_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -164,6 +165,7 @@ def status():
                       "open_mode": APPROVE_TOKEN is None,
                       "override_token_required": OVERRIDE_TOKEN is not None},
         "window_enforced": bool(policy_mod.load_policy().get("window_enforced")),
+        "llm_providers": llm_mod.available_providers(),   # names only; brief is AI when present, else deterministic
     }
 
 
@@ -198,6 +200,26 @@ def impact(name: str = Path(max_length=256), max_depth: int = Query(default=3, g
     if out is None:
         raise HTTPException(404, f"definition not found: {name}")
     return out
+
+
+@app.get("/api/brief/{name}")
+def brief(name: str = Path(max_length=256)):
+    """A natural-language governed-review brief. REAL AI when a free LLM key has
+    quota (provider named), else a deterministic template (clearly labeled). The
+    model only explains the engine's facts; it never produces a number or a verdict."""
+    _imp, out = _impact_with_governance(name, 3)
+    if out is None:
+        raise HTTPException(404, f"definition not found: {name}")
+    epi = out.get("epicenter", {})
+    prec = _ledger.precedent(target_symbols=[name], signature=out["signature"],
+                             target_fqns=[epi.get("fqn")] if epi.get("fqn") else None)
+    pol = out["policy"]
+    ctx = {"symbol": name, "fqn": epi.get("fqn"), "file": epi.get("file"),
+           "counts": pol["counts"], "tier": pol["tier"], "action": pol["action"],
+           "required_approvers": pol["required_approvers"], "precedent": prec, "signature": out["signature"]}
+    res = llm_mod.review_brief(ctx)
+    res["providers_configured"] = llm_mod.available_providers()
+    return res
 
 
 @app.get("/api/policy")
