@@ -274,7 +274,7 @@ function drawBlast(imp) {
       const t = document.createElementNS(ns, "text");
       t.setAttribute("x", pos[id].x); t.setAttribute("y", pos[id].y + (isEpi ? 30 : 20));
       t.setAttribute("text-anchor", "middle"); t.setAttribute("fill", isEpi ? "#EDEDED" : "#9BA3AE");
-      t.setAttribute("font-size", isEpi ? "13" : "11"); t.setAttribute("font-family", "JetBrains Mono, monospace");
+      t.setAttribute("font-size", isEpi ? "13" : "11"); t.setAttribute("font-family", "ui-monospace, Menlo, Consolas, monospace");
       const label = full.length > 11 ? full.slice(0, 10) + "…" : full;
       t.textContent = label;
       g.appendChild(t);

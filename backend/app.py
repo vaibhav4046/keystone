@@ -287,7 +287,8 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
     )
     att = attest_mod.build_attestation(impact_dict=out, policy_eval=pol, row=row, source_mode=_graph.source.mode)
     return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": res["author"],
-            "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status")},
+            "self_asserted": res.get("self_asserted", True),
+            "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")},
             "attestation": att}
 
 

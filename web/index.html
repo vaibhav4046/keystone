@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<a class="skip-link" href="#bsvg">Skip to blast radius</a>
+<a class="skip-link" href="#blast-radius">Skip to blast radius</a>
 <noscript><div class="noscript-msg">Keystone is a live command center that needs JavaScript to render. Enable JavaScript, or run it locally — see the README.</div></noscript>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
@@ -40,7 +40,7 @@
   </section>
 
   <!-- center: blast radius -->
-  <section class="stage panel" data-reveal>
+  <section class="stage panel" data-reveal id="blast-radius" tabindex="-1">
     <div class="stage-h">
       <span>BLAST RADIUS</span>
       <span class="epi" id="epi">select a symbol</span>
@@ -64,7 +64,7 @@
   <section class="side" data-reveal>
     <div class="panel impact">
       <div class="p-h">IMPACT</div>
-      <div id="rings" class="rings" aria-live="polite"><div class="muted">No symbol selected.</div></div>
+      <div id="rings" class="rings" aria-live="polite" role="group" aria-label="blast radius by severity ring, the text alternative to the graph"><div class="muted">No symbol selected.</div></div>
     </div>
 
     <div class="panel precedent">
@@ -108,7 +108,8 @@
   </div>
   <div class="ltable-wrap">
     <table class="ltable">
-      <thead><tr><th>#</th><th>time</th><th>change</th><th>blast</th><th>reviewer</th><th>decision</th><th>hash (prev to this)</th></tr></thead>
+      <caption class="visually-hidden">Append-only audit ledger: each row binds a decision to its blast radius and the previous row's hash.</caption>
+      <thead><tr><th scope="col">#</th><th scope="col">time</th><th scope="col">change</th><th scope="col">blast</th><th scope="col">reviewer</th><th scope="col">decision</th><th scope="col">hash (prev to this)</th></tr></thead>
       <tbody id="lrows"></tbody>
     </table>
   </div>
