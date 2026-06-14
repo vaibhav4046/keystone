@@ -76,6 +76,8 @@ def governed_review(symbol, get_json, post_json=None, *, decide=None, reviewer=N
         report["recorded"] = res.get("row")
         report["chain_after"] = res.get("verify")
         report["quorum"] = res.get("quorum")
+        report["self_asserted"] = res.get("self_asserted", True)
+        report["ci_identity"] = res.get("ci_identity")
     else:
         report["chain"] = get_json("/api/audit/verify")
         report["steps"].append("verify")
@@ -99,6 +101,11 @@ def _print_report(rep):
     if rep.get("recorded"):
         r = rep["recorded"]
         print(f"  recorded     : {r['decision']} by {r['actor']} -> row #{r['seq']} {r['row_hash'][:12]}...")
+        cid = rep.get("ci_identity")
+        if cid and not rep.get("self_asserted", True):
+            print(f"  identity     : GitLab-attested (OIDC sub={cid.get('sub')}, ref={cid.get('ref')}) - not self-asserted")
+        else:
+            print("  identity     : self-asserted (advisory) - bind a GitLab OIDC id_token to attest the actor")
         print(f"  chain        : {'VERIFIED' if rep['chain_after']['ok'] else 'BROKEN@' + str(rep['chain_after']['broken_index'])}")
     elif rep.get("chain"):
         print(f"  chain        : {'VERIFIED' if rep['chain']['ok'] else 'BROKEN@' + str(rep['chain']['broken_index'])}")
@@ -143,25 +150,31 @@ def _local_callables(prefer_live=True):
             return led.verify()
         raise AssertionError("unexpected GET " + path)
 
-    from core import gate as gate_mod
+    from core import gate as gate_mod, identity as identity_mod
+
+    # On a GitLab pipeline a runner-injected OIDC token binds the actor to a `sub` claim,
+    # so a decision recorded here is GitLab-attested (self_asserted=False), not a free string.
+    ci_id = identity_mod.ci_identity()
 
     def post_json(path, body):
         # route through the SAME enforcement gate the API uses (no weaker CLI path)
         res = gate_mod.evaluate(g, led, name=body["name"], decision=body["decision"],
                                 reviewer=body["reviewer"], change_id=body.get("change_id"),
                                 change_author=body.get("change_author"), author_kind=body.get("author_kind"),
-                                override=bool(body.get("override")))
+                                override=bool(body.get("override")), ci_identity=ci_id)
         if not res["ok"]:
             return {"blocked": res["error"], "detail": res.get("detail")}
         row = led.append(actor=body["reviewer"], change_id=res["change_id"], target_symbols=[body["name"]],
                          target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"], signature=res["sig"],
                          decision=body["decision"], rationale=body["rationale"], extra=res["row_extra"])
-        return {"row": row, "verify": led.verify(), "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status")}}
+        return {"row": row, "verify": led.verify(), "self_asserted": res.get("self_asserted", True),
+                "ci_identity": res.get("ci_identity"),
+                "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status")}}
 
     def gate_check(symbol):
-        return gate_mod.evaluate(g, led, name=symbol, decision="approve", reviewer="ci-gate")
+        return gate_mod.evaluate(g, led, name=symbol, decision="approve", reviewer="ci-gate", ci_identity=ci_id)
 
-    return get_json, post_json, gate_check
+    return get_json, post_json, gate_check, ci_id
 
 
 def main(argv=None):
@@ -182,7 +195,10 @@ def main(argv=None):
     a = ap.parse_args(argv)
     gate_check = None
     if a.local:
-        get_json, post_json, gate_check = _local_callables(prefer_live=not a.fixture)
+        get_json, post_json, gate_check, ci_id = _local_callables(prefer_live=not a.fixture)
+        if ci_id:
+            print(f"identity: bound to GitLab OIDC sub={ci_id.get('sub')} (project={ci_id.get('project_path')}, "
+                  f"ref={ci_id.get('ref')}) - pipeline decisions are GitLab-attested, not self-asserted")
     else:
         get_json, post_json = _urllib_get(a.base), _urllib_post(a.base)
     rep = governed_review(a.symbol, get_json, post_json,

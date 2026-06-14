@@ -1,0 +1,19 @@
+# Keystone — one command to a live demo:
+#
+#   docker compose up
+#
+# Then open http://127.0.0.1:8787. Serves the backend over the committed REAL Orbit
+# self-index. Drop a free LLM key in .env (OPENROUTER_API_KEY=... etc.) to light up
+# the real review brief + the tool-using agent; without one it runs deterministically.
+services:
+  keystone:
+    build: .
+    ports:
+      - "8787:8787"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      KEYSTONE_GRAPH_PATH: data/keystone_self_graph.duckdb
+      KEYSTONE_PREFER_LIVE: "1"
+    restart: unless-stopped
