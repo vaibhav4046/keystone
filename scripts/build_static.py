@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from core import (graph as graph_mod, impact as impact_mod, policy as policy_mod,
                   attest as attest_mod, llm as llm_mod, seed as seed_mod, agent as agent_mod,
-                  collision as collision_mod, graph_audit as graph_audit_mod)
+                  collision as collision_mod, graph_audit as graph_audit_mod, agents as agents_mod)
 from core.audit import Ledger
 
 # The headline cross-MR collision scenario, baked into the public bundle so a static-only
@@ -178,6 +178,7 @@ def main():
         "brief": {},
         "assistant": {},
         "policy": {"policy": policy_mod.load_policy(), "policy_hash": policy_mod.policy_hash()},
+        "agents": agents_mod.load_registry(),     # baked so the client can enforce agent scope on the static deploy
         "attestation": {},
         "audit": {"rows": led.rows(), "verify": led.verify()},
     }

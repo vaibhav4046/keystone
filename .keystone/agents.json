@@ -3,9 +3,9 @@
   "agents": {
     "claude-code": {
       "model": "claude-opus-4-8",
-      "allowed_paths": ["/src/**"],
-      "forbidden_paths": ["/src/cli/**", "**/config*.py"],
-      "max_blast_radius": 6
+      "allowed_paths": ["core/**", "backend/**"],
+      "forbidden_paths": ["core/audit*", "core/gate*", "**/config*.py"],
+      "max_blast_radius": 15
     },
     "dependabot": {
       "model": "rules-bot",
