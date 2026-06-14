@@ -141,3 +141,40 @@ def test_agent_scope_enforced(graph):
     # tokenize lives in /src/parser/lexer.py (allowed) but blast 5 > max 3 -> still a violation
     tok = agents_mod.check_scope(bot, impact_mod.compute_blast_radius(graph, "tokenize").to_dict())
     assert tok["in_scope"] is False and any("blast radius" in v for v in tok["violations"])
+
+
+def _fake_gitlab_oidc_token(sub="project_path:g/p:ref_type:branch:ref:main", **claims):
+    import base64, json
+    def b64(d): return base64.urlsafe_b64encode(json.dumps(d).encode()).decode().rstrip("=")
+    payload = {"iss": "https://gitlab.com", "sub": sub, "aud": "keystone",
+               "project_path": "g/p", "ref": "main", "user_login": "alice", **claims}
+    return b64({"alg": "RS256", "typ": "JWT"}) + "." + b64(payload) + ".sig"
+
+
+def test_ci_identity_binding_flips_self_asserted(graph, monkeypatch, tmp_path):
+    # On the GitLab CI path a runner-injected OIDC token binds the actor to its `sub`
+    # claim, so the recorded decision is GitLab-attested, not self-asserted.
+    from core import identity as identity_mod, gate as gate_mod
+    monkeypatch.setenv("KEYSTONE_ID_TOKEN", _fake_gitlab_oidc_token())
+    ci = identity_mod.ci_identity()
+    assert ci and ci["bound"] is True and ci["sub"].startswith("project_path:g/p")
+    assert ci["signature_verified"] is False     # honest: claims bound by CI, not RS256-checked here
+
+    led = Ledger(str(tmp_path / "id_ledger.jsonl"))
+    bound = gate_mod.evaluate(graph, led, name="parse", decision="approve",
+                              reviewer="alice", ci_identity=ci)
+    assert bound["ok"] and bound["self_asserted"] is False
+    assert bound["row_extra"]["self_asserted"] is False
+    assert bound["row_extra"]["ci_identity"]["sub"] == ci["sub"]
+
+    # without a bound identity, the same decision is honestly self-asserted
+    unbound = gate_mod.evaluate(graph, led, name="parse", decision="approve", reviewer="alice")
+    assert unbound["self_asserted"] is True and "ci_identity" not in unbound["row_extra"]
+
+
+def test_ci_identity_absent_when_no_token(monkeypatch):
+    from core import identity as identity_mod
+    for v in ("KEYSTONE_ID_TOKEN", "GITLAB_OIDC_TOKEN", "CI_JOB_JWT_V2", "CI_JOB_JWT"):
+        monkeypatch.delenv(v, raising=False)
+    assert identity_mod.ci_identity() is None
+    assert identity_mod.decode_jwt_claims("not-a-jwt") is None

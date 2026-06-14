@@ -67,8 +67,15 @@ _origins = os.environ.get("KEYSTONE_CORS_ORIGINS",
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins if o.strip()],
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 
-# one shared graph + ledger for the process
-_graph = graph_mod.Graph(prefer_live=_PREFER_LIVE)
+# one shared graph + ledger for the process. KEYSTONE_GRAPH_PATH lets the one-command
+# launcher point the backend at the committed real self-index (data/keystone_self_graph.duckdb)
+# so a local demo shows the SAME real Orbit graph as the public deploy, in LIVE mode with a
+# live `orbit sql` cross-check; unset falls back to ~/.orbit -> fixture.
+_GRAPH_PATH = os.environ.get("KEYSTONE_GRAPH_PATH")
+if _GRAPH_PATH and graph_mod._is_valid_duckdb(_GRAPH_PATH):
+    _graph = graph_mod.Graph(path=_GRAPH_PATH, mode="LIVE")
+else:
+    _graph = graph_mod.Graph(prefer_live=_PREFER_LIVE)
 _ledger = Ledger(LEDGER_PATH)
 
 # When running on a LIVE Orbit graph and glab is resolvable, drive Orbit's OWN CLI
@@ -122,8 +129,12 @@ def _orbit_crosscheck(epi_id: int) -> Optional[dict]:
     if not _orbit_cli_ok:
         return None
     try:
-        q = ("SELECT count(*) AS n FROM gl_edge WHERE target_id = {} AND relationship_kind='CALLS' "
-             "AND source_kind='Definition' AND target_kind='Definition'").format(int(epi_id))
+        # Mirror the engine's ring-1 semantics EXACTLY (core/graph.direct_callers): DISTINCT
+        # source definitions, self-edges excluded. A raw count(*) over-counts duplicate/self
+        # CALLS edges and would make the live cross-check spuriously differ from the engine.
+        q = ("SELECT count(DISTINCT source_id) AS n FROM gl_edge WHERE target_id = {} "
+             "AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' "
+             "AND source_id <> target_id").format(int(epi_id))
         res = orbit_cli.sql(q)
         if not res.ok:
             return None

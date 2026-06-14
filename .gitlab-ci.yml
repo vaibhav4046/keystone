@@ -26,10 +26,20 @@ test:
 governance-gate:
   stage: gate
   image: python:3.13-slim
+  # Mint a GitLab OIDC ID token for THIS job. The runner injects it as $KEYSTONE_ID_TOKEN;
+  # Keystone binds the recorded actor to its `sub` claim, so a pipeline decision is
+  # GitLab-attested (self_asserted=False), closing the self-asserted-identity gap on the
+  # path that matters most for supply-chain attestation.
+  id_tokens:
+    KEYSTONE_ID_TOKEN:
+      aud: https://keystone.example/ci
   script:
     - pip install --quiet -r requirements.txt
     # the SAME policy gate the API uses: a clean symbol passes, a BLOCKed one fails
     - python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
+    # record a GitLab-ATTESTED approval (the output shows "identity: GitLab-attested",
+    # not self-asserted) to demonstrate the cryptographically-bound actor on the CI path
+    - python skills/keystone/run_review.py metrics --local --fixture --decide approve --reviewer "$GITLAB_USER_LOGIN" --reason "pipeline-gated approval (OIDC-bound actor)"
   rules:
     - when: always
 

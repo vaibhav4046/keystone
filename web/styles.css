@@ -202,6 +202,18 @@ body{min-height:100vh;position:relative}
 .gov-why{margin:6px 0 0;padding-left:16px;color:var(--text-mid);line-height:1.5}
 .gov-why li{margin:2px 0}
 .gov-foot{margin-top:6px;color:var(--text-dim);font-size:10.5px}
+/* tablet (1081–1280px): the 3-column command center was cramped and pushed the
+   APPROVAL GATE far down the side column. Reflow to 2 columns with named areas so the
+   side panel (impact -> precedent -> brief -> assistant -> gate) sits BESIDE the graph
+   and stays reachable, with the rail above the stage on the left. */
+@media (min-width:1081px) and (max-width:1280px){
+  .grid{grid-template-columns:1fr 340px;
+        grid-template-areas:"rail side" "stage side";align-items:start}
+  .rail{grid-area:rail;min-height:auto}
+  .stage{grid-area:stage}
+  .side{grid-area:side;position:sticky;top:14px}
+  .deflist{max-height:220px}
+}
 @media (max-width:1080px){
   .grid{grid-template-columns:1fr}
   .rail{min-height:auto}

@@ -54,7 +54,7 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
              change_id: Optional[str] = None, change_author: Optional[str] = None,
              author_kind: Optional[str] = None, override: bool = False,
              max_depth: int = 3, policy: Optional[dict] = None,
-             registry: Optional[dict] = None) -> dict:
+             registry: Optional[dict] = None, ci_identity: Optional[dict] = None) -> dict:
     imp = impact_mod.compute_blast_radius(graph, name, max_depth=max_depth)
     if imp is None:
         return {"ok": False, "status": 404, "error": "NOT_FOUND",
@@ -108,6 +108,12 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
                     "detail": {"error": "REVIEW_WINDOW_PENDING", "time_remaining_hours": remaining,
                                "review_window_hours": window_h}}
 
+    # Identity binding: on the GitLab CI path a runner-injected OIDC token binds the actor
+    # to a `sub` claim, so the decision is GitLab-attested rather than self-asserted. The
+    # flag is the honest discriminator auditors key on; it is only flipped when a real bound
+    # identity is supplied (never by a free-typed reviewer string).
+    bound = bool(ci_identity and ci_identity.get("bound"))
+    self_asserted = not bound
     row_extra = {
         "tier": pol["tier"], "governance_action": pol["action"],
         "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
@@ -116,13 +122,17 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
         "quorum_status": quorum_status, "override": bool(override and pol["action"] == "BLOCK"),
         # honest: the actor is self-asserted unless bound to GitLab OIDC; auditors can
         # distinguish advisory from cryptographically-bound decisions on this flag.
-        "self_asserted": True,
+        "self_asserted": self_asserted,
     }
+    if bound:
+        # record the bound subject + issuer (non-sensitive subset) for the audit trail
+        row_extra["ci_identity"] = {k: ci_identity.get(k) for k in
+                                    ("source", "sub", "iss", "project_path", "ref", "signature_verified")}
     if change_author:
         row_extra["change_author"] = change_author
     return {
         "ok": True, "impact": out, "policy": pol, "author": author,
-        "self_asserted": True,
+        "self_asserted": self_asserted, "ci_identity": ci_identity if bound else None,
         "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status,
                    "closed": quorum_status == "APPROVED",   # 200 != closed; check this flag
                    "approvers": confirmed, "change_id": cid},

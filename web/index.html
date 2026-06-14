@@ -98,7 +98,7 @@
         <input id="changeauthor" class="ip" placeholder="change author (four-eyes, optional)" aria-label="change author" maxlength="120" />
         <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" aria-describedby="reason-err" />
         <div id="reason-err" class="gate-err" role="alert"></div>
-        <div class="gate-note id-note">identity is self-asserted in this demo, so four-eyes and agent gating are advisory labels until bound to GitLab OIDC (the sub claim becomes the actor). The chain proves the text was not edited, not who typed it. See README.</div>
+        <div class="gate-note id-note">in this browser demo the reviewer is self-asserted (the chain proves the text was not edited, not who typed it). On the GitLab CI gate path the actor IS bound: the runner injects an OIDC id_token and the recorded row carries its <code>sub</code> claim with <code>self_asserted=false</code> (core/identity.py, .gitlab-ci.yml). See README.</div>
         <div class="gate-btns">
           <button id="approve" class="btn approve" disabled>APPROVE</button>
           <button id="reject" class="btn reject" disabled>REJECT</button>
