@@ -20,6 +20,7 @@ function fromStatic(p) {
   if (p === "/api/policy") return s.policy || {};
   if (p.startsWith("/api/impact/")) { const n = decodeURIComponent(p.split("/").pop()); return s.impact[n] || {}; }
   if (p.startsWith("/api/precedent/")) { const n = decodeURIComponent(p.split("/").pop()); return s.precedent[n] || { match_count: 0 }; }
+  if (p.startsWith("/api/brief/")) { const n = decodeURIComponent(p.split("/").pop()); return (s.brief && s.brief[n]) || { brief: "", deterministic: true }; }
   if (p.startsWith("/api/attestation/")) {
     const n = decodeURIComponent(p.split("/").pop());
     const att = (s.attestation || {})[n];
@@ -152,6 +153,8 @@ async function select(name) {
   renderRings(imp);
   const prec = await api("/api/precedent/" + encodeURIComponent(name));
   renderPrecedent(prec);
+  renderBrief({ brief: "…", deterministic: true });
+  api("/api/brief/" + encodeURIComponent(name)).then(renderBrief).catch(() => {});
   $("#reject").disabled = false;
   const ex = $("#export-att"); if (ex) ex.disabled = false;
   applyGatePolicy();
@@ -380,6 +383,17 @@ function renderPrecedent(p) {
       <div class="quote">"${esc(m.rationale)}"</div><div class="rowref">row #${m.seq} · ${esc((m.row_hash || "").slice(0, 12))}…</div></div>`;
   }
   box.innerHTML = html;
+}
+
+function renderBrief(b) {
+  const box = $("#brief"), src = $("#brief-src");
+  if (!box) return;
+  box.innerHTML = `<div class="ai-brief">${esc(b.brief || "—")}</div>` +
+    `<div class="brief-note">advisory prose · every number is engine-computed · the verdict is the human's</div>`;
+  if (src) {
+    src.textContent = b.deterministic ? "deterministic summary" : ("AI · " + (b.provider || "llm"));
+    src.className = "hint" + (b.deterministic ? "" : " ai-on");
+  }
 }
 
 async function refreshLedger() {

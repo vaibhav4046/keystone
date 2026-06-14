@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # hermetic: fixture graph + throwaway ledger, set before importing the app
 os.environ["KEYSTONE_PREFER_LIVE"] = "0"
+os.environ["KEYSTONE_LLM_DISABLED"] = "1"        # no network in tests; brief falls back to deterministic
 os.environ["KEYSTONE_LEDGER_PATH"] = os.path.join(tempfile.mkdtemp(), "api_ledger.jsonl")
 
 import pytest
@@ -51,6 +52,14 @@ def test_depth_cap_and_decision_validation():
                                              "reviewer": "x", "rationale": "y"}).status_code == 422
     assert client.post("/api/approve", json={"name": "tokenize", "decision": "approve",
                                              "reviewer": "x", "rationale": ""}).status_code == 422
+
+
+def test_review_brief_is_deterministic_without_llm():
+    b = client.get("/api/brief/tokenize").json()
+    assert b["deterministic"] is True and b["provider"] is None    # no LLM in tests -> deterministic
+    assert "tokenize" in b["brief"] and len(b["brief"]) > 20       # a real, useful brief
+    # the brief must never assert a verdict; it is advisory prose over engine facts
+    assert "providers_configured" in b
 
 
 def test_precedent_contradiction_over_http():
