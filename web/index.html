@@ -23,13 +23,14 @@
 </header>
 
 <div id="open-banner" class="open-banner" role="note" hidden></div>
+<div id="data-provenance" class="data-prov" role="note" hidden></div>
 
 <main class="grid">
   <!-- left rail -->
   <section class="rail panel" data-reveal>
     <div class="rail-h" id="symbols-h">SYMBOLS</div>
     <input id="search" class="search" placeholder="filter symbols..." autocomplete="off" aria-label="filter symbols" />
-    <div class="rail-hint">try <b>tokenize</b> or <b>compile_unit</b> — they carry a prior decision</div>
+    <div class="rail-hint">try <b>compute_blast_radius</b> (BLOCKed by precedent) or <b>append</b> (3-ring blast)</div>
     <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
     <div class="rail-foot">
       <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
@@ -75,6 +76,15 @@
     <div class="panel brief">
       <div class="p-h">REVIEW BRIEF <span class="hint" id="brief-src"></span></div>
       <div id="brief" class="prec" aria-live="polite"><div class="muted">select a symbol</div></div>
+    </div>
+
+    <div class="panel assistant">
+      <div class="p-h">AI ASSISTANT <span class="agentic-badge" id="assistant-src" title="a bounded agent that calls the deterministic engine tools, then recommends a next step — it proposes, it never decides">tool-using agent</span></div>
+      <div id="assistant" class="assistant-body" aria-live="polite"><div class="muted">select a symbol — the agent will inspect it with engine tools</div></div>
+      <div class="assistant-ask">
+        <input id="assistant-q" class="ip" placeholder="ask the agent (e.g. who should review this?)" aria-label="ask the review assistant" maxlength="400" />
+        <button id="assistant-go" class="btn ghost" disabled>ASK</button>
+      </div>
     </div>
 
     <div class="panel gate">

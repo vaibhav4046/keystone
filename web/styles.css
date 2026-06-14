@@ -95,15 +95,38 @@ body{min-height:100vh;position:relative}
 .ringrow .rn-sub{color:var(--text-dim);font-size:10.5px}
 .sig{padding:8px 14px;color:var(--text-mid);font-size:11px;border-top:1px solid var(--bg-line)}
 .sig b{color:var(--text-hi);font-weight:500}
-.orbit-verified{display:flex;align-items:center;gap:7px;margin-top:6px;padding:6px 9px;border-radius:7px;
+.orbit-verified{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:6px;padding:6px 9px;border-radius:7px;
   background:rgba(91,191,214,.10);border:1px solid rgba(91,191,214,.4);color:#bfe9f3;font-size:11.5px}
 .orbit-verified b{color:var(--cyan);font-weight:700}
 .orbit-verified code{color:var(--cyan);background:rgba(91,191,214,.12);padding:0 4px;border-radius:4px}
 .ov-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px rgba(91,191,214,.7);flex:0 0 auto}
+.ov-cmd{flex-basis:100%;margin-top:3px;padding:5px 7px;border-radius:5px;background:rgba(8,12,16,.6);
+  color:#8fd6e6;font-family:var(--mono);font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-word;
+  border-left:2px solid rgba(91,191,214,.5)}
+/* top provenance strip: the public deploy is real Orbit data (positive/cyan), distinct from the amber open-mode warning */
+.data-prov{position:relative;z-index:1;margin:10px 18px 0;padding:8px 12px;border-radius:8px;font-size:11.5px;line-height:1.5;
+  color:#bfe9f3;background:rgba(91,191,214,.09);border:1px solid rgba(91,191,214,.38)}
 
 .ai-brief{color:var(--text-hi);font-size:12.5px;line-height:1.55}
 .brief-note{margin-top:8px;color:var(--text-dim);font-size:10.5px;border-top:1px solid var(--bg-line);padding-top:6px}
 .hint.ai-on{color:var(--green);font-weight:700}
+
+/* AI assistant: the bounded tool-using agent (trace + recommendation) */
+.assistant-body{padding:12px 14px;font-size:12.5px;color:var(--text-mid);min-height:40px}
+.agentic-badge{font-size:10px;letter-spacing:.04em;color:var(--cyan);background:rgba(91,191,214,.12);
+  border:1px solid rgba(91,191,214,.35);border-radius:5px;padding:1px 6px;font-weight:700}
+.agentic-badge.ai-on{color:var(--green);background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.4)}
+.agent-trace{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+.agent-step{display:grid;grid-template-columns:auto auto 1fr;gap:8px;align-items:baseline;
+  padding:5px 8px;border-radius:6px;background:var(--bg-raised);border-left:2px solid rgba(91,191,214,.5)}
+.as-n{font-family:var(--display);font-size:11px;color:var(--cyan);opacity:.8}
+.as-tool{font-family:var(--mono);font-size:11px;color:#8fd6e6;white-space:nowrap}
+.as-res{font-size:11px;color:var(--text-mid);line-height:1.4}
+.agent-answer{color:var(--text-hi);font-size:12.5px;line-height:1.55;
+  border-left:2px solid var(--green);padding-left:10px;margin-top:4px}
+.assistant-ask{display:flex;gap:7px;padding:0 14px 12px}
+.assistant-ask .ip{flex:1;margin:0}
+@media (max-width:560px){.agent-step{grid-template-columns:auto 1fr;row-gap:2px}.as-res{grid-column:1 / -1}}
 .prec{padding:12px 14px;font-size:12.5px;color:var(--text-mid)}
 .prec .counts{display:flex;gap:14px;margin-bottom:8px}
 .prec .counts b{font-family:var(--display);font-size:24px}

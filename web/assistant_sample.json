@@ -1,0 +1,108 @@
+{
+  "append": {
+    "answer": "The symbol append is in the CROSS_TEAM governance tier with 17 affected symbols and requires 2 approvers. Since the required owner is core and no prior approvers are listed for this specific change, you should pull in the core team for review. I recommend getting a second approver from the core owner group before approving.",
+    "deterministic": false,
+    "provider": "openrouter",
+    "steps": [
+      {
+        "args": {
+          "symbol": "append"
+        },
+        "result": {
+          "action": "ALLOW",
+          "affected_directories": 4,
+          "affected_files": 6,
+          "direct_callers": 10,
+          "epicenter": "core.audit.Ledger.append",
+          "required_approvers": 2,
+          "signature": "03247ec6202fcae8\u2026",
+          "symbol": "append",
+          "tier": "CROSS_TEAM",
+          "total_affected": 17
+        },
+        "tool": "blast_radius"
+      },
+      {
+        "args": {
+          "symbol": "append"
+        },
+        "result": {
+          "approved": 1,
+          "contradiction_actor": null,
+          "contradiction_change_id": null,
+          "contradiction_rationale": null,
+          "has_identical_contradiction": false,
+          "rejected": 0,
+          "symbol": "append"
+        },
+        "tool": "precedent"
+      },
+      {
+        "args": {
+          "symbol": "append"
+        },
+        "result": {
+          "note": "Quorum is per change; the change author cannot self-approve (four-eyes).",
+          "prior_approvers": [],
+          "required_approvers": 2,
+          "required_owner": "core",
+          "symbol": "append"
+        },
+        "tool": "propose_reviewers"
+      }
+    ]
+  },
+  "compute_blast_radius": {
+    "answer": "The symbol compute_blast_radius is a CROSS_TEAM tier symbol affecting 12 dependents and was previously rejected due to its high impact. Because there is an identical contradiction from MR-203 requiring an RFC and migration tests, this change is not safe to approve yet. Please file an RFC and pull in the core owner for a second approval.",
+    "deterministic": false,
+    "provider": "openrouter",
+    "steps": [
+      {
+        "args": {
+          "symbol": "compute_blast_radius"
+        },
+        "result": {
+          "action": "BLOCK",
+          "affected_directories": 3,
+          "affected_files": 5,
+          "direct_callers": 12,
+          "epicenter": "core.impact.compute_blast_radius",
+          "required_approvers": 2,
+          "signature": "9a8b48b1f2ba90f6\u2026",
+          "symbol": "compute_blast_radius",
+          "tier": "CROSS_TEAM",
+          "total_affected": 12
+        },
+        "tool": "blast_radius"
+      },
+      {
+        "args": {
+          "symbol": "compute_blast_radius"
+        },
+        "result": {
+          "approved": 0,
+          "contradiction_actor": "s.castellano",
+          "contradiction_change_id": "MR-203",
+          "contradiction_rationale": "compute_blast_radius sits under 12 dependents across the graph; changing it shifts the computed impact of every one. Needs an RFC and a migration test first.",
+          "has_identical_contradiction": true,
+          "rejected": 1,
+          "symbol": "compute_blast_radius"
+        },
+        "tool": "precedent"
+      },
+      {
+        "args": {
+          "symbol": "compute_blast_radius"
+        },
+        "result": {
+          "note": "Quorum is per change; the change author cannot self-approve (four-eyes).",
+          "prior_approvers": [],
+          "required_approvers": 2,
+          "required_owner": "core",
+          "symbol": "compute_blast_radius"
+        },
+        "tool": "propose_reviewers"
+      }
+    ]
+  }
+}

@@ -58,6 +58,14 @@ GLAB_BINARY = os.environ.get("KEYSTONE_GLAB_BINARY", "glab")
 # documented `glab orbit local` form remain the canonical path.
 ORBIT_BINARY = os.environ.get("KEYSTONE_ORBIT_BINARY") or None
 
+# Optional explicit DuckDB graph path. When set (or passed per-call), the orbit
+# binary is driven with `--db <path>` so Keystone can run Orbit's own CLI against
+# a committed snapshot of a real index (data/keystone_self_graph.duckdb) for the
+# build-time provenance capture, instead of only the machine's ~/.orbit graph.
+# Only honoured for the orbit-binary launcher (the `--db` flag is an orbit-binary
+# option); the glab wrapper form ignores it.
+ORBIT_DB = os.environ.get("KEYSTONE_ORBIT_DB") or None
+
 # Hard per-invocation timeout in seconds. Orbit schema/sql calls are local and
 # should be quick, but a generous ceiling keeps a stalled CLI from ever blocking
 # a render. Override with KEYSTONE_ORBIT_CLI_TIMEOUT.
@@ -195,14 +203,22 @@ def _render_command(argv: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in argv)
 
 
-def _run(subcommand: str, extra_args: list[str], timeout: float) -> OrbitCliResult:
+def _run(subcommand: str, extra_args: list[str], timeout: float,
+         db: Optional[str] = None) -> OrbitCliResult:
     """Low-level: run `glab orbit local <subcommand> <extra_args...>`.
 
     Always records the result in the transcript, including failures, so the
-    status panel shows the attempt even when the binary is missing.
+    status panel shows the attempt even when the binary is missing. When a db
+    path is resolved (arg or KEYSTONE_ORBIT_DB) and we are driving the orbit
+    binary directly, `--db <path>` is appended so the CLI runs against an
+    explicit graph snapshot.
     """
     binary, prefix, source, label = _driver()
-    argv = [binary, *prefix, subcommand, *extra_args]
+    db_args: list[str] = []
+    resolved_db = db or ORBIT_DB
+    if resolved_db and ORBIT_BINARY:  # --db is an orbit-binary option, not a glab-wrapper one
+        db_args = ["--db", resolved_db]
+    argv = [binary, *prefix, subcommand, *extra_args, *db_args]
     command = _render_command(argv)
     started = time.time()
     perf = time.perf_counter()
@@ -336,7 +352,8 @@ def _parse_rows(stdout: str) -> Optional[Any]:
     return None
 
 
-def schema(table: Optional[str] = None, timeout: float = DEFAULT_TIMEOUT) -> OrbitCliResult:
+def schema(table: Optional[str] = None, timeout: float = DEFAULT_TIMEOUT,
+           db: Optional[str] = None) -> OrbitCliResult:
     """Drive `glab orbit local schema [table]` for live schema introspection.
 
     With no table, returns the whole-database schema. With a table name (for
@@ -345,20 +362,26 @@ def schema(table: Optional[str] = None, timeout: float = DEFAULT_TIMEOUT) -> Orb
     status panel and for cross-checking against DuckDB PRAGMA table_info.
     """
     extra = [table] if table else []
-    result = _run("schema", extra, timeout)
+    result = _run("schema", extra, timeout, db=db)
     if result.ok:
         result.parsed = _parse_rows(result.stdout) or result.stdout.strip()
     return result
 
 
-def sql(query: str, timeout: float = DEFAULT_TIMEOUT) -> OrbitCliResult:
+def sql(query: str, timeout: float = DEFAULT_TIMEOUT, db: Optional[str] = None,
+        fmt: Optional[str] = None) -> OrbitCliResult:
     """Drive `glab orbit local sql "<query>"` for one live query.
 
     The query string is passed as a single argv element (no shell), so embedded
     spaces and quotes are safe. parsed holds best-effort rows; ok plus stdout
-    are what the status panel shows to prove the CLI ran.
-    """
-    result = _run("sql", [query], timeout)
+    are what the status panel shows to prove the CLI ran. Pass fmt='json' for a
+    machine-parseable result when driving the orbit binary directly (the default
+    table format is kept so the documented glab form and existing callers are
+    unchanged)."""
+    extra = [query]
+    if fmt and ORBIT_BINARY:  # -F is an orbit-binary option
+        extra += ["-F", fmt]
+    result = _run("sql", extra, timeout, db=db)
     if result.ok:
         result.parsed = _parse_rows(result.stdout)
     return result
