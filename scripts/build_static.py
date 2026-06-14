@@ -90,7 +90,9 @@ def main():
             "tables": rep["tables"],
             "audit_chain": led.verify(),
             "definitions": g.total_definitions(),
-            "integrity": {"hmac": True, "approve_token_required": False},
+            "integrity": {"hmac": True, "approve_token_required": False,
+                          "reviewer_verified": False, "open_mode": True, "override_token_required": False},
+            "window_enforced": bool(pol_active.get("window_enforced")),
             # a real captured `orbit schema` + `orbit sql` transcript (recorded), so the
             # public FALLBACK deploy still shows the product driving Orbit's own CLI
             "orbit_cli_transcript": tx,
