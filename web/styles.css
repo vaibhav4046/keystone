@@ -3,8 +3,9 @@
   --bg-void:#0D0D0D; --bg-base:#111114; --bg-raised:#16171C; --bg-line:#23252B;
   --text-hi:#EDEDED; --text-mid:#9BA3AE; --text-dim:#7A8494;
   --orange:#FF8A2B; --green:#3BE081; --gold:#F5C542; --amber:#FFB02E; --danger:#FF5C66; --danger-2:#FF8088; --cyan:#5BBFD6;
-  --mono:'JetBrains Mono',ui-monospace,'Courier New',monospace;
-  --display:'VT323',monospace;
+  /* system monospace only — no external font request (offline, fast, reliable) */
+  --mono:ui-monospace,'SF Mono','Cascadia Mono','Roboto Mono',Menlo,Consolas,'Courier New',monospace;
+  --display:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;
   --r:10px;
 }
 *{box-sizing:border-box}
