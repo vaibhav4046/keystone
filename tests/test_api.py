@@ -98,6 +98,37 @@ def test_mr_union_blast_is_conservative():
     assert client.post("/api/impact-mr", json={"symbols": ["nope_a", "nope_b"]}).status_code == 404
 
 
+def test_cross_mr_collision_detects_invisible_hazard():
+    # the reframe hero: two MRs touching different files can be semantically entangled
+    # (one changes a symbol the other's change depends on) with NO Git text conflict.
+    r = client.post("/api/collisions", json={"mrs": [
+        {"id": "MR-A", "symbols": ["tokenize"]},
+        {"id": "MR-B", "symbols": ["parse"]},
+        {"id": "MR-C", "symbols": ["audit_log"]}]})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["counts"]["mrs"] == 3
+    pair = [c for c in b["collisions"] if {"MR-A", "MR-B"} == {c["mr_a"], c["mr_b"]}]
+    assert pair, "tokenize and parse should collide on overlapping blast"
+    assert pair[0]["kind"] in ("same_change", "change_in_blast", "blast_overlap")
+    assert pair[0]["shared"]                       # the shared symbols are named, not asserted
+    # merge_order ∪ cycle is a full partition of the MRs (a safe order or a flagged cycle)
+    assert sorted(b["merge_order"] + b["uncoordinable_cycle"]) == ["MR-A", "MR-B", "MR-C"]
+    # all-unknown symbols -> 404; nothing invented
+    assert client.post("/api/collisions", json={"mrs": [{"id": "X", "symbols": ["nope"]}]}).status_code == 404
+
+
+def test_graph_audit_flags_untested_high_blast():
+    # the second hazard: high-blast symbols no test file directly exercises (review debt).
+    g = client.get("/api/graph-audit").json()
+    assert g["hazard"] == "review_debt" and g["items"]
+    for r in g["items"]:
+        assert r["blast"] >= 2
+        assert (r["test_callers"] == 0) == r["untested"]   # the flag is honest, derived from the graph
+    # the fixture has no test files, so its high-blast symbols are flagged untested
+    assert g["counts"]["untested_high_blast"] >= 1
+
+
 def test_assistant_is_deterministic_tool_loop_without_llm():
     # no LLM in tests -> the agent runs the deterministic tool plan: a real, ordered
     # trace of engine tool calls (blast_radius -> precedent -> propose_reviewers) plus

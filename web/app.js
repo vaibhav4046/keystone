@@ -21,6 +21,7 @@ function fromStatic(p) {
   if (p.startsWith("/api/impact/")) { const n = decodeURIComponent(p.split("/").pop()); return s.impact[n] || {}; }
   if (p.startsWith("/api/precedent/")) { const n = decodeURIComponent(p.split("/").pop()); return s.precedent[n] || { match_count: 0 }; }
   if (p.startsWith("/api/brief/")) { const n = decodeURIComponent(p.split("/").pop()); return (s.brief && s.brief[n]) || { brief: "", deterministic: true }; }
+  if (p === "/api/graph-audit") return s.graph_audit || { items: [], counts: {}, verdict: "" };
   if (p.startsWith("/api/attestation/")) {
     const n = decodeURIComponent(p.split("/").pop());
     const att = (s.attestation || {})[n];
@@ -59,6 +60,7 @@ async function boot() {
   STATE.defs = d.names;
   renderDefList(STATE.defs);
   await refreshLedger();
+  loadHazards();
   // auto-select the headline demo symbol: compute_blast_radius (Keystone's own engine,
   // BLOCKed by prior precedent) on the real self-index, tokenize on the fixture, else top.
   if (STATE.defs.length) {
@@ -415,6 +417,90 @@ function renderBrief(b) {
     src.textContent = b.deterministic ? "deterministic summary" : ("AI · " + (b.provider || "llm"));
     src.className = "hint" + (b.deterministic ? "" : " ai-on");
   }
+}
+
+// ---- HAZARD X-RAY: cross-MR collisions + review debt (the reframe lead) ----
+// The demo scenario: three open MRs on the real self-index. MR-204 refactors the blast
+// engine; MR-207 changes the impact API that CALLS it (a different file -> NO Git text
+// conflict); MR-211 touches the ledger. The graph reveals the entanglement Git cannot.
+const DEMO_MRS = [
+  { id: "MR-204 · speed up the blast engine", symbols: ["compute_blast_radius"] },
+  { id: "MR-207 · tune the impact API", symbols: ["impact"] },
+  { id: "MR-211 · ledger append fix", symbols: ["append"] },
+];
+
+async function loadHazards() {
+  // collisions: live backend computes from the scenario; static deploy serves the baked one
+  let col = null;
+  if (!STATIC_MODE) {
+    try {
+      const r = await fetch("/api/collisions", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mrs: DEMO_MRS }),
+      });
+      if (r.ok) col = await r.json();
+    } catch (e) { /* fall through to static */ }
+  }
+  if (!col) { try { await ensureStatic(); col = STATIC.collisions; } catch (e) {} }
+  if (col && col.collisions) renderCollision(col);
+  try { renderGraphAudit(await api("/api/graph-audit")); } catch (e) {}
+}
+
+const KIND_LABEL = {
+  same_change: "both change the same symbol",
+  change_in_blast: "one changes a symbol the other depends on",
+  blast_overlap: "their blast radii overlap",
+};
+
+function renderCollision(col) {
+  const box = $("#collision");
+  if (!box) return;
+  const mrs = col.per_mr || [];
+  const order = col.merge_order || [];
+  const cyc = col.uncoordinable_cycle || [];
+  // the MRs in play
+  let html = `<div class="hz-mrs">` + mrs.map((m) =>
+    `<div class="hz-mr"><span class="hz-mrid">${esc(m.id)}</span>` +
+    `<span class="hz-mrmeta">changes ${esc((m.changes || []).join(", ") || "—")} · blast ${m.blast_size}</span></div>`
+  ).join("") + `</div>`;
+  // the collisions
+  if (!col.collisions.length) {
+    html += `<div class="hz-ok">No blast-radius collisions — these MRs are independent.</div>`;
+  } else {
+    html += col.collisions.map((c) => {
+      const noConflict = c.kind === "change_in_blast" || c.kind === "same_change";
+      const shared = (c.shared || []).slice(0, 5).join(", ");
+      return `<div class="hz-collide sev-${c.kind}" role="alert">` +
+        `<div class="hz-cl-top"><b>${esc(c.mr_a.split("·")[0].trim())}</b> ✕ <b>${esc(c.mr_b.split("·")[0].trim())}</b>` +
+        `<span class="hz-kind">${esc(KIND_LABEL[c.kind] || c.kind)}</span></div>` +
+        `<div class="hz-cl-shared">shares <code>${esc(shared)}</code></div>` +
+        (noConflict ? `<div class="hz-noconflict">⚠ Git sees NO conflict (different files) — this is invisible to a normal review</div>` : "") +
+        `</div>`;
+    }).join("");
+  }
+  // safe merge order / cycle
+  if (cyc.length) {
+    html += `<div class="hz-order bad">cannot be safely ordered — ${cyc.length} MRs form a dependency cycle; coordinate them</div>`;
+  } else if (order.length) {
+    html += `<div class="hz-order">safe merge order: ` +
+      order.map((o) => `<span class="hz-ord">${esc(o.split("·")[0].trim())}</span>`).join(' <span class="hz-arrow">→</span> ') + `</div>`;
+  }
+  html += `<div class="hz-foot">${esc(col.verdict || "")}</div>`;
+  box.innerHTML = html;
+}
+
+function renderGraphAudit(ga) {
+  const box = $("#graph-audit");
+  if (!box) return;
+  const items = (ga.items || []).slice(0, 7);
+  let html = `<div class="hz-debt-list">` + items.map((r) =>
+    `<div class="hz-debt-row ${r.untested ? "untested" : ""}">` +
+    `<span class="hz-d-name" title="${esc(r.file || "")}">${esc(r.name)}</span>` +
+    `<span class="hz-d-blast tabnum">${r.blast}</span>` +
+    `<span class="hz-d-tag">${r.untested ? "no direct test" : r.test_callers + " test caller(s)"}</span></div>`
+  ).join("") + `</div>`;
+  html += `<div class="hz-foot">${esc(ga.verdict || "")}</div>`;
+  box.innerHTML = html;
 }
 
 // ---- AI assistant (bounded tool-using agent) ----

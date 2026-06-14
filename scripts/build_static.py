@@ -23,8 +23,19 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from core import (graph as graph_mod, impact as impact_mod, policy as policy_mod,
-                  attest as attest_mod, llm as llm_mod, seed as seed_mod, agent as agent_mod)
+                  attest as attest_mod, llm as llm_mod, seed as seed_mod, agent as agent_mod,
+                  collision as collision_mod, graph_audit as graph_audit_mod)
 from core.audit import Ledger
+
+# The headline cross-MR collision scenario, baked into the public bundle so a static-only
+# judge sees Keystone's most differentiated capability. Real symbols on the committed
+# self-index: MR-204 refactors the blast engine; MR-207 changes the impact API that CALLS
+# it (a different file -> no Git text conflict); MR-211 touches the ledger. Deterministic.
+DEMO_MRS = [
+    {"id": "MR-204 · speed up the blast engine", "symbols": ["compute_blast_radius"]},
+    {"id": "MR-207 · tune the impact API", "symbols": ["impact"]},
+    {"id": "MR-211 · ledger append fix", "symbols": ["append"]},
+]
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA = os.path.join(ROOT, "data")
@@ -204,6 +215,13 @@ def main():
         if sym in bundle["assistant"] and isinstance(rec, dict) and rec.get("answer"):
             rec.pop("providers_configured", None)
             bundle["assistant"][sym] = rec
+
+    # HAZARD X-RAY (the reframe): bake the two graph-revealed hazards so the static deploy
+    # leads with Keystone's most differentiated capability.
+    #  1. cross-MR blast collision for the demo scenario (the hero).
+    #  2. review-debt audit (high-blast, directly-untested symbols).
+    bundle["collisions"] = collision_mod.detect_collisions(g, DEMO_MRS) or {}
+    bundle["graph_audit"] = graph_audit_mod.review_debt_report(g, limit=12)
     g.close()
 
     out = os.path.join(WEB, "data.json")

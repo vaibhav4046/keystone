@@ -127,6 +127,39 @@ body{min-height:100vh;position:relative}
 .assistant-ask{display:flex;gap:7px;padding:0 14px 12px}
 .assistant-ask .ip{flex:1;margin:0}
 @media (max-width:560px){.agent-step{grid-template-columns:auto 1fr;row-gap:2px}.as-res{grid-column:1 / -1}}
+
+/* HAZARD X-RAY: the lead section — risk the Orbit graph reveals that Git cannot */
+.hazard{margin:14px 18px 0}
+.hazard-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:1px;background:var(--bg-line)}
+.hz-col{padding:12px 14px;background:var(--bg-panel,#0f1116)}
+.hz-title{font-size:11px;letter-spacing:.1em;color:var(--cyan);font-weight:700;margin-bottom:9px}
+.hz-sub{display:block;letter-spacing:0;color:var(--text-dim);font-weight:400;font-size:10.5px;margin-top:2px}
+.hz-body{font-size:12px;color:var(--text-mid)}
+.hz-mrs{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+.hz-mr{display:flex;justify-content:space-between;gap:10px;padding:5px 9px;border-radius:6px;background:var(--bg-raised);align-items:baseline}
+.hz-mrid{color:var(--text-hi);font-family:var(--mono);font-size:11.5px}
+.hz-mrmeta{color:var(--text-dim);font-size:10.5px;text-align:right}
+.hz-collide{margin:6px 0;padding:8px 10px;border-radius:7px;border:1px solid rgba(255,92,102,.5);background:rgba(255,92,102,.08)}
+.hz-collide.sev-blast_overlap{border-color:rgba(255,176,46,.5);background:rgba(255,176,46,.07)}
+.hz-cl-top{color:var(--text-hi);font-size:12.5px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.hz-cl-top b{color:var(--orange);font-weight:600}
+.hz-kind{color:var(--text-mid);font-size:11px;margin-left:auto}
+.hz-cl-shared{color:var(--text-mid);font-size:11px;margin-top:3px}
+.hz-cl-shared code{color:var(--cyan);background:rgba(91,191,214,.1);padding:0 4px;border-radius:4px}
+.hz-noconflict{margin-top:5px;color:#ffb9bd;font-size:11px;font-weight:600}
+.hz-order{margin-top:8px;padding:7px 10px;border-radius:6px;background:rgba(74,222,128,.09);border:1px solid rgba(74,222,128,.35);color:#bff0cf;font-size:12px}
+.hz-order.bad{background:rgba(255,92,102,.1);border-color:rgba(255,92,102,.5);color:#ffb9bd}
+.hz-ord{font-family:var(--mono);color:var(--green);font-weight:700}
+.hz-arrow{color:var(--text-dim)}
+.hz-ok{color:var(--green);font-size:12px;padding:6px 0}
+.hz-foot{margin-top:8px;color:var(--text-dim);font-size:10.5px;border-top:1px solid var(--bg-line);padding-top:6px;line-height:1.45}
+.hz-debt-list{display:flex;flex-direction:column;gap:4px}
+.hz-debt-row{display:grid;grid-template-columns:1fr auto auto;gap:9px;align-items:baseline;padding:4px 8px;border-radius:5px;background:var(--bg-raised)}
+.hz-debt-row.untested{border-left:2px solid var(--amber)}
+.hz-d-name{color:var(--text-hi);font-family:var(--mono);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hz-d-blast{color:var(--orange);font-weight:700;font-size:12px}
+.hz-d-tag{color:var(--text-dim);font-size:10px;white-space:nowrap}
+@media (max-width:900px){.hazard-grid{grid-template-columns:1fr}}
 .prec{padding:12px 14px;font-size:12.5px;color:var(--text-mid)}
 .prec .counts{display:flex;gap:14px;margin-bottom:8px}
 .prec .counts b{font-family:var(--display);font-size:24px}

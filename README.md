@@ -2,11 +2,15 @@
 
 [![ci](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml)
 
-A graph-driven governance and audit layer for the GitLab Orbit code knowledge graph. Orbit already gives you the blast radius of a change; Keystone turns that blast radius into the enforcement decision and binds it to an auditable record. It maps the impact to a policy tier that sets required approvers and an ALLOW / HOLD / BLOCK action, refuses an approval that contradicts a prior identical-blast rejection, gates autonomous coding agents against a committed scope manifest, and mints a tamper-evident, standards-shaped attestation for every decision. The differentiator is not the blast-radius view, which GitLab markets; it is the tamper-evident precedent memory and the graph-computed enforcement tier wrapped around it.
+Keystone X-rays the GitLab Orbit code knowledge graph for risk that the review surface structurally cannot see, then governs the change with a deterministic, tamper-evident gate. The lead is the hazard, not the gate.
+
+Two hazards the graph knows and Git does not. The first is a cross-MR blast collision: two open merge requests can touch entirely different files, pass review independently, and still break together, because one changes a function the other's change depends on. There is no textual conflict, so Git, the MR diff, and CODEOWNERS are all blind to it; the call graph is not. Keystone finds the collision, classifies how dangerous it is, and computes a safe merge order (or reports the cycle that makes one impossible). The second is review debt: a symbol with a large blast radius that no test file directly exercises is a change that is at once high-impact and unverified, and the graph can rank exactly those. Both are deterministic graph computations, not a model's guess.
+
+Then it governs. Orbit gives the blast radius of a single change; Keystone maps that impact to a policy tier that sets required approvers and an ALLOW / HOLD / BLOCK action, refuses an approval that contradicts a prior identical-blast rejection, gates autonomous coding agents against a committed scope manifest, takes the union blast radius across a multi-symbol merge request, and mints a tamper-evident, standards-shaped attestation for every decision recorded in an HMAC hash-chained ledger. The differentiator is not the blast-radius view, which GitLab markets; it is reading the graph for hazards nobody else surfaces and binding the decision to a record nobody can quietly edit.
 
 A GitLab-native extension, not a standalone product: it consumes Orbit, drives Orbit's own CLI, ships as a project SKILL.md plus a CI governance gate, and is built for the GitLab Transcend Hackathon, Showcase track. The onboarding path is a merge-request hook (or the committed `.gitlab-ci.yml` gate) that calls the Keystone API on the touched symbols and fails the pipeline on a BLOCK.
 
-Live demo: https://vaibhav4046.github.io/keystone/ (the public sample, labeled FALLBACK; the live local-graph run is in the demo video).
+Live demo: https://vaibhav4046.github.io/keystone/ — status SNAPSHOT: a committed real `orbit index` of this repo (262 definitions) with every figure cross-verified by `orbit sql`, served static. Stand up the live backend (one-click `render.yaml`) to interact with the agent and the live hazard detection.
 
 ## Who it is for, and what breaks today
 
@@ -18,7 +22,9 @@ Concretely: a ten-person platform team inside a 500-engineer company merges a ch
 
 ## What it does
 
-Pick a symbol that is about to change. Keystone reads the GitLab Orbit Local code graph and computes the deterministic blast radius: the direct callers, the transitive dependents to a bounded depth, the owning files and directories, ranked as severity rings out from the epicenter. Every number is computed from the graph by a pure-Python engine and is reproducible; the model never invents a figure. A Precedent Panel surfaces prior governance on the same symbol or the same blast signature, including a contradiction when a pending approval conflicts with a past rejection. A reviewer approves or rejects with a written reason, and the decision is appended to an HMAC-keyed, sha256 hash-chained audit ledger whose integrity is recomputed live, showing a green verified badge only when every link checks out.
+Point Keystone at a set of open merge requests and it runs the hazard X-ray over the Orbit graph: which MRs collide on the call graph despite no Git conflict (`POST /api/collisions`), in what safe merge order, and which high-blast symbols carry review debt because no test directly exercises them (`GET /api/graph-audit`). Both are deterministic graph reads.
+
+Then pick a symbol that is about to change. Keystone reads the GitLab Orbit Local code graph and computes the deterministic blast radius: the direct callers, the transitive dependents to a bounded depth, the owning files and directories, ranked as severity rings out from the epicenter. Every number is computed from the graph by a pure-Python engine and is reproducible; the model never invents a figure. A Precedent Panel surfaces prior governance on the same symbol or the same blast signature, including a contradiction when a pending approval conflicts with a past rejection. A reviewer approves or rejects with a written reason, and the decision is appended to an HMAC-keyed, sha256 hash-chained audit ledger whose integrity is recomputed live, showing a green verified badge only when every link checks out.
 
 ## Why this is not branch protection, signed commits, or a CI check
 
