@@ -1,4 +1,4 @@
-"""Optional LLM assist layer — REAL AI, kept strictly off the trust path.
+"""Optional LLM assist layer - REAL AI, kept strictly off the trust path.
 
 What it does: turns the engine's already-computed governance facts (blast radius,
 precedent, tier, action) into a short natural-language reviewer brief, and powers a
@@ -50,7 +50,7 @@ _OR_URL = "https://openrouter.ai/api/v1/chat/completions"
 # (name, base_url, key_env, model_env, default_model)
 # Several OpenRouter free models are listed because each carries its OWN upstream
 # rate limit, so a 429 on one tool-calling model falls through to the next that is
-# genuinely good at tool use — the assistant degrades to the deterministic plan only
+# genuinely good at tool use - the assistant degrades to the deterministic plan only
 # when ALL are exhausted. Order: fast/cheap first, strong tool-callers as fallbacks.
 _PROVIDERS = [
     ("cerebras", "https://api.cerebras.ai/v1/chat/completions", "CEREBRAS_API_KEY", "CEREBRAS_MODEL", "gpt-oss-120b"),

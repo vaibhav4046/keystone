@@ -3,7 +3,7 @@
 Maps the engine-computed blast radius to a severity TIER and a concrete governance
 outcome (required approver count, review window, ALLOW / HOLD / BLOCK), using a
 versioned policy whose canonical sha256 is pinned into every decision. The same
-graph snapshot plus the same policy always yields the same tier — this is the
+graph snapshot plus the same policy always yields the same tier - this is the
 enforcement decision the Orbit graph drives, not decoration.
 
 Policy source: .keystone/policy.json if present, else the committed DEFAULT_POLICY.

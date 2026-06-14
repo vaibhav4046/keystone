@@ -1,4 +1,4 @@
-# Keystone — Devpost submission text
+# Keystone - Devpost submission text
 
 Paste these into the Devpost fields. Written to be honest and specific. No em-dashes, no
 hashtags, no invented numbers or users. Fill the two links and the video URL where marked.

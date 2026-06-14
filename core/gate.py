@@ -1,7 +1,7 @@
 """The single governance decision, shared by the FastAPI handler and the CLI gate.
 
 Centralizing it here means a change blocked by the API is blocked identically by
-`run_review.py --local` in CI — there is no second, weaker code path. Pure and
+`run_review.py --local` in CI - there is no second, weaker code path. Pure and
 deterministic: same graph + same ledger + same policy => same verdict. No model.
 
 evaluate(...) returns a dict:

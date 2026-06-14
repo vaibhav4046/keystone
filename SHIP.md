@@ -1,4 +1,4 @@
-# Ship checklist — Keystone
+# Ship checklist - Keystone
 
 The build is complete and verified end to end on a real GitLab Orbit graph: 28 tests green,
 the engine runs on `~/.orbit/graph.duckdb`, the product drives Orbit's own CLI live, the
@@ -6,9 +6,9 @@ precedent contradiction fires on real data, and the hash chain verifies. What re
 your credentials or your hands. Each step below is exact and was checked against this machine.
 
 These are listed because they require sign-in, a payment-free account action, or a screen
-recording — things an assistant must not do for you. Do them in order.
+recording - things an assistant must not do for you. Do them in order.
 
-## 1. Repository — DONE on GitHub
+## 1. Repository - DONE on GitHub
 
 Already created, public, MIT, pushed, with green CI:
 
@@ -31,7 +31,7 @@ glab repo create keystone --public --source . --remote gitlab --push
 
 The committed `.gitlab-ci.yml` then runs the tests and publishes GitLab Pages automatically.
 
-## 2. Live link — DONE on GitHub Pages
+## 2. Live link - DONE on GitHub Pages
 
     https://vaibhav4046.github.io/keystone/
 
@@ -81,7 +81,7 @@ no review queue, free). This strengthens the "meaningful Orbit use via the skill
 gate beyond the in-repo SKILL.md. Your call; the SKILL.md + its runnable `run_review.py` are
 already the gate artifact.
 
-## 5. Devpost submission (after 1–3 are done)
+## 5. Devpost submission (after 1-3 are done)
 
 Devpost: gitlab-transcend.devpost.com. Submit at least a day before the deadline
 (2026-06-24 14:00 US Eastern). The organic draft is at

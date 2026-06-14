@@ -1,4 +1,4 @@
-# Keystone — minimal container for a one-command live demo (no paid services).
+# Keystone - minimal container for a one-command live demo (no paid services).
 # Serves the FastAPI backend over the committed REAL Orbit self-index, with the
 # static hero mounted at /. Real LLM brief/agent activate if a free key is provided
 # via the environment (.env); otherwise everything runs deterministically offline.

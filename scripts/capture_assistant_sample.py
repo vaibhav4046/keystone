@@ -8,7 +8,7 @@ so the ASSISTANT panel shows a real recorded agent trace (provider-named) even o
 static deploy, while the LIVE backend serves fresh runs for any symbol.
 
 The recorded text is non-deterministic (it is a real model output), so it is committed
-as a static artifact and read verbatim by the build — CI rebuilds web/data.json
+as a static artifact and read verbatim by the build - CI rebuilds web/data.json
 byte-identically without any network or key. Run this only to refresh the sample:
 
     python scripts/capture_assistant_sample.py

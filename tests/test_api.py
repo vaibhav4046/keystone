@@ -67,7 +67,7 @@ ACTION_RANK = {"ALLOW": 0, "HOLD": 1, "BLOCK": 2}
 
 
 def _assert_union_conservative(symbols):
-    """The union outcome must be NO WEAKER than any constituent symbol — the MR gate's
+    """The union outcome must be NO WEAKER than any constituent symbol - the MR gate's
     core guarantee. Asserts tier, action, and approver count all dominate every single."""
     b = client.post("/api/impact-mr", json={"symbols": symbols}).json()
     u = b["union"]

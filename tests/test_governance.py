@@ -130,7 +130,7 @@ def test_review_window_blocks_fast_close(graph, tmp_path):
 
 def test_public_sample_key_is_forgeable(monkeypatch):
     """Honest documentation: the PUBLIC static bundle uses a published HMAC key, so
-    its chain is illustrative only — anyone holding the published key reproduces a
+    its chain is illustrative only - anyone holding the published key reproduces a
     valid row hash. This is why the public UI labels it SAMPLE / PUBLIC KEY and the
     real per-machine key is secret."""
     import hashlib

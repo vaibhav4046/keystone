@@ -264,8 +264,8 @@ class CollisionQuery(BaseModel):
 @app.post("/api/collisions")
 def collisions(q: CollisionQuery):
     """Cross-MR blast-collision detection (core/collision.py): given several OPEN merge
-    requests, find where their blast radii collide on the Orbit call graph — the semantic
-    merge hazard that has NO textual conflict, so Git and GitLab are blind to it — and
+    requests, find where their blast radii collide on the Orbit call graph - the semantic
+    merge hazard that has NO textual conflict, so Git and GitLab are blind to it - and
     propose a safe merge order. Pure deterministic graph computation; reveals a capability
     the standard review surface does not."""
     out = collision_mod.detect_collisions(
@@ -278,7 +278,7 @@ def collisions(q: CollisionQuery):
 @app.get("/api/graph-audit")
 def graph_audit(limit: int = Query(default=14, ge=1, le=50)):
     """Review-debt hazard (core/graph_audit.py): high-blast symbols that NO test file
-    directly exercises in the Orbit call graph — a change that is both high-impact and
+    directly exercises in the Orbit call graph - a change that is both high-impact and
     unverified. The second graph-revealed hazard the standard review surface hides."""
     return graph_audit_mod.review_debt_report(_graph, limit=limit)
 
