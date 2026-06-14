@@ -40,3 +40,8 @@ data/*.jsonl
 
 # server logs (transient)
 data/*.log
+
+# dev scratch (misredirected output, temp copies) — never commit
+null
+temp_*.json
+temp_*.ps1
