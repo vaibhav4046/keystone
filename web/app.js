@@ -190,9 +190,12 @@ function highlightPanel(el) {
 
 async function select(name) {
   STATE.selected = name;
-  // a fresh change id per selection = one MR; quorum accumulates across approvers
-  // of this same change, and is separate from any other change on the same symbol
-  STATE.changeId = (window.crypto && crypto.randomUUID) ? "MR-" + crypto.randomUUID().slice(0, 8) : "MR-" + (STATE._n = (STATE._n || 0) + 1);
+  // Deterministic change id per symbol so a CROSS_TEAM quorum accumulates across distinct
+  // approvers of the same change. It must be stable across the re-select that decide() performs
+  // after recording a decision; a fresh random id per select() would give the second approver a
+  // new change_id and the quorum would never close on the live backend (the static path already
+  // keys on a stable id, so the bug only bit the live render.yaml backend).
+  STATE.changeId = "MR-" + name;
   document.querySelectorAll("#deflist li").forEach((li) => {
     const on = li.dataset.name === name;
     li.classList.toggle("sel", on);
@@ -852,7 +855,7 @@ function clientGate(name, decision, reviewer, changeAuthor, override, authorKind
   const imp = (STATIC && STATIC.impact && STATIC.impact[name]) || {};
   const pol = imp.policy || {};
   const sig = imp.signature || "";
-  const cid = "KS-" + name;                          // stable per-symbol change id on the static demo
+  const cid = STATE.changeId || ("MR-" + name);      // share one change identity with the live path
   // agent gating (mirrors core/agents.py + the gate.py order): a registered agent out of scope is
   // refused for any decision; an unregistered agent cannot self-approve.
   const author = resolveAuthor(reviewer, authorKind, (typeof STATIC !== "undefined" && STATIC.agents) || null);
