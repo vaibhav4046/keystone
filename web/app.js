@@ -468,13 +468,18 @@ function renderCollision(col) {
     html += `<div class="hz-ok">No blast-radius collisions — these MRs are independent.</div>`;
   } else {
     html += col.collisions.map((c) => {
-      const noConflict = c.kind === "change_in_blast" || c.kind === "same_change";
       const shared = (c.shared || []).slice(0, 5).join(", ");
+      // honest per-kind warning. Only change_in_blast is the "no Git conflict, different
+      // files" hazard. same_change edits the same symbol (Git WOULD conflict). blast_overlap
+      // shares dependents (the shared line conveys it; no banner).
+      let warn = "";
+      if (c.kind === "change_in_blast") warn = "⚠ Git sees NO conflict (different files) - invisible to a normal review";
+      else if (c.kind === "same_change") warn = "⚠ both MRs change the same symbol - Git will conflict, but neither reviewer sees the other's intent";
       return `<div class="hz-collide sev-${c.kind}" role="alert">` +
         `<div class="hz-cl-top"><b>${esc(c.mr_a.split("·")[0].trim())}</b> ✕ <b>${esc(c.mr_b.split("·")[0].trim())}</b>` +
         `<span class="hz-kind">${esc(KIND_LABEL[c.kind] || c.kind)}</span></div>` +
         `<div class="hz-cl-shared">shares <code>${esc(shared)}</code></div>` +
-        (noConflict ? `<div class="hz-noconflict">⚠ Git sees NO conflict (different files) — this is invisible to a normal review</div>` : "") +
+        (warn ? `<div class="hz-noconflict">${warn}</div>` : "") +
         `</div>`;
     }).join("");
   }

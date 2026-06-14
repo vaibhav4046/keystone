@@ -244,3 +244,22 @@ def test_review_debt_untested_flag_is_graph_derived(graph):
     for r in rep["items"]:
         assert r["untested"] == (r["test_callers"] == 0)
         assert r["blast"] >= 2
+    # the fixture has no test files, so audit_log (the 13-caller ORG_WIDE hub) is the
+    # top untested review-debt hazard, and no test definition appears in the ranked set.
+    names = [r["name"] for r in rep["items"]]
+    top = rep["items"][0]
+    assert top["name"] == "audit_log" and top["untested"] and top["blast"] == 13
+    assert not any(n.startswith("test_") for n in names)
+
+
+def test_is_test_path_predicate_contract(graph):
+    # the 'untested' classification rests on this predicate; pin its contract so a future
+    # edit can't silently widen or narrow what counts as a test file.
+    con = graph._con
+    cases = {"tests/test_x.py": True, "test/util.py": True, "src/test/foo.py": True,
+             "src/tests/foo.py": True, "test_helpers.py": True, "core/graph.py": False,
+             "backend/app.py": False, "web/app.js": False}
+    for path, expected in cases.items():
+        lit = "'" + path.replace("'", "''") + "'"        # safe literal; paths are fixed test data
+        got = con.execute(f"SELECT {graph._is_test_path(lit)}").fetchone()[0]
+        assert bool(got) is expected, (path, got)
