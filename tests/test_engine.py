@@ -175,6 +175,24 @@ def test_contradiction_strength_identical_vs_symbol(tmp_path):
     assert diff["contradiction_strength"] == "symbol"   # same symbol, different blast -> weaker
 
 
+def test_identical_rejection_not_masked_by_later_different_signature(tmp_path):
+    """A stale later rejection of the same symbol with a DIFFERENT blast signature must not
+    mask an earlier IDENTICAL-signature rejection. The identical-signature rejection is the
+    BLOCK-forcing beat, so a different-radius rejection arriving afterwards cannot quietly
+    downgrade the contradiction to a weak advisory."""
+    led = Ledger(str(tmp_path / "ledger.jsonl"))
+    sig = impact_mod.blast_radius_signature([2, 3], epicenter_id=1)
+    other = impact_mod.blast_radius_signature([2, 3, 9], epicenter_id=1)
+    led.append(actor="r1", change_id="MR-1", target_symbols=["foo"], blast_radius_set=[2, 3],
+               signature=sig, decision="reject", rationale="identical-radius reject")
+    led.append(actor="r2", change_id="MR-2", target_symbols=["foo"], blast_radius_set=[2, 3, 9],
+               signature=other, decision="reject", rationale="different-radius reject")
+    prec = led.precedent(target_symbols=["foo"], signature=sig)
+    assert prec["contradiction_same_signature"] is True
+    assert prec["contradiction_strength"] == "identical"        # not downgraded by the later reject
+    assert prec["contradiction"]["rationale"] == "identical-radius reject"
+
+
 def test_precedent_suppresses_cross_namespace_collision(tmp_path):
     """A prior reject on mod_a.parse must NOT contradict a review of mod_b.parse
     (same short name, different fqn) — fqn is authoritative when both sides have one."""
