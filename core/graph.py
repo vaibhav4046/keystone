@@ -187,9 +187,12 @@ class Graph:
 
     def _is_test_path(self, col: str) -> str:
         """SQL predicate matching a test file path for the given column expression.
-        Conservative: a tests/ or test/ directory, or a file named test_*."""
-        return (f"({col} LIKE 'tests/%' OR {col} LIKE 'test/%' OR {col} LIKE '%/tests/%' "
-                f"OR lower({col}) LIKE '%/test\\_%' ESCAPE '\\' OR lower({col}) LIKE 'test\\_%' ESCAPE '\\')")
+        Conservative and case-insensitive: a tests/ or test/ directory at any depth, or a
+        file named test_*."""
+        c = f"lower({col})"
+        return (f"({c} LIKE 'tests/%' OR {c} LIKE 'test/%' OR {c} LIKE '%/tests/%' "
+                f"OR {c} LIKE '%/test/%' OR {c} LIKE '%/test\\_%' ESCAPE '\\' "
+                f"OR {c} LIKE 'test\\_%' ESCAPE '\\')")
 
     def review_debt(self, limit: int = 14, min_blast: int = 2) -> list:
         """Deterministic 'review debt' candidates: callable symbols ranked by blast size
