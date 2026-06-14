@@ -33,6 +33,11 @@
     <div class="hz-col hz-collision">
       <div class="hz-title">CROSS-MR BLAST COLLISION <span class="hz-sub">two MRs that silently break together</span></div>
       <div id="collision" class="hz-body" aria-live="polite"><div class="muted">loading open merge requests…</div></div>
+      <div class="hz-ctrl">
+        <input id="mr-add" class="ip" list="mr-symbols" placeholder="add a symbol as an open MR, press Enter" aria-label="add a symbol as an open MR" maxlength="120" />
+        <datalist id="mr-symbols"></datalist>
+        <button id="mr-reset" class="btn ghost" type="button">reset</button>
+      </div>
     </div>
     <div class="hz-col hz-debt">
       <div class="hz-title">REVIEW DEBT <span class="hz-sub">high blast, no test directly exercises it</span></div>

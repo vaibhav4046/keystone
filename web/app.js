@@ -429,21 +429,114 @@ const DEMO_MRS = [
   { id: "MR-211 · ledger append fix", symbols: ["append"] },
 ];
 
-async function loadHazards() {
-  // collisions: live backend computes from the scenario; static deploy serves the baked one
-  let col = null;
+// Client-side collision engine: mirrors core/collision.py over the bundled per-symbol
+// impact data, so a judge can build their OWN set of open MRs and watch the hazard compute
+// in-browser on the static deploy — no backend required. The live backend uses the Python
+// engine; both produce the same shape.
+const KIND_WEIGHT = { same_change: 5, change_in_blast: 3, blast_overlap: 1 };
+function _inter(a, b) { const o = new Set(); a.forEach((x) => { if (b.has(x)) o.add(x); }); return o; }
+function footprintLocal(symbols) {
+  const touched = new Set(), affected = new Set(), names = {}, weight = {};
+  (symbols || []).forEach((s) => {
+    const imp = (STATIC && STATIC.impact) ? STATIC.impact[s] : null;
+    if (!imp || !imp.epicenter) return;
+    const epi = imp.epicenter.id;
+    touched.add(epi); names[epi] = imp.epicenter.name;
+    (imp.affected_ids || []).forEach((i) => affected.add(i));
+    Object.keys(imp.names || {}).forEach((k) => { names[Number(k)] = imp.names[k]; });
+    weight[epi] = Math.max(weight[epi] || 0, (imp.affected_ids || []).length);
+  });
+  return { touched, affected, region: new Set([...touched, ...affected]), names, weight };
+}
+function classifyLocal(a, b) {
+  const same = _inter(a.touched, b.touched);
+  const cross = new Set([..._inter(a.touched, b.affected), ..._inter(b.touched, a.affected)]);
+  same.forEach((x) => cross.delete(x));
+  const blast = _inter(a.affected, b.affected); [...same, ...cross].forEach((x) => blast.delete(x));
+  if (!same.size && !cross.size && !blast.size) return null;
+  const names = { ...a.names, ...b.names }, weight = { ...a.weight, ...b.weight };
+  const label = (s) => [...s].map((i) => names[i] || String(i)).sort();
+  let sev = 0;
+  [[same, "same_change"], [cross, "change_in_blast"], [blast, "blast_overlap"]].forEach(([s, k]) =>
+    s.forEach((i) => { sev += KIND_WEIGHT[k] * (1 + (weight[i] || 0)); }));
+  const kind = same.size ? "same_change" : (cross.size ? "change_in_blast" : "blast_overlap");
+  return { kind, severity: sev, same_change: label(same), change_in_blast: label(cross),
+    blast_overlap: label(blast), shared: label(new Set([...same, ...cross, ...blast])) };
+}
+function computeCollisionsLocal(mrs) {
+  const fps = (mrs || []).map((m) => ({ id: String(m.id || (m.symbols || []).join(",")), fp: footprintLocal(m.symbols), symbols: m.symbols }))
+    .filter((x) => x.fp.region.size);
+  if (!fps.length) return null;
+  const collisions = [];
+  for (let i = 0; i < fps.length; i++) for (let j = i + 1; j < fps.length; j++) {
+    const c = classifyLocal(fps[i].fp, fps[j].fp);
+    if (c) collisions.push({ mr_a: fps[i].id, mr_b: fps[j].id, ...c });
+  }
+  collisions.sort((x, y) => y.severity - x.severity || (x.mr_a < y.mr_a ? -1 : 1));
+  const ids = fps.map((f) => f.id);
+  const succ = {}, indeg = {}; ids.forEach((i) => { succ[i] = new Set(); indeg[i] = 0; });
+  for (const a of fps) for (const b of fps) {           // edge A->B: A changes what B depends on -> A first
+    if (a.id !== b.id && _inter(a.fp.affected, b.fp.touched).size && !succ[a.id].has(b.id)) { succ[a.id].add(b.id); indeg[b.id]++; }
+  }
+  const order = [], ready = ids.filter((i) => indeg[i] === 0).sort();
+  while (ready.length) { const n = ready.shift(); order.push(n); [...succ[n]].sort().forEach((m) => { if (--indeg[m] === 0) ready.push(m); }); ready.sort(); }
+  const cycle = ids.filter((i) => !order.includes(i)).sort();
+  const per_mr = fps.map((f) => {
+    const cs = collisions.filter((c) => c.mr_a === f.id || c.mr_b === f.id);
+    return { id: f.id, changes: [...f.fp.touched].map((i) => f.fp.names[i] || String(i)).sort(),
+      blast_size: f.fp.affected.size,
+      collides_with: [...new Set(cs.map((c) => (c.mr_a === f.id ? c.mr_b : c.mr_a)))].sort(),
+      risk: cs.reduce((s, c) => s + c.severity, 0) };
+  }).sort((a, b) => b.risk - a.risk);
+  const n = collisions.length;
+  const verdict = cycle.length ? `${cycle.length} MRs form a dependency cycle and cannot be safely ordered - coordinate them.`
+    : (n === 0 ? "No blast-radius collisions - these MRs are independent and any merge order is safe."
+      : `${n} collision(s) across ${ids.length} MRs. Suggested safe merge order avoids merging a dependent before the change it relies on.`);
+  return { mrs: ids, collisions, per_mr, merge_order: order, uncoordinable_cycle: cycle,
+    counts: { mrs: ids.length, collisions: n, colliding_mrs: per_mr.filter((m) => m.collides_with.length).length }, verdict };
+}
+
+STATE.openMrs = DEMO_MRS.slice();
+
+async function detectCollisions(mrs) {
   if (!STATIC_MODE) {
     try {
       const r = await fetch("/api/collisions", {
         method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mrs: DEMO_MRS }),
+        body: JSON.stringify({ mrs }),
       });
-      if (r.ok) col = await r.json();
-    } catch (e) { /* fall through to static */ }
+      if (r.ok) return await r.json();
+    } catch (e) { /* fall through to client-side */ }
   }
-  if (!col) { try { await ensureStatic(); col = STATIC.collisions; } catch (e) {} }
+  await ensureStatic();
+  return computeCollisionsLocal(mrs) || (STATIC && STATIC.collisions);
+}
+
+async function loadHazards() {
+  const col = await detectCollisions(STATE.openMrs);
   if (col && col.collisions) renderCollision(col);
   try { renderGraphAudit(await api("/api/graph-audit")); } catch (e) {}
+  populateMrPicker();
+}
+
+function populateMrPicker() {
+  const dl = $("#mr-symbols");
+  if (dl && STATE.defs && !dl.childElementCount) {
+    dl.innerHTML = STATE.defs.map((n) => `<option value="${esc(n)}"></option>`).join("");
+  }
+}
+
+async function addMr(symbol) {
+  const s = (symbol || "").trim();
+  if (!s || !(STATIC && STATIC.impact && STATIC.impact[s]) && !STATE.defs.includes(s)) return;
+  const n = STATE.openMrs.length + 1;
+  STATE.openMrs.push({ id: `MR-${500 + n} · change ${s}`, symbols: [s] });
+  renderCollision(await detectCollisions(STATE.openMrs));
+}
+
+async function resetMrs() {
+  STATE.openMrs = DEMO_MRS.slice();
+  renderCollision(await detectCollisions(STATE.openMrs));
 }
 
 const KIND_LABEL = {
@@ -613,6 +706,13 @@ function wire() {
   $("#tamper").onclick = tamperDemo;
   const ex = $("#export-att"); if (ex) ex.onclick = exportAttestation;
   const ov = $("#override"); if (ov) ov.onchange = applyGatePolicy;
+  // interactive cross-MR hazard: a judge builds their own open-MR set and the collision
+  // recomputes live (client-side on the static deploy, via the backend when running live)
+  const mrAdd = $("#mr-add"), mrReset = $("#mr-reset");
+  if (mrAdd) mrAdd.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); addMr(mrAdd.value); mrAdd.value = ""; }
+  });
+  if (mrReset) mrReset.onclick = resetMrs;
   const ag = $("#assistant-go"), aq = $("#assistant-q");
   if (ag && aq) {
     const ask = () => {
