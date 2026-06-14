@@ -115,6 +115,24 @@ def test_live_post_surfaces_gate_block_without_crashing(monkeypatch):
     res = run_review._urllib_post("http://x")("/api/approve",
                                               {"name": "tokenize", "decision": "approve", "reviewer": "r", "rationale": "x"})
     assert res["blocked"] == "GOVERNANCE_BLOCK"
+
+
+def test_live_get_handles_unreachable_and_404(monkeypatch):
+    """The live path must fail cleanly when the server is down (connection refused) and treat a
+    404 as a missing symbol, instead of crashing with a raw traceback."""
+    import io
+    from urllib import error as _error
+
+    def _refuse(*_a, **_k):
+        raise _error.URLError("Connection refused")
+    monkeypatch.setattr(run_review.request, "urlopen", _refuse)
+    with pytest.raises(run_review._Unreachable):
+        run_review._urllib_get("http://x")("/api/impact/foo")
+
+    def _404(*_a, **_k):
+        raise _error.HTTPError("http://x/api/impact/foo", 404, "Not Found", {}, io.BytesIO(b"{}"))
+    monkeypatch.setattr(run_review.request, "urlopen", _404)
+    assert run_review._urllib_get("http://x")("/api/impact/foo") == {}
     rep = run_review.governed_review(
         "tokenize",
         lambda _p: {"counts": {"total_affected": 1}, "epicenter": {}, "signature": "s"},

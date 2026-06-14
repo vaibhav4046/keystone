@@ -118,9 +118,13 @@ On startup the status panel flips to `source LIVE` and `orbit CLI+DuckDB`, meani
 Run the governed-review workflow from the command line, which is the Skill's runnable action:
 
 ```
-python skills/keystone/run_review.py tokenize
-python skills/keystone/run_review.py parse --decide approve --reviewer you --reason "reviewed, safe"
+python skills/keystone/run_review.py compute_blast_radius
+python skills/keystone/run_review.py append --decide approve --reviewer you --reason "reviewed, safe"
 ```
+
+(Those two symbols exist in this repo's own index, so the commands work against the
+committed self-graph. For an arbitrary indexed repo, pass a symbol that exists in it, or add
+`--local --fixture` to run against the bundled sample graph deterministically.)
 
 ## Live data versus sample data
 
