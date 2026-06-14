@@ -40,6 +40,10 @@ Agent gating answers the 2026 "who wrote this" problem. A repo-committed registr
 
 Three further graph-driven gates are designed but not shipped, because they require Orbit Remote data the free local graph does not contain, and faking them on the sample fixture would be dishonest: a dependency-depth quarantine that blocks an agent-authored lockfile change reaching a known-vulnerable package node; an ownership-entropy gate that joins file diffs against CODEOWNERS and 90-day commit recency to catch stale owners; and a pipeline-health risk multiplier from the CI history recipe. Each is one Orbit Remote query away and is documented rather than mocked.
 
+## The AI assist layer (real, but off the trust path)
+
+Keystone has a working AI layer that explains a governance decision in plain language. `core/llm.py` runs a free provider ladder (Cerebras, Groq, OpenRouter, Gemini), each behind a hard timeout, and turns the engine's already-computed facts into a short reviewer brief at `GET /api/brief/{symbol}` ("this change reaches N dependents across F files, CROSS-TEAM tier, get a second approver"). It is deliberately confined: the model never produces a number (every figure is passed in from the deterministic engine) and never decides a verdict (the human does); it only explains and proposes a next step. When no key has quota it falls back to a deterministic template, so the product works with zero keys, and the UI labels the brief honestly as "AI · provider" or "deterministic summary". This is the agentic capability — the LLM as an assistant over a trustworthy engine — without letting a model invent the audit trail.
+
 ## Integrity model, stated honestly
 
 What the ledger guarantees and what it does not, so the claim is precise rather than marketing:
