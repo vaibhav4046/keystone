@@ -63,11 +63,16 @@ def resolve_author(author: str, declared_kind: Optional[str] = None, registry: O
     return {"id": author, "badge": "HUMAN", "model": None, "scope": None}
 
 
-def _change_files(impact_dict: dict) -> list:
-    files = set()
-    for o in impact_dict.get("owners", []) or []:
-        if o.get("file"):
-            files.add(o["file"])
+def _changed_files(impact_dict: dict) -> list:
+    """Files the change actually EDITS: the epicenter(s) at ring 0. Path scope governs what
+    the agent changes, not what its change transitively affects; a dependent that merely lives
+    in a forbidden path (ring 1+) must not flag a change made entirely within allowed paths,
+    because the agent never edited it. The blast magnitude is governed separately by
+    max_blast_radius. Falls back to all owned files only if no ring-0 epicenter file is present."""
+    owners = impact_dict.get("owners", []) or []
+    files = {o["file"] for o in owners if o.get("ring", 0) == 0 and o.get("file")}
+    if not files:
+        files = {o["file"] for o in owners if o.get("file")}
     return sorted(files)
 
 
@@ -87,7 +92,7 @@ def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
     scope = author_ctx.get("scope")
     if not scope:
         return {"in_scope": True, "violations": []}
-    files = _change_files(impact_dict)
+    files = _changed_files(impact_dict)
     allowed = scope.get("allowed_paths") or []
     forbidden = scope.get("forbidden_paths") or []
     violations = []

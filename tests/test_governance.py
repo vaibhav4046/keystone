@@ -92,6 +92,25 @@ def test_agent_scope_matches_relative_paths():
     assert agents_mod.check_scope(bot, ok)["in_scope"] is True
 
 
+def test_agent_scope_governs_changed_file_not_affected_dependents():
+    """An agent's path scope must govern what it CHANGES (the ring-0 epicenter), not a
+    transitive dependent that merely lives in a forbidden path. Changing an allowed file whose
+    blast reaches a forbidden dependent is in-scope (the dependent is never edited); magnitude
+    is governed by max_blast_radius, not the path rule. Changing a file IN a forbidden path is
+    still a violation."""
+    reg = {"agents": {"bot": {"allowed_paths": ["src/parser/**"],
+                              "forbidden_paths": ["src/cli/**"], "max_blast_radius": 99}}}
+    bot = agents_mod.resolve_author("bot", declared_kind="agent", registry=reg)
+    changes_allowed_affects_forbidden = {
+        "owners": [{"ring": 0, "file": "src/parser/lexer.py"},
+                   {"ring": 1, "file": "src/cli/main.py"}],
+        "counts": {"total_affected": 1}}
+    assert agents_mod.check_scope(bot, changes_allowed_affects_forbidden)["in_scope"] is True
+    changes_forbidden = {"owners": [{"ring": 0, "file": "src/cli/main.py"}],
+                         "counts": {"total_affected": 0}}
+    assert agents_mod.check_scope(bot, changes_forbidden)["in_scope"] is False
+
+
 def test_review_window_blocks_fast_close(graph, tmp_path):
     """With window_enforced, a CROSS_TEAM change cannot be closed by the second
     approver before the window elapses; the open-time is read from the ledger."""
