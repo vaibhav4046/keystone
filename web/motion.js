@@ -1,16 +1,20 @@
 "use strict";
 // Keystone premium motion layer (presentation only; never touches engine numbers).
-// 1) ambient neon particle field behind everything
-// 2) a rotating 3D blast-radius graph rendered in pure Canvas via perspective
-//    projection (no WebGL, no CDN, works offline) — the centerpiece motion
-// 3) entrance + scroll reveals
-// All disabled under prefers-reduced-motion, where the handwritten SVG in app.js
-// remains the static fallback. Numbers, rings, and the counter are owned by app.js.
+// A pixelated-terminal 3D blast-radius visualization rendered in pure Canvas:
+//   - a receding perspective pixel-grid floor (depth)
+//   - nodes drawn as glowing PIXEL BLOCKS (not smooth circles), depth-fogged
+//   - edges as marching data-flow lines with travelling pixel packets
+//   - a faint CRT scanline pass and a terminal HUD line that types in
+// Plus an ambient particle field and entrance/scroll reveals. All disabled under
+// prefers-reduced-motion, where the handwritten SVG in app.js is the static fallback.
 (function () {
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let STILL = false;
+  window.__ksFreeze = function () { STILL = true; };   // freeze all loops on the next frame
   const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
   const ringColor = (r) => RING_COLOR[r] || "#7A8494";
   const DPR = Math.min(2, window.devicePixelRatio || 1);
+  const PX = Math.max(2, Math.round(2 * DPR));     // logical pixel-block size
 
   // ---------- ambient particle field ----------
   function initBackground() {
@@ -19,12 +23,13 @@
     const ctx = c.getContext("2d");
     let W, H, pts;
     function resize() {
-      W = c.width = Math.floor(innerWidth * DPR); H = c.height = Math.floor(innerHeight * DPR);
-      c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
-      const n = Math.min(90, Math.floor(innerWidth * innerHeight / 26000));
+      W = c.width = Math.max(1, Math.floor((innerWidth || 1200) * DPR));
+      H = c.height = Math.max(1, Math.floor((innerHeight || 800) * DPR));
+      c.style.width = (innerWidth || 1200) + "px"; c.style.height = (innerHeight || 800) + "px";
+      const n = Math.min(80, Math.floor((innerWidth || 1200) * (innerHeight || 800) / 30000));
       pts = Array.from({ length: n }, () => ({
         x: Math.random() * W, y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.12 * DPR, vy: (Math.random() - 0.5) * 0.12 * DPR,
+        vx: (Math.random() - 0.5) * 0.1 * DPR, vy: (Math.random() - 0.5) * 0.1 * DPR,
       }));
     }
     resize(); addEventListener("resize", resize);
@@ -35,44 +40,33 @@
         if (p.x < 0 || p.x > W) p.vx *= -1;
         if (p.y < 0 || p.y > H) p.vy *= -1;
       }
-      // faint connecting lines (the "graph field")
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const a = pts[i], b = pts[j], dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy);
-          if (d < 120 * DPR) {
-            ctx.strokeStyle = "rgba(255,138,43," + (0.05 * (1 - d / (120 * DPR))).toFixed(3) + ")";
-            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-          }
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+        const a = pts[i], b = pts[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < 130 * DPR) {
+          ctx.strokeStyle = "rgba(255,138,43," + (0.05 * (1 - d / (130 * DPR))).toFixed(3) + ")";
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
         }
       }
-      for (const p of pts) {
-        ctx.fillStyle = "rgba(155,163,174,0.25)";
-        ctx.beginPath(); ctx.arc(p.x, p.y, 1.1 * DPR, 0, 7); ctx.fill();
-      }
-      requestAnimationFrame(frame);
+      for (const p of pts) { ctx.fillStyle = "rgba(155,163,174,0.22)"; ctx.fillRect(p.x, p.y, DPR, DPR); }
+      if (!STILL) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
   }
 
-  // ---------- 3D blast-radius graph ----------
-  const G = { canvas: null, ctx: null, nodes: [], edges: [], yaw: 0, raf: 0, t0: 0, target: null };
+  // ---------- pixelated 3D blast-radius graph ----------
+  const G = { canvas: null, ctx: null, raf: 0, t0: 0, yaw: 0, target: null };
 
   function layout(imp) {
-    // place nodes on spherical shells by ring; epicenter at origin
-    const rings = imp.rings || {}; const parents = imp.parents || {};
-    const nodes = []; const byId = {};
-    const shellR = 1.0;
+    const rings = imp.rings || {}, parents = imp.parents || {};
+    const nodes = [], byId = {};
     Object.keys(rings).map(Number).sort((a, b) => a - b).forEach((r) => {
-      const ids = rings[r]; const R = r * shellR;
+      const ids = rings[r], R = r * 1.15;            // shell radius (wider spread)
       ids.forEach((id, i) => {
         let x = 0, y = 0, z = 0;
         if (r > 0) {
-          // golden-angle distribution on the shell, tilted per ring for depth
-          const ga = 2.399963; const phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(1, ids.length));
-          const th = ga * i + r * 0.7;
-          x = R * Math.sin(phi) * Math.cos(th);
-          y = R * Math.cos(phi) * 0.7;
-          z = R * Math.sin(phi) * Math.sin(th);
+          const ga = 2.399963, phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(1, ids.length));
+          const th = ga * i + r * 0.6;
+          x = R * Math.sin(phi) * Math.cos(th); y = R * Math.cos(phi) * 0.62; z = R * Math.sin(phi) * Math.sin(th);
         }
         const node = { id, r, x, y, z, name: (imp.names && imp.names[String(id)]) || ("#" + id), grow: 0 };
         nodes.push(node); byId[id] = node;
@@ -87,80 +81,120 @@
         if (byId[p] && byId[id]) edges.push([byId[p], byId[id]]);
       });
     });
-    return { nodes, edges, epi: imp.epicenter.id };
+    return { nodes, edges, epi: imp.epicenter.id, name: imp.epicenter.name, total: imp.counts.total_affected };
   }
 
   function project(n, cx, cy, scale, yaw, pitch) {
-    // rotate around Y then X, then perspective project
-    const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
-    let x = n.x * cosY - n.z * sinY, z = n.x * sinY + n.z * cosY, y = n.y;
-    const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
-    const y2 = y * cosP - z * sinP, z2 = y * sinP + z * cosP;
-    const f = 4.2, depth = f / (f + z2);
+    const cy_ = Math.cos(yaw), sy = Math.sin(yaw);
+    let x = n.x * cy_ - n.z * sy, z = n.x * sy + n.z * cy_, y = n.y;
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const y2 = y * cp - z * sp, z2 = y * sp + z * cp;
+    const f = 4.4, depth = f / (f + z2);
     return { sx: cx + x * scale * depth, sy: cy + y2 * scale * depth, depth, z: z2 };
   }
 
-  function renderFrame(ts) {
-    try { _renderFrame(ts); }
-    catch (e) {
-      G.raf = 0; const wrap = document.querySelector(".canvas-wrap");
-      if (wrap) wrap.classList.remove("has-3d");      // fall back to the SVG on any draw error
-    }
+  // a crisp glowing pixel block
+  function block(ctx, x, y, size, color, alpha) {
+    const s = Math.max(PX, Math.round(size / PX) * PX);
+    const px = Math.round(x / PX) * PX, py = Math.round(y / PX) * PX;
+    ctx.globalAlpha = Math.min(1, alpha) * 0.5;
+    ctx.shadowColor = color; ctx.shadowBlur = s * 2.2;
+    ctx.fillStyle = color; ctx.fillRect(px - s, py - s, s * 2, s * 2);
+    ctx.shadowBlur = 0; ctx.globalAlpha = Math.min(1, alpha);
+    ctx.fillRect(px - s / 2, py - s / 2, s, s);
+    ctx.globalAlpha = 1;
   }
+
   function _renderFrame(ts) {
     const { ctx, canvas, target } = G;
     if (!ctx || !target) { G.raf = 0; return; }
     if (!G.t0) G.t0 = ts;
-    const W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2;
-    const scale = Math.min(W, H) / 5.2;
+    const W = canvas.width, H = canvas.height, cx = W / 2, cy = H * 0.52;
+    const scale = Math.min(W, H) / 4.6;
     ctx.clearRect(0, 0, W, H);
-    G.yaw += 0.0032;                       // slow auto-rotate
-    const pitch = -0.34;
-    const epi = target.nodes.find((n) => n.id === target.epi);
-    // grow-in animation
-    for (const n of target.nodes) n.grow = Math.min(1, n.grow + 0.05);
-    // project all
+    G.yaw += 0.0030;
+    const pitch = -0.40;
+
+    // perspective pixel-grid floor
+    ctx.strokeStyle = "rgba(255,138,43,0.05)"; ctx.lineWidth = DPR;
+    for (let gx = -3; gx <= 3; gx++) {
+      const a = project({ x: gx * 0.7, y: 1.5, z: -3 }, cx, cy, scale, G.yaw, pitch);
+      const b = project({ x: gx * 0.7, y: 1.5, z: 3 }, cx, cy, scale, G.yaw, pitch);
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
+    for (let gz = -3; gz <= 3; gz++) {
+      const a = project({ x: -2.1, y: 1.5, z: gz * 0.7 }, cx, cy, scale, G.yaw, pitch);
+      const b = project({ x: 2.1, y: 1.5, z: gz * 0.7 }, cx, cy, scale, G.yaw, pitch);
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
+
+    for (const n of target.nodes) n.grow = Math.min(1, n.grow + 0.045);
     const P = new Map();
     for (const n of target.nodes) P.set(n, project(n, cx, cy, scale, G.yaw, pitch));
-    // edges with a flowing pulse
+
+    // edges: marching dashes + a travelling data packet
+    ctx.lineWidth = DPR;
     for (const [a, b] of target.edges) {
-      const pa = P.get(a), pb = P.get(b); const g = Math.min(a.grow, b.grow);
+      const pa = P.get(a), pb = P.get(b), g = Math.min(a.grow, b.grow);
       if (g <= 0) continue;
-      ctx.strokeStyle = "rgba(120,130,150," + (0.35 * g).toFixed(3) + ")";
-      ctx.lineWidth = 1 * DPR; ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
-      // moving pulse dot
-      const tt = ((ts / 1400) + (a.id % 7) / 7) % 1;
-      const px = pa.sx + (pb.sx - pa.sx) * tt, py = pa.sy + (pb.sy - pa.sy) * tt;
-      ctx.fillStyle = "rgba(255,138,43," + (0.5 * g).toFixed(3) + ")";
-      ctx.beginPath(); ctx.arc(px, py, 1.6 * DPR, 0, 7); ctx.fill();
+      ctx.setLineDash([2 * DPR, 4 * DPR]); ctx.lineDashOffset = -(ts / 26) % 1000;
+      ctx.strokeStyle = "rgba(120,130,150," + (0.5 * g).toFixed(3) + ")";
+      ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
+      ctx.setLineDash([]);
+      const tt = ((ts / 1300) + (a.id % 5) / 5) % 1;
+      block(ctx, pa.sx + (pb.sx - pa.sx) * tt, pa.sy + (pb.sy - pa.sy) * tt, PX, ringColor(b.r), 0.9 * g);
     }
-    // nodes, depth-sorted
+
+    // nodes as depth-sorted glowing pixel blocks
     const order = target.nodes.slice().sort((a, b) => P.get(a).z - P.get(b).z);
     for (const n of order) {
-      const p = P.get(n); const isEpi = n.id === target.epi;
-      const base = (isEpi ? 9 : 5.2) * DPR * (0.6 + 0.4 * p.depth) * (0.4 + 0.6 * n.grow);
-      const col = ringColor(n.r);
-      const glow = ctx.createRadialGradient(p.sx, p.sy, 0, p.sx, p.sy, base * 3.4);
-      glow.addColorStop(0, col); glow.addColorStop(0.4, col + "55"); glow.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.globalAlpha = 0.85 * n.grow; ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(p.sx, p.sy, base * 3.4, 0, 7); ctx.fill();
-      ctx.globalAlpha = n.grow; ctx.fillStyle = col;
-      const pr = isEpi ? base * (1 + 0.12 * Math.sin(ts / 320)) : base;   // epicenter pulse
-      ctx.beginPath(); ctx.arc(p.sx, p.sy, pr, 0, 7); ctx.fill();
-      ctx.globalAlpha = 1;
+      const p = P.get(n), isEpi = n.id === target.epi;
+      const size = (isEpi ? 7 : 3.4) * DPR * (0.55 + 0.45 * p.depth);
+      const a = (isEpi ? 1 : (0.45 + 0.55 * p.depth)) * n.grow;     // depth fog
+      const sz = isEpi ? size * (1 + 0.14 * Math.sin(ts / 300)) : size;
+      block(ctx, p.sx, p.sy, sz, ringColor(n.r), a);
     }
-    // a couple of nearest labels only (epicenter + closest ring-1), to stay clean
+
+    // labels: epicenter + ring-1, terminal style
+    ctx.textAlign = "center"; ctx.font = "700 " + (11 * DPR) + "px monospace";
+    const epi = target.nodes.find((n) => n.id === target.epi);
     if (epi) {
       const pe = P.get(epi);
-      ctx.fillStyle = "#EDEDED"; ctx.font = (12 * DPR) + "px JetBrains Mono, monospace";
-      ctx.textAlign = "center"; ctx.fillText(epi.name, pe.sx, pe.sy + 22 * DPR);
+      ctx.fillStyle = "#EDEDED"; ctx.fillText(epi.name, pe.sx, pe.sy - 16 * DPR);
     }
-    G.raf = requestAnimationFrame(renderFrame);
+    for (const n of (target.nodes.filter((x) => x.r === 1))) {
+      if ((target.nodes.filter((x) => x.r === 1)).length > 8) break;
+      const p = P.get(n); ctx.fillStyle = "rgba(155,163,174," + (0.7 * n.grow).toFixed(2) + ")";
+      ctx.font = (9.5 * DPR) + "px monospace";
+      ctx.fillText(n.name.length > 12 ? n.name.slice(0, 11) + "…" : n.name, p.sx, p.sy + 16 * DPR);
+    }
+
+    // terminal HUD line (types in), top-left
+    const elapsed = (ts - G.t0);
+    const hud = "> blast_radius(" + target.name + ")  ::  " + target.total + " affected";
+    const shown = Math.min(hud.length, Math.floor(elapsed / 22));
+    ctx.textAlign = "left"; ctx.font = (11 * DPR) + "px monospace";
+    ctx.fillStyle = "rgba(59,224,129,0.9)";
+    ctx.fillText(hud.slice(0, shown), 14 * DPR, 22 * DPR);
+    if (Math.floor(ts / 480) % 2 === 0) {               // blinking block cursor
+      const w = ctx.measureText(hud.slice(0, shown)).width;
+      ctx.fillRect(14 * DPR + w + 2 * DPR, 13 * DPR, 7 * DPR, 12 * DPR);
+    }
+
+    // faint CRT scanlines over the canvas
+    ctx.globalAlpha = 0.06; ctx.fillStyle = "#000";
+    for (let y = 0; y < H; y += 3 * DPR) ctx.fillRect(0, y, W, DPR);
+    ctx.globalAlpha = 1;
+
+    G.raf = STILL ? 0 : requestAnimationFrame(renderFrame);
+  }
+  function renderFrame(ts) {
+    try { _renderFrame(ts); }
+    catch (e) { G.raf = 0; const w = document.querySelector(".canvas-wrap"); if (w) w.classList.remove("has-3d"); }
   }
 
   function setup3D() {
-    const wrap = document.querySelector(".canvas-wrap");
-    const c = document.getElementById("g3d");
+    const wrap = document.querySelector(".canvas-wrap"), c = document.getElementById("g3d");
     if (!wrap || !c || reduce) return false;
     const ctx = c.getContext("2d"); if (!ctx) return false;
     G.canvas = c; G.ctx = ctx;
@@ -170,22 +204,18 @@
       c.style.width = r.width + "px"; c.style.height = r.height + "px";
     }
     resize(); addEventListener("resize", resize);
-    // resize when the container itself changes (responsive grid collapse, initial
-    // narrow render) — window 'resize' alone misses these
     if ("ResizeObserver" in window) { try { new ResizeObserver(resize).observe(wrap); } catch (e) {} }
     return true;
   }
 
-  // hook called by app.js drawBlast: render the 3D graph + hide the SVG
   window.__ksRenderGraph = function (imp) {
     try {
       if (reduce || !G.ctx || !imp || !imp.epicenter) return;
       document.querySelector(".canvas-wrap").classList.add("has-3d");
       G.target = layout(imp); G.t0 = 0;
       if (!G.raf) G.raf = requestAnimationFrame(renderFrame);
-    } catch (e) {                                     // never let the motion layer break the app
-      const wrap = document.querySelector(".canvas-wrap");
-      if (wrap) wrap.classList.remove("has-3d");      // fall back to the SVG
+    } catch (e) {
+      const w = document.querySelector(".canvas-wrap"); if (w) w.classList.remove("has-3d");
     }
   };
 
@@ -193,7 +223,6 @@
   function initReveals() {
     if (reduce) return;
     const els = document.querySelectorAll("[data-reveal]");
-    // JS adds the hidden state, so if this layer never runs nothing stays invisible
     els.forEach((el, i) => { el.style.setProperty("--rev-delay", (i * 55) + "ms"); el.classList.add("ks-hidden"); });
     const reveal = (e) => e.classList.remove("ks-hidden");
     if (!("IntersectionObserver" in window)) { els.forEach(reveal); return; }
@@ -201,8 +230,6 @@
       ents.forEach((e) => { if (e.isIntersecting) { reveal(e.target); io.unobserve(e.target); } });
     }, { threshold: 0.1 });
     els.forEach((e) => io.observe(e));
-    // safety net: never leave content hidden if the observer never fires (0-size
-    // viewport, headless, or an element that never scrolls into view)
     setTimeout(() => els.forEach(reveal), 1600);
   }
 
