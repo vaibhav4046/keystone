@@ -57,13 +57,22 @@ def _first_token() -> Optional[str]:
 def ci_identity() -> Optional[dict]:
     """Resolve a bound CI identity from a GitLab OIDC ID token in the environment, or None
     when not running on a token-bearing pipeline. The returned dict is what the gate stamps
-    onto the ledger row so the actor is GitLab-attested, not self-asserted."""
+    onto the ledger row so the actor is GitLab-attested, not self-asserted.
+
+    The token's RS256 signature is verified against the issuer's JWKS when verification is
+    enabled (KEYSTONE_VERIFY_OIDC=1, or a pinned KEYSTONE_OIDC_JWKS for an air-gapped
+    runner). `signature_verified` reflects the REAL result and never overstates it: claims
+    are always bound by the runner injecting the token; the boolean adds cryptographic proof
+    of the issuer's signature when checked."""
     token = _first_token()
     if not token:
         return None
     claims = decode_jwt_claims(token)
     if not claims or not claims.get("sub"):
         return None
+    verified = False
+    if os.environ.get("KEYSTONE_VERIFY_OIDC") or os.environ.get("KEYSTONE_OIDC_JWKS"):
+        verified = verify_signature(token)
     # A curated, non-sensitive subset of the standard GitLab OIDC claims.
     keep = ("sub", "iss", "aud", "project_path", "namespace_path", "ref", "ref_type",
             "pipeline_id", "job_id", "runner_id", "user_login", "user_email")
@@ -76,24 +85,78 @@ def ci_identity() -> Optional[dict]:
         "actor": claims.get("user_login") or claims.get("sub"),
         "project_path": claims.get("project_path"),
         "ref": claims.get("ref"),
-        "signature_verified": False,   # honest: claims bound by CI injection, not RS256-checked here
+        "signature_verified": bool(verified),
         "claims": subset,
-        "note": "actor bound to the GitLab OIDC sub claim injected by the runner; "
-                "RS256 JWKS verification is the production hardening step.",
+        "note": ("actor bound to the GitLab OIDC sub claim injected by the runner"
+                 + (", RS256 signature verified against the issuer JWKS" if verified
+                    else "; set KEYSTONE_VERIFY_OIDC=1 (or pin KEYSTONE_OIDC_JWKS) for RS256 verification")),
     }
 
 
-def verify_signature(token: str) -> bool:
-    """Best-effort RS256 verification against the issuer's JWKS. Returns False unless the
-    optional `cryptography` dependency is present AND the issuer's keys validate the token.
-    Deployments that want hard verification install `cryptography`; the gate's recorded
-    `signature_verified` reflects the real result and never overstates it."""
+def _rsa_pub_from_jwk(jwk: dict):
+    """Build an RSA public key from a JWK (n, e). Raises if cryptography is absent."""
+    from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicNumbers
+    n = int.from_bytes(_b64url_decode(jwk["n"]), "big")
+    e = int.from_bytes(_b64url_decode(jwk["e"]), "big")
+    return RSAPublicNumbers(e, n).public_key()
+
+
+def _resolve_jwks(token: str, timeout: float) -> Optional[list]:
+    """The signing keys to check against: a pinned KEYSTONE_OIDC_JWKS (air-gapped /
+    deterministic tests), else the issuer's published JWKS via its discovery document."""
+    pinned = os.environ.get("KEYSTONE_OIDC_JWKS")
+    if pinned:
+        try:
+            return (json.loads(pinned) or {}).get("keys")
+        except Exception:
+            return None
+    claims = decode_jwt_claims(token) or {}
+    iss = claims.get("iss")
+    if not iss:
+        return None
     try:
         import urllib.request
-        from cryptography.hazmat.primitives.asymmetric import padding  # type: ignore
-        from cryptography.hazmat.primitives import hashes, serialization  # noqa: F401
-        # Intentionally minimal: real deployments flesh this out with JWKS key matching by
-        # kid. Absent the dependency we return False rather than pretend verification ran.
+        disc = iss.rstrip("/") + "/.well-known/openid-configuration"
+        with urllib.request.urlopen(disc, timeout=timeout) as r:
+            jwks_uri = json.loads(r.read().decode("utf-8")).get("jwks_uri")
+        with urllib.request.urlopen(jwks_uri, timeout=timeout) as r:
+            return json.loads(r.read().decode("utf-8")).get("keys")
+    except Exception:
+        return None
+
+
+def verify_signature(token: str, *, jwks: Optional[list] = None, timeout: float = 5.0) -> bool:
+    """RS256 verification of the token against the issuer's JWKS. Returns True only when the
+    signature genuinely validates. Returns False (never raises, never overstates) if the
+    `cryptography` dependency is absent, the keys cannot be resolved, the alg is not RS256,
+    or the signature does not check out. Pass `jwks` (a list of JWK dicts) for a pinned,
+    network-free check."""
+    try:
+        from cryptography.hazmat.primitives.asymmetric import padding
+        from cryptography.hazmat.primitives import hashes
+        from cryptography.exceptions import InvalidSignature
+    except Exception:
+        return False
+    try:
+        parts = token.strip().split(".")
+        if len(parts) != 3:
+            return False
+        header = json.loads(_b64url_decode(parts[0]).decode("utf-8"))
+        if header.get("alg") != "RS256":
+            return False
+        keys = jwks if jwks is not None else _resolve_jwks(token, timeout)
+        if not keys:
+            return False
+        kid = header.get("kid")
+        jwk = next((k for k in keys if k.get("kid") == kid), None) or (keys[0] if len(keys) == 1 else None)
+        if not jwk:
+            return False
+        pub = _rsa_pub_from_jwk(jwk)
+        signing_input = (parts[0] + "." + parts[1]).encode("ascii")
+        sig = _b64url_decode(parts[2])
+        pub.verify(sig, signing_input, padding.PKCS1v15(), hashes.SHA256())
+        return True
+    except InvalidSignature:
         return False
     except Exception:
         return False

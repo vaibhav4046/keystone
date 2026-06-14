@@ -178,3 +178,41 @@ def test_ci_identity_absent_when_no_token(monkeypatch):
         monkeypatch.delenv(v, raising=False)
     assert identity_mod.ci_identity() is None
     assert identity_mod.decode_jwt_claims("not-a-jwt") is None
+
+
+def _mint_rs256(claims, kid="k1"):
+    """Mint a genuinely RS256-signed JWT + the matching JWK, so RS256 verification can be
+    proven end-to-end offline (no network, no pinned GitLab key)."""
+    import base64, json
+    from cryptography.hazmat.primitives.asymmetric import rsa, padding
+    from cryptography.hazmat.primitives import hashes
+    def b64u(b): return base64.urlsafe_b64encode(b).decode().rstrip("=")
+    def seg(d): return b64u(json.dumps(d, separators=(",", ":")).encode())
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    pn = key.public_key().public_numbers()
+    def itob(i): return i.to_bytes((i.bit_length() + 7) // 8, "big")
+    jwk = {"kty": "RSA", "kid": kid, "n": b64u(itob(pn.n)), "e": b64u(itob(pn.e))}
+    signing_input = (seg({"alg": "RS256", "typ": "JWT", "kid": kid}) + "." + seg(claims)).encode("ascii")
+    sig = key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
+    token = signing_input.decode("ascii") + "." + b64u(sig)
+    return token, jwk
+
+
+def test_rs256_signature_verification_offline(monkeypatch):
+    # Prove the RS256 path really verifies a signature (closes the prior "claims bound by
+    # CI injection but not cryptographically verified" gap), without any network.
+    import json
+    from core import identity as identity_mod
+    claims = {"iss": "https://gitlab.example", "sub": "project_path:g/p:ref:main", "user_login": "alice"}
+    token, jwk = _mint_rs256(claims)
+    # a correctly-signed token verifies against its JWK
+    assert identity_mod.verify_signature(token, jwks=[jwk]) is True
+    # a tampered payload fails verification
+    head, body, sig = token.split(".")
+    tampered = head + "." + body[:-2] + ("AA" if not body.endswith("AA") else "BB") + "." + sig
+    assert identity_mod.verify_signature(tampered, jwks=[jwk]) is False
+    # ci_identity with a pinned JWKS flips signature_verified to true
+    monkeypatch.setenv("KEYSTONE_ID_TOKEN", token)
+    monkeypatch.setenv("KEYSTONE_OIDC_JWKS", json.dumps({"keys": [jwk]}))
+    ci = identity_mod.ci_identity()
+    assert ci and ci["signature_verified"] is True and ci["sub"] == claims["sub"]

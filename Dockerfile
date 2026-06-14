@@ -16,4 +16,6 @@ ENV KEYSTONE_GRAPH_PATH=data/keystone_self_graph.duckdb \
     PORT=8787
 
 EXPOSE 8787
-CMD ["python", "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8787"]
+# Honor $PORT so the same image runs on Render / Fly / Cloud Run (which inject it),
+# defaulting to 8787 locally. Shell form so ${PORT} expands at runtime.
+CMD ["sh", "-c", "python -m uvicorn backend.app:app --host 0.0.0.0 --port ${PORT:-8787}"]
