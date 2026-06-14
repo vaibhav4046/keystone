@@ -184,10 +184,15 @@ class Ledger:
         # same blast signature). It is the load-bearing "you are about to approve
         # something that was rejected before" beat. The strongest form is a
         # signature-identical rejection.
-        contradiction = rejections[-1] if rejections else None
-        contradiction_same_signature = bool(
-            contradiction and signature and contradiction.get("signature") == signature
-        )
+        # An identical-blast-signature rejection is the strong, BLOCK-forcing beat, so it must
+        # win even when a MORE RECENT rejection of the same symbol carried a DIFFERENT signature
+        # (a stale different-radius rejection must not mask the identical one and quietly downgrade
+        # a BLOCK to a weak advisory). Prefer the most recent identical-signature rejection; fall
+        # back to the most recent rejection of any matching kind.
+        identical_rej = next((r for r in reversed(rejections)
+                              if signature and r.get("signature") == signature), None)
+        contradiction = identical_rej or (rejections[-1] if rejections else None)
+        contradiction_same_signature = identical_rej is not None
         # Strength: an identical blast signature is the strong "you are about to
         # approve the exact thing that was rejected" beat; a same-symbol match with
         # a DIFFERENT blast radius is a weaker advisory (the symbol was rejected
