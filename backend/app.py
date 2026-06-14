@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
-                  llm as llm_mod)
+                  llm as llm_mod, agent as agent_mod)
 from core.audit import Ledger
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -218,6 +218,24 @@ def brief(name: str = Path(max_length=256)):
            "counts": pol["counts"], "tier": pol["tier"], "action": pol["action"],
            "required_approvers": pol["required_approvers"], "precedent": prec, "signature": out["signature"]}
     res = llm_mod.review_brief(ctx)
+    res["providers_configured"] = llm_mod.available_providers()
+    return res
+
+
+class AssistantQuery(BaseModel):
+    symbol: str = Field(min_length=1, max_length=256)
+    question: Optional[str] = Field(default=None, max_length=400)
+
+
+@app.post("/api/assistant")
+def assistant(q: AssistantQuery):
+    """Run the bounded tool-using review assistant (core/agent.py). REAL agent loop when a
+    free LLM key has quota: the model calls deterministic engine tools (blast_radius,
+    precedent, propose_reviewers) and returns a recommendation + the tool trace. Falls back
+    to a deterministic plan. The assistant PROPOSES; it never records a decision."""
+    if impact_mod.compute_blast_radius(_graph, q.symbol, max_depth=3) is None:
+        raise HTTPException(404, f"definition not found: {q.symbol}")
+    res = agent_mod.run_agent(_graph, _ledger, q.symbol, q.question)
     res["providers_configured"] = llm_mod.available_providers()
     return res
 

@@ -45,19 +45,33 @@ def _load_dotenv():
         pass
 
 
+_OR_URL = "https://openrouter.ai/api/v1/chat/completions"
+
 # (name, base_url, key_env, model_env, default_model)
+# Several OpenRouter free models are listed because each carries its OWN upstream
+# rate limit, so a 429 on one tool-calling model falls through to the next that is
+# genuinely good at tool use — the assistant degrades to the deterministic plan only
+# when ALL are exhausted. Order: fast/cheap first, strong tool-callers as fallbacks.
 _PROVIDERS = [
     ("cerebras", "https://api.cerebras.ai/v1/chat/completions", "CEREBRAS_API_KEY", "CEREBRAS_MODEL", "gpt-oss-120b"),
-    ("groq", "https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "GROQ_MODEL", "llama-3.1-8b-instant"),
-    ("openrouter", "https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),
+    ("groq", "https://api.groq.com/openai/v1/chat/completions", "GROQ_API_KEY", "GROQ_MODEL", "llama-3.3-70b-versatile"),
+    ("openrouter", _OR_URL, "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),
+    ("openrouter", _OR_URL, "OPENROUTER_API_KEY", "OPENROUTER_MODEL_2", "meta-llama/llama-3.3-70b-instruct:free"),
+    ("openrouter", _OR_URL, "OPENROUTER_API_KEY", "OPENROUTER_MODEL_3", "qwen/qwen-2.5-72b-instruct:free"),
     ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GEMINI_API_KEY", "GEMINI_MODEL", "gemini-2.0-flash"),
 ]
 
 
 def available_providers() -> list:
-    """Names of providers that have a key configured (never the key values)."""
+    """Distinct provider names that have a key configured (never the key values).
+    Deduped so multiple models behind one provider (e.g. OpenRouter) list once."""
     _load_dotenv()
-    return [name for (name, _u, ke, _me, _dm) in _PROVIDERS if os.environ.get(ke)]
+    seen, out = set(), []
+    for (name, _u, ke, _me, _dm) in _PROVIDERS:
+        if os.environ.get(ke) and name not in seen:
+            seen.add(name)
+            out.append(name)
+    return out
 
 
 def _call(url: str, key: str, model: str, system: str, prompt: str, max_tokens: int, timeout: float) -> Optional[str]:
@@ -73,6 +87,46 @@ def _call(url: str, key: str, model: str, system: str, prompt: str, max_tokens: 
     msg = (d.get("choices") or [{}])[0].get("message", {})
     text = (msg.get("content") or "").strip()
     return text or None
+
+
+def _call_chat(url: str, key: str, model: str, messages: list, tools: Optional[list],
+               max_tokens: int, timeout: float) -> Optional[dict]:
+    """One OpenAI-compatible chat completion that MAY return tool_calls. Returns the
+    raw assistant message dict ({content, tool_calls?}) or None. Used by the agent
+    loop (core/agent.py) to let the model drive the deterministic engine tools."""
+    payload = {"model": model, "messages": messages, "max_tokens": max_tokens, "temperature": 0.2}
+    if tools:
+        payload["tools"] = tools
+        payload["tool_choice"] = "auto"
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=body, method="POST",
+                                 headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d = json.loads(r.read().decode("utf-8"))
+    return (d.get("choices") or [{}])[0].get("message") or None
+
+
+def chat(messages: list, *, tools: Optional[list] = None, max_tokens: int = 380,
+         timeout: Optional[float] = None) -> Tuple[Optional[dict], Optional[str]]:
+    """Provider-ladder chat with optional tool-calling. Returns (assistant_message, provider)
+    or (None, None). Never raises. The assistant_message is the raw OpenAI-compatible dict so
+    the caller can read either .content (final answer) or .tool_calls (a step in the loop)."""
+    if os.environ.get("KEYSTONE_LLM_DISABLED"):
+        return None, None
+    _load_dotenv()
+    t = timeout if timeout is not None else _TIMEOUT
+    for (name, url, key_env, model_env, default_model) in _PROVIDERS:
+        key = os.environ.get(key_env)
+        if not key:
+            continue
+        model = os.environ.get(model_env) or default_model
+        try:
+            msg = _call_chat(url, key, model, messages, tools, max_tokens, t)
+            if msg is not None:
+                return msg, name
+        except Exception:
+            continue   # provider lacks tool support / dead key / quota -> next, then deterministic
+    return None, None
 
 
 def generate(prompt: str, *, system: str = "You are Keystone's review assistant.",

@@ -33,9 +33,11 @@ jobs:
       # prove the gate BLOCKS a contradicted change (must exit non-zero); inverted so
       # the pipeline stays green while demonstrating the block.
       - run: "! python skills/keystone/run_review.py tokenize --local --fixture --fail-on-block"
-      # committed static bundle must equal a fresh build (no silent drift)
+      # committed static bundle must equal a fresh build from the committed real Orbit
+      # self-index + provenance + recorded agent sample (no silent drift; no orbit binary
+      # or network needed — the build reads only committed artifacts)
       - run: python scripts/build_static.py
-      - run: git diff --exit-code -- web/data.json web/orbit_sample_transcript.json
+      - run: git diff --exit-code -- web/data.json
 
   deploy:
     needs: test

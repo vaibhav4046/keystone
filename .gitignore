@@ -23,6 +23,10 @@ target/
 # data and local graph
 data/audit_ledger.jsonl
 *.duckdb
+# ...but the committed self-index IS tracked: it is a real `orbit index` of THIS
+# repo that the static build + CI drift check require (CI has no orbit binary to
+# regenerate it). It is read-only graph data, no secrets. See scripts/build_static.py.
+!data/keystone_self_graph.duckdb
 schema_snapshot.local.json
 
 # os / editor

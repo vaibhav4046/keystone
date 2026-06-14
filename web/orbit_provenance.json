@@ -1,0 +1,1229 @@
+{
+  "canonical_form": "glab orbit local sql \"<query>\"",
+  "definitions_total": 262,
+  "note": "Real Orbit Local CLI provenance captured by scripts/capture_orbit_provenance.py against data/keystone_self_graph.duckdb (a real `orbit index` of THIS repository). Each per-symbol command is the exact query Orbit ran; ring1_cli is the count Orbit itself returned for that symbol's direct callers, cross-checked against the engine.",
+  "orbit_version": "0.74.0",
+  "per_symbol": {
+    "$": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6094629917699856060 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.8,
+      "epicenter_id": "6094629917699856060",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 11,
+      "ring1_engine": 11
+    },
+    "CommandFormTests": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3109190366436110188 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.1,
+      "epicenter_id": "3109190366436110188",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "Decision": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5833367117257125882 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 41.4,
+      "epicenter_id": "5833367117257125882",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "ExecutionResultTests": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8785112392531339164 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.1,
+      "epicenter_id": "8785112392531339164",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "Graph": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4366699392924165412 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.0,
+      "epicenter_id": "4366699392924165412",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 4,
+      "ring1_engine": 4
+    },
+    "Impact": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8012128537253698480 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "8012128537253698480",
+      "file": "core/impact.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "Ledger": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1786631309914082706 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.8,
+      "epicenter_id": "1786631309914082706",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 6,
+      "ring1_engine": 6
+    },
+    "OrbitCliResult": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1441124648184055166 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.6,
+      "epicenter_id": "1441124648184055166",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 5,
+      "ring1_engine": 5
+    },
+    "ParseRowsTests": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3887576185839227926 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.2,
+      "epicenter_id": "3887576185839227926",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "Source": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3874309466299007418 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.7,
+      "epicenter_id": "3874309466299007418",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "TranscriptTests": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 330041090382019951 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "330041090382019951",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "__init__": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 314562455631684153 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.2,
+      "epicenter_id": "314562455631684153",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "_canonical": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1496328667200904799 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.9,
+      "epicenter_id": "1496328667200904799",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 2,
+      "ring1_engine": 2
+    },
+    "_completed": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6859216865133875861 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.6,
+      "epicenter_id": "6859216865133875861",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 6,
+      "ring1_engine": 6
+    },
+    "_ensure_fixture": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2891605778667564184 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.5,
+      "epicenter_id": "2891605778667564184",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_fixed_ts": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3550691819590907599 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.1,
+      "epicenter_id": "3550691819590907599",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_introspect": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3083116531516270272 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.9,
+      "epicenter_id": "3083116531516270272",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_is_valid_duckdb": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4523535067962480215 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.1,
+      "epicenter_id": "4523535067962480215",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_orbit_access": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 704639376110542373 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.9,
+      "epicenter_id": "704639376110542373",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "_parse_rows": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8253807830376486381 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.3,
+      "epicenter_id": "8253807830376486381",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 8,
+      "ring1_engine": 8
+    },
+    "_print_report": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2237502619666632048 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 34.4,
+      "epicenter_id": "2237502619666632048",
+      "file": "skills/keystone/run_review.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_read_raw": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5772487899051918031 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.8,
+      "epicenter_id": "5772487899051918031",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 4,
+      "ring1_engine": 4
+    },
+    "_record": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8118358084742038787 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.2,
+      "epicenter_id": "8118358084742038787",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_render_command": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5955030031203507303 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 33.7,
+      "epicenter_id": "5955030031203507303",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_row_hash": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4122419328578178866 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.9,
+      "epicenter_id": "4122419328578178866",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 2,
+      "ring1_engine": 2
+    },
+    "_run": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5277624557425123493 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.9,
+      "epicenter_id": "5277624557425123493",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 2,
+      "ring1_engine": 2
+    },
+    "_truncate": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1557362986586892046 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.3,
+      "epicenter_id": "1557362986586892046",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_urllib_get": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8577769218360876086 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.0,
+      "epicenter_id": "8577769218360876086",
+      "file": "skills/keystone/run_review.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "_urllib_post": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2986523809524804026 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 41.1,
+      "epicenter_id": "2986523809524804026",
+      "file": "skills/keystone/run_review.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "all_definition_names": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5599052756049505951 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 41.3,
+      "epicenter_id": "5599052756049505951",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "animateCounterTo": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6002134538831974659 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.5,
+      "epicenter_id": "6002134538831974659",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "api": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3004815431440592716 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.5,
+      "epicenter_id": "3004815431440592716",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 4,
+      "ring1_engine": 4
+    },
+    "append": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 740980856069008026 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.0,
+      "epicenter_id": "740980856069008026",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 10,
+      "ring1_engine": 10
+    },
+    "approve": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6660160112518181993 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.9,
+      "epicenter_id": "6660160112518181993",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "as_status_entry": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8851939305316021138 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.8,
+      "epicenter_id": "8851939305316021138",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "audit": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2832377784051637889 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.4,
+      "epicenter_id": "2832377784051637889",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "audit_verify": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4311572562052833436 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.1,
+      "epicenter_id": "4311572562052833436",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "blast_radius_signature": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 686772421409423676 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.2,
+      "epicenter_id": "686772421409423676",
+      "file": "core/impact.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 7,
+      "ring1_engine": 7
+    },
+    "boom": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 9065988799850895260 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.5,
+      "epicenter_id": "9065988799850895260",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "boot": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8090781725541875503 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.5,
+      "epicenter_id": "8090781725541875503",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "build_fixture_duckdb": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3783089497492346604 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.8,
+      "epicenter_id": "3783089497492346604",
+      "file": "core/fixtures.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 5,
+      "ring1_engine": 5
+    },
+    "clear_transcript": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4344390961906831771 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.6,
+      "epicenter_id": "4344390961906831771",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 3,
+      "ring1_engine": 3
+    },
+    "close": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5130566730713613113 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.5,
+      "epicenter_id": "5130566730713613113",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 3,
+      "ring1_engine": 3
+    },
+    "compute_blast_radius": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1691604444861513983 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.6,
+      "epicenter_id": "1691604444861513983",
+      "file": "core/impact.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 12,
+      "ring1_engine": 12
+    },
+    "decide": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8655236636402854555 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.5,
+      "epicenter_id": "8655236636402854555",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "definitions": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5402760027945593920 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.8,
+      "epicenter_id": "5402760027945593920",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "direct_callers": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5145478264326607745 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.5,
+      "epicenter_id": "5145478264326607745",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "drawBlast": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6209940673233378709 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.0,
+      "epicenter_id": "6209940673233378709",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "ensureStatic": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4438766632301533128 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.3,
+      "epicenter_id": "4438766632301533128",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 2,
+      "ring1_engine": 2
+    },
+    "esc": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3644402312584446603 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.5,
+      "epicenter_id": "3644402312584446603",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "fake_run": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8951397016447446811 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.9,
+      "epicenter_id": "8951397016447446811",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "find_definition": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3801518256473977609 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.3,
+      "epicenter_id": "3801518256473977609",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "fromStatic": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8391237654556812364 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "8391237654556812364",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "g": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5563979799679736981 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.6,
+      "epicenter_id": "5563979799679736981",
+      "file": "skills/keystone/run_review.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "get_json": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7446542423404855046 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 34.8,
+      "epicenter_id": "7446542423404855046",
+      "file": "tests/test_skill.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "get_transcript": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4414192367688673793 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 41.6,
+      "epicenter_id": "4414192367688673793",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 5,
+      "ring1_engine": 5
+    },
+    "glab_available": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3073690311818994035 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.1,
+      "epicenter_id": "3073690311818994035",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "governed_review": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2118797803055715033 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.4,
+      "epicenter_id": "2118797803055715033",
+      "file": "skills/keystone/run_review.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "graph": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8203852070281633537 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.6,
+      "epicenter_id": "8203852070281633537",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "health": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3702471398725908604 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.7,
+      "epicenter_id": "3702471398725908604",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "idNames": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8518052198276654969 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.9,
+      "epicenter_id": "8518052198276654969",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "impact": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3658915740377288552 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 40.8,
+      "epicenter_id": "3658915740377288552",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "index": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8798154573640857850 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.9,
+      "epicenter_id": "8798154573640857850",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "main": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3552715490817611153 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 34.5,
+      "epicenter_id": "3552715490817611153",
+      "file": "skills/keystone/run_review.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "nameOf": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6007514542225333363 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "6007514542225333363",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "name_of": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3846239329991777162 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.5,
+      "epicenter_id": "3846239329991777162",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "owning_file_and_dir": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4003331155711775721 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.7,
+      "epicenter_id": "4003331155711775721",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "p": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5547132868449016382 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.6,
+      "epicenter_id": "5547132868449016382",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "pad": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7907307166728226024 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.0,
+      "epicenter_id": "7907307166728226024",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "paintStatus": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3390683666244204697 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.9,
+      "epicenter_id": "3390683666244204697",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "post_json": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7401933855113500698 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.7,
+      "epicenter_id": "7401933855113500698",
+      "file": "tests/test_skill.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "precedent": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6739675823047667172 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.8,
+      "epicenter_id": "6739675823047667172",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 4,
+      "ring1_engine": 4
+    },
+    "probe": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5614198446417940204 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 34.9,
+      "epicenter_id": "5614198446417940204",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "refreshLedger": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 907108557239531630 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.8,
+      "epicenter_id": "907108557239531630",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "renderDefList": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5579686503885638409 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.6,
+      "epicenter_id": "5579686503885638409",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "renderPrecedent": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1272775223301199902 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.2,
+      "epicenter_id": "1272775223301199902",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "renderRings": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4055672127152932043 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.0,
+      "epicenter_id": "4055672127152932043",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "ringColor": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6502881835869231268 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 40.4,
+      "epicenter_id": "6502881835869231268",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "rows": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4190134856146784865 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.6,
+      "epicenter_id": "4190134856146784865",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 2,
+      "ring1_engine": 2
+    },
+    "schema": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 691646735282759861 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.8,
+      "epicenter_id": "691646735282759861",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 2,
+      "ring1_engine": 2
+    },
+    "schema_report": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2198959858930734264 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.4,
+      "epicenter_id": "2198959858930734264",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "seed_ledger_rows": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2454551220365021568 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.0,
+      "epicenter_id": "2454551220365021568",
+      "file": "core/fixtures.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 4,
+      "ring1_engine": 4
+    },
+    "select": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8466216772198935520 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.7,
+      "epicenter_id": "8466216772198935520",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "setUp": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2407612719320391174 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.3,
+      "epicenter_id": "2407612719320391174",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "sql": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1246022010118027193 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 39.0,
+      "epicenter_id": "1246022010118027193",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 9,
+      "ring1_engine": 9
+    },
+    "status": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4178325346008632695 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.7,
+      "epicenter_id": "4178325346008632695",
+      "file": "backend/app.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "tamperDemo": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 753553820175345187 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.7,
+      "epicenter_id": "753553820175345187",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_audit_chain_appends_and_verifies": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6129851478030161522 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.3,
+      "epicenter_id": "6129851478030161522",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_audit_chain_detects_tampering": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3802790403761273020 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.9,
+      "epicenter_id": "3802790403761273020",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_blast_radius_exact_counts": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1482734565408047830 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.1,
+      "epicenter_id": "1482734565408047830",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_canonical_command_form_for_schema_table": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7483697689796864172 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "7483697689796864172",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_canonical_command_form_for_sql": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1780799417388543906 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.4,
+      "epicenter_id": "1780799417388543906",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_contradiction_signature_matches_live_blast": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2455015571288494617 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.3,
+      "epicenter_id": "2455015571288494617",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_decision_requires_reviewer_and_reason": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1155643099179643194 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.2,
+      "epicenter_id": "1155643099179643194",
+      "file": "tests/test_skill.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_empty_returns_none": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 9167430580887254589 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.4,
+      "epicenter_id": "9167430580887254589",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_independent_recompute_matches": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6091362926688991061 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.7,
+      "epicenter_id": "6091362926688991061",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_json_array": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8864103862908568987 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "8864103862908568987",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_missing_binary_degrades_gracefully": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8471240115619468328 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.1,
+      "epicenter_id": "8471240115619468328",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_ndjson": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 4755484895679024533 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.8,
+      "epicenter_id": "4755484895679024533",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_oserror_is_caught": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6532570479740606375 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.1,
+      "epicenter_id": "6532570479740606375",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_pipe_table": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1774788296248204985 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.5,
+      "epicenter_id": "1774788296248204985",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_precedent_surfaces_contradiction": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8786728380294671153 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.1,
+      "epicenter_id": "8786728380294671153",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_signature_is_stable_and_set_based": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6818314553287061365 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.2,
+      "epicenter_id": "6818314553287061365",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_sql_nonzero_exit_is_not_ok": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 3830025592742277214 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.4,
+      "epicenter_id": "3830025592742277214",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_sql_success_parses_json_array": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1139221240120664683 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.8,
+      "epicenter_id": "1139221240120664683",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_status_entry_is_serialisable_and_secret_free": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7588691507531355333 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.0,
+      "epicenter_id": "7588691507531355333",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_timeout_is_caught": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8784462313559349017 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.1,
+      "epicenter_id": "8784462313559349017",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_transcript_is_bounded": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5870345008822695711 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.9,
+      "epicenter_id": "5870345008822695711",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_transcript_lines_render": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1796779127474932566 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.0,
+      "epicenter_id": "1796779127474932566",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_unknown_symbol_is_reported_not_invented": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8155455061164093560 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.5,
+      "epicenter_id": "8155455061164093560",
+      "file": "tests/test_skill.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_unknown_symbol_returns_none": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7714791994246045857 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.4,
+      "epicenter_id": "7714791994246045857",
+      "file": "tests/test_engine.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_unparseable_returns_none": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1620758858155408406 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.2,
+      "epicenter_id": "1620758858155408406",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_whitespace_table_skips_rule_lines": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 2262017075246319737 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.3,
+      "epicenter_id": "2262017075246319737",
+      "file": "tests/test_orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_workflow_records_a_verifiable_decision": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 7984010746485397623 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 36.5,
+      "epicenter_id": "7984010746485397623",
+      "file": "tests/test_skill.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "test_workflow_runs_and_surfaces_contradiction": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5134329000890034036 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 43.5,
+      "epicenter_id": "5134329000890034036",
+      "file": "tests/test_skill.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "to_dict": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 1132679687173088230 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.3,
+      "epicenter_id": "1132679687173088230",
+      "file": "core/impact.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    },
+    "total_definitions": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 5850282506554730175 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 37.9,
+      "epicenter_id": "5850282506554730175",
+      "file": "core/graph.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "transcript_lines": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 6200683542108375354 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 40.2,
+      "epicenter_id": "6200683542108375354",
+      "file": "core/orbit_cli.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 1,
+      "ring1_engine": 1
+    },
+    "verify": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 8043296401456372784 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 38.5,
+      "epicenter_id": "8043296401456372784",
+      "file": "core/audit.py",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 10,
+      "ring1_engine": 10
+    },
+    "wire": {
+      "command": "orbit sql \"SELECT count(DISTINCT source_id) AS ring1 FROM gl_edge WHERE target_id = 143342488428941967 AND relationship_kind='CALLS' AND source_kind='Definition' AND target_kind='Definition' AND source_id <> target_id\" -F json",
+      "duration_ms": 35.7,
+      "epicenter_id": "143342488428941967",
+      "file": "web/app.js",
+      "match": true,
+      "returncode": 0,
+      "ring1_cli": 0,
+      "ring1_engine": 0
+    }
+  },
+  "probe": {
+    "command": "orbit sql \"SELECT name, definition_type FROM gl_definition WHERE definition_type IN ('Function','Method','Class') ORDER BY name LIMIT 3\" -F json",
+    "duration_ms": 36.9,
+    "ok": true,
+    "returncode": 0,
+    "source": "glab orbit local",
+    "stdout": "[{\"name\":\"$\",\"definition_type\":\"Function\"},{\"name\":\"CommandFormTests\",\"definition_type\":\"Class\"},{\"name\":\"Decision\",\"definition_type\":\"Class\"}]\n",
+    "subcommand": "sql"
+  },
+  "repo": "keystone (self-indexed by Orbit)",
+  "schema": {
+    "command": "orbit schema",
+    "duration_ms": 51.2,
+    "ok": true,
+    "returncode": 0,
+    "source": "glab orbit local",
+    "stdout": "+--------------------+-------------------+-------------------------------------------------+\n| table_name         | column_name       | data_type                                       |\n+--------------------+-------------------+-------------------------------------------------+\n| _orbit_manifest    | repo_path         | VARCHAR                                         |\n| _orbit_manifest    | project_id        | BIGINT                                          |\n| _orbit_manifest    | parent_repo_path  | VARCHAR                                         |\n| _orbit_manifest    | branch            | VARCHAR                                         |\n| _orbit_manifest    | commit_sha        | VARCHAR                                         |\n| _orbit_manifest    | status            | ENUM('pending', 'indexing', 'indexed', 'error') |\n| _orbit_manifest    | last_indexed_at   | TIMESTAMP                                       |\n| _orbit_manifest    | error_message     | VARCHAR                                         |\n| gl_definition      | id                | BIGINT                                          |\n| gl_definition      | traversal_path    | VARCHAR                                  \n... [truncated 4845 chars]",
+    "subcommand": "schema"
+  },
+  "symbols_captured": 120,
+  "symbols_verified": 120
+}

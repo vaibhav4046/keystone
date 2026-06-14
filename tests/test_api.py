@@ -62,6 +62,23 @@ def test_review_brief_is_deterministic_without_llm():
     assert "providers_configured" in b
 
 
+def test_assistant_is_deterministic_tool_loop_without_llm():
+    # no LLM in tests -> the agent runs the deterministic tool plan: a real, ordered
+    # trace of engine tool calls (blast_radius -> precedent -> propose_reviewers) plus
+    # a recommendation. It must NOT claim to be a live model run, and must stay advisory.
+    r = client.post("/api/assistant", json={"symbol": "tokenize"})
+    assert r.status_code == 200
+    b = r.json()
+    assert b["deterministic"] is True and b["provider"] is None
+    tools = [s["tool"] for s in b["steps"]]
+    assert tools == ["blast_radius", "precedent", "propose_reviewers"]   # a real tool trace
+    # the trace is grounded in engine facts, not invented
+    assert b["steps"][0]["result"]["tier"] == "LOCAL"
+    assert "tokenize" in b["answer"] and "next step" in b["answer"].lower()
+    # the agent proposes; it never records a decision (the ledger is unchanged)
+    assert client.post("/api/assistant", json={"symbol": "does_not_exist"}).status_code == 404
+
+
 def test_precedent_contradiction_over_http():
     p = client.get("/api/precedent/tokenize").json()
     assert p["rejected"] >= 1

@@ -59,19 +59,28 @@ async function boot() {
   STATE.defs = d.names;
   renderDefList(STATE.defs);
   await refreshLedger();
-  // auto-select the scripted demo symbol on the fixture, else the top real symbol
-  if (STATE.defs.length) select(STATE.defs.includes("tokenize") ? "tokenize" : STATE.defs[0]);
+  // auto-select the headline demo symbol: compute_blast_radius (Keystone's own engine,
+  // BLOCKed by prior precedent) on the real self-index, tokenize on the fixture, else top.
+  if (STATE.defs.length) {
+    const demo = STATE.defs.includes("compute_blast_radius") ? "compute_blast_radius"
+      : (STATE.defs.includes("tokenize") ? "tokenize" : STATE.defs[0]);
+    select(demo);
+  }
   wire();
 }
 
 function paintStatus(st) {
   const src = $("#src-chip"), orbit = $("#orbit-chip"), chain = $("#chain-chip"), integ = $("#integ-chip");
   const live = st.source_mode === "LIVE";
-  src.innerHTML = `<span class="dot ${live ? "g" : "a"}"></span>source <b>${esc(st.source_mode)}</b>`;
-  src.className = "chip " + (live ? "ok" : "warn");
+  const snapshot = st.source_mode === "SNAPSHOT";   // committed REAL orbit index, served without a backend
+  src.innerHTML = `<span class="dot ${live ? "g" : (snapshot ? "g" : "a")}"></span>source <b>${esc(st.source_mode)}</b>`;
+  src.className = "chip " + (live || snapshot ? "ok" : "warn");
+  if (snapshot) src.title = "a committed REAL `orbit index` of this repository (" + (st.definitions || "") +
+    " definitions) — every number is engine-computed and cross-verified by orbit sql; served as a static snapshot (no backend).";
   orbit.innerHTML = `orbit <b>${esc(st.orbit_access)}</b>`;
-  orbit.className = "chip " + (/CLI/.test(st.orbit_access || "") ? "ok" : "");
-  orbit.title = /recorded/i.test(st.orbit_access || "") ? "a real orbit CLI run is recorded in the status transcript (public sample reads the fixture)" : "";
+  const cliVerified = /CLI/.test(st.orbit_access || "");
+  orbit.className = "chip " + (cliVerified ? "ok" : "");
+  orbit.title = cliVerified ? ((st.orbit_verified_symbols || 0) + " symbols' direct-caller counts were reproduced by Orbit's own `orbit sql` CLI against the committed index; see the IMPACT panel's orbit-verified badge.") : "";
   const ok = st.audit_chain && st.audit_chain.ok;
   const staticChain = STATIC_MODE || !!STATIC;       // public bundle uses a published key
   if (!ok) {
@@ -107,11 +116,19 @@ function paintStatus(st) {
       banner.innerHTML = "OPEN MODE — no approve token is set, so any caller can record a decision and identity is self-asserted (four-eyes and agent gating are advisory). Set KEYSTONE_APPROVE_TOKEN / bind GitLab OIDC for an enforced deployment.";
     } else { banner.hidden = true; }
   }
-  $("#db-mode").textContent = st.source_mode === "LIVE" ? "Orbit Local (live)" : "fixture (FALLBACK)";
+  const modeLabel = st.source_mode === "LIVE" ? "Orbit Local (live)"
+    : (st.source_mode === "SNAPSHOT" ? "Orbit index (real, committed)" : "fixture (FALLBACK)");
+  $("#db-mode").textContent = modeLabel;
   $("#def-count").textContent = st.definitions;
   $("#db-path").textContent = (st.duckdb_path || "").split(/[\\/]/).slice(-2).join("/");
   $("#db-path").title = st.duckdb_path || "";
-  $("#foot-src").textContent = (st.source_mode === "LIVE" ? "LIVE Orbit Local graph" : "FALLBACK sample graph; live graph runs locally and is shown in the demo video") + " · " + st.duckdb_path;
+  const footSrc = st.source_mode === "LIVE" ? "LIVE Orbit Local graph"
+    : (st.source_mode === "SNAPSHOT"
+        ? ("real Orbit index of this repo · " + (st.orbit_verified_symbols || 0) + " symbols cross-verified by orbit sql")
+        : "FALLBACK sample graph; live graph runs locally and is shown in the demo video");
+  $("#foot-src").textContent = footSrc + " · " + st.duckdb_path;
+  const prov = $("#data-provenance");
+  if (prov && st.data_provenance) { prov.textContent = st.data_provenance; prov.hidden = false; }
 }
 
 function renderDefList(names) {
@@ -155,6 +172,9 @@ async function select(name) {
   renderPrecedent(prec);
   renderBrief({ brief: "…", deterministic: true });
   api("/api/brief/" + encodeURIComponent(name)).then(renderBrief).catch(() => {});
+  const ab = $("#assistant"); if (ab) ab.innerHTML = `<div class="muted">the agent is inspecting ${esc(name)} with engine tools…</div>`;
+  callAssistant(name).then((r) => { if (STATE.selected === name) renderAssistant(r); }).catch(() => {});
+  const ag = $("#assistant-go"); if (ag) ag.disabled = false;
   $("#reject").disabled = false;
   const ex = $("#export-att"); if (ex) ex.disabled = false;
   applyGatePolicy();
@@ -334,13 +354,14 @@ function renderRings(imp) {
     `<div class="ringrow r${r}"><span class="rl">${label}</span><span class="rc tabnum">${n}</span><span class="rn">${names || "—"}</span></div>`
   ).join("");
   if (c.total_affected === 0) {
-    html += `<div class="leaf-note">leaf symbol — nothing depends on it, so changing it is contained by design. Try <b>tokenize</b> or <b>compile_unit</b> to see a blast radius and a prior decision.</div>`;
+    html += `<div class="leaf-note">leaf symbol — nothing depends on it, so changing it is contained by design. Try <b>compute_blast_radius</b> (a BLOCK from prior precedent) or <b>append</b> (a 3-ring blast) to see a real radius and a recorded decision.</div>`;
   }
   const cc = imp.orbit_crosscheck;
   if (cc && cc.ok) {
     html += `<div class="orbit-verified" title="${esc(cc.command || "")}"><span class="ov-dot"></span>` +
-      `orbit-verified · ring-1 = <b>${cc.ring1_cli}</b> via live <code>orbit sql</code>` +
-      (cc.match ? " · matches engine" : " · differs (engine wins)") + `</div>`;
+      `orbit-verified · ring-1 = <b>${cc.ring1_cli}</b> reproduced by <code>orbit sql</code>` +
+      (cc.match ? " · matches engine" : " · differs (engine wins)") +
+      (cc.command ? `<div class="ov-cmd">${esc(cc.command)}</div>` : "") + `</div>`;
   }
   html += `<div class="sig">blast signature <b>${esc(imp.signature.slice(0, 16))}…</b> · sha256 over the epicenter + sorted affected id set</div>`;
   const pol = imp.policy;
@@ -396,6 +417,60 @@ function renderBrief(b) {
   }
 }
 
+// ---- AI assistant (bounded tool-using agent) ----
+// Live backend runs a fresh agent loop (POST); the static deploy serves the baked
+// plan (and a REAL recorded run for headline symbols). The agent PROPOSES; the
+// deterministic gate DECIDES — so this never touches the trust path.
+async function callAssistant(symbol, question) {
+  if (!STATIC_MODE) {
+    try {
+      const r = await fetch("/api/assistant", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol, question: question || undefined }),
+      });
+      if (r.ok) return await r.json();
+      throw new Error("assistant " + r.status);
+    } catch (e) {
+      try { await ensureStatic(); STATIC_MODE = true; } catch (e2) { throw e; }
+    }
+  }
+  await ensureStatic();
+  const rec = (STATIC.assistant || {})[symbol];
+  return rec || { answer: "No assistant data for this symbol in the static bundle.", steps: [], deterministic: true, provider: null };
+}
+
+// a compact one-line summary of an engine tool result for the trace
+function toolResultSummary(tool, r) {
+  if (!r || r.error) return r && r.error ? esc(r.error) : "—";
+  if (tool === "blast_radius") return `${esc(r.tier)} · ${esc(r.action)} · ${r.total_affected} affected (${r.direct_callers} direct) · ${r.required_approvers} approver(s)`;
+  if (tool === "precedent") return `${r.approved} approved / ${r.rejected} rejected` + (r.has_identical_contradiction ? ` · identical-signature rejection by ${esc(r.contradiction_actor)}` : "");
+  if (tool === "propose_reviewers") return (r.prior_approvers && r.prior_approvers.length ? `prior: ${esc(r.prior_approvers.join(", "))}` : "no prior approvers") + (r.required_owner ? ` · owner ${esc(r.required_owner)}` : "");
+  return esc(JSON.stringify(r).slice(0, 80));
+}
+
+function renderAssistant(res) {
+  const box = $("#assistant"), src = $("#assistant-src");
+  if (!box) return;
+  const steps = res.steps || [];
+  let trace = "";
+  if (steps.length) {
+    trace = `<div class="agent-trace" aria-label="agent tool trace">` +
+      steps.map((s, i) =>
+        `<div class="agent-step"><span class="as-n">${i + 1}</span>` +
+        `<code class="as-tool">${esc(s.tool)}(${esc((s.args && s.args.symbol) || "")})</code>` +
+        `<span class="as-res">${toolResultSummary(s.tool, s.result)}</span></div>`
+      ).join("") + `</div>`;
+  }
+  box.innerHTML = trace +
+    `<div class="agent-answer">${esc(res.answer || "—")}</div>` +
+    `<div class="brief-note">${steps.length ? steps.length + " engine tool call(s) · " : ""}the agent proposes; the deterministic gate decides</div>`;
+  if (src) {
+    const real = res.deterministic === false;
+    src.textContent = real ? ("agent · " + (res.provider || "llm")) : "agent · deterministic plan";
+    src.className = "agentic-badge" + (real ? " ai-on" : "");
+  }
+}
+
 async function refreshLedger() {
   const a = await api("/api/audit");
   // names for blast columns are ids; show count
@@ -447,6 +522,18 @@ function wire() {
   $("#tamper").onclick = tamperDemo;
   const ex = $("#export-att"); if (ex) ex.onclick = exportAttestation;
   const ov = $("#override"); if (ov) ov.onchange = applyGatePolicy;
+  const ag = $("#assistant-go"), aq = $("#assistant-q");
+  if (ag && aq) {
+    const ask = () => {
+      if (!STATE.selected) return;
+      const q = aq.value.trim();
+      const box = $("#assistant");
+      if (box) box.innerHTML = `<div class="muted">the agent is working on your question…</div>`;
+      callAssistant(STATE.selected, q).then((r) => { if (STATE.selected) renderAssistant(r); }).catch(() => {});
+    };
+    ag.onclick = ask;
+    aq.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); ask(); } });
+  }
   // premium keyboard layer: "/" focuses symbol search, Escape clears it
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);

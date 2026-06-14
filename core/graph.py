@@ -72,10 +72,19 @@ def _is_valid_duckdb(path: str) -> bool:
 class Graph:
     """Read-only graph reader with live-vs-fallback resolution and introspection."""
 
-    def __init__(self, prefer_live: bool = True):
+    def __init__(self, prefer_live: bool = True, path: Optional[str] = None,
+                 mode: Optional[str] = None):
         import duckdb
         self._duckdb = duckdb
-        if prefer_live and _is_valid_duckdb(LIVE_DUCKDB):
+        if path is not None:
+            # An explicit committed graph snapshot (e.g. data/keystone_self_graph.duckdb,
+            # a real Orbit index of this repo). It IS real Orbit data, so it resolves in
+            # LIVE mode by default and the live-symbol seeding/provenance applies; the
+            # caller labels the served bundle honestly (a committed snapshot, not a backend).
+            if not _is_valid_duckdb(path):
+                raise ValueError(f"not a valid Orbit DuckDB graph: {path}")
+            self.source = Source(mode or "LIVE", os.path.abspath(path), [], True)
+        elif prefer_live and _is_valid_duckdb(LIVE_DUCKDB):
             self.source = Source("LIVE", LIVE_DUCKDB, [], True)
         else:
             self.source = Source("FALLBACK", _ensure_fixture(), [], True)

@@ -12,9 +12,10 @@ test:
   script:
     - pip install --quiet -r requirements.txt
     - python -m pytest -q
-    # committed static bundle must equal a fresh build (no silent drift)
+    # committed static bundle must equal a fresh build from the committed real Orbit
+    # self-index + provenance + recorded agent sample (no silent drift)
     - python scripts/build_static.py
-    - git diff --exit-code -- web/data.json web/orbit_sample_transcript.json
+    - git diff --exit-code -- web/data.json
   rules:
     - when: always
 
