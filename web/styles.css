@@ -244,6 +244,11 @@ body{min-height:100vh;position:relative}
 .tamper-note{margin:8px 14px 2px;padding:8px 11px;border-radius:7px;font-size:11.5px;line-height:1.5}
 .tamper-note.bad{color:#ffc2c6;background:rgba(255,92,102,.10);border:1px solid rgba(255,92,102,.45)}
 .tamper-note.ok{color:#bff3d4;background:rgba(59,224,129,.09);border:1px solid rgba(59,224,129,.40)}
+/* named Blast Collision risk taxonomy badges */
+.risk-badge{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-right:4px}
+.risk-badge.r-high{color:#ffd0d4;background:rgba(255,92,102,.18);border:1px solid rgba(255,92,102,.5)}
+.risk-badge.r-mid{color:#ffe3ad;background:rgba(255,176,46,.16);border:1px solid rgba(255,176,46,.5)}
+.risk-badge.r-low{color:#cfe9f3;background:rgba(91,191,214,.14);border:1px solid rgba(91,191,214,.45)}
 .gate-err{color:var(--danger-2);font-size:11.5px;min-height:0}
 .gate-err:not(:empty){min-height:16px}
 .leaf-note{margin-top:8px;padding:8px 10px;border-radius:7px;background:var(--bg-raised);color:var(--text-mid);font-size:11.5px;line-height:1.45}

@@ -625,6 +625,13 @@ const KIND_LABEL = {
   change_in_blast: "one changes a symbol the other depends on",
   blast_overlap: "their blast radii overlap",
 };
+// Named risk taxonomy for the Blast Collision hazard, strongest first. Honest labels: we do not
+// split DIRECT vs TRANSITIVE here because the footprint does not retain the dependency hop depth.
+const RISK = {
+  change_in_blast: { tag: "DEPENDENCY-BREAK", cls: "r-high" },   // B changes what A depends on
+  same_change: { tag: "SAME-SYMBOL", cls: "r-mid" },             // both edit the same symbol
+  blast_overlap: { tag: "SHARED-DEPENDENCY", cls: "r-low" },     // blast radii share dependents
+};
 
 function renderCollision(col) {
   const box = $("#collision");
@@ -649,8 +656,9 @@ function renderCollision(col) {
       let warn = "";
       if (c.kind === "change_in_blast") warn = "⚠ Git sees NO conflict (different files) - invisible to a normal review";
       else if (c.kind === "same_change") warn = "⚠ both MRs change the same symbol - Git will conflict, but neither reviewer sees the other's intent";
+      const risk = RISK[c.kind] || { tag: c.kind, cls: "r-low" };
       return `<div class="hz-collide sev-${c.kind}" role="alert">` +
-        `<div class="hz-cl-top"><b>${esc(c.mr_a.split("·")[0].trim())}</b> ✕ <b>${esc(c.mr_b.split("·")[0].trim())}</b>` +
+        `<div class="hz-cl-top"><span class="risk-badge ${risk.cls}">${esc(risk.tag)}</span> <b>${esc(c.mr_a.split("·")[0].trim())}</b> ✕ <b>${esc(c.mr_b.split("·")[0].trim())}</b>` +
         `<span class="hz-kind">${esc(KIND_LABEL[c.kind] || c.kind)}</span></div>` +
         `<div class="hz-cl-shared">shares <code>${esc(shared)}</code></div>` +
         (warn ? `<div class="hz-noconflict">${warn}</div>` : "") +
@@ -659,7 +667,7 @@ function renderCollision(col) {
   }
   // safe merge order / cycle
   if (cyc.length) {
-    html += `<div class="hz-order bad">cannot be safely ordered - ${cyc.length} MRs form a dependency cycle; coordinate them</div>`;
+    html += `<div class="hz-order bad"><span class="risk-badge r-high">UNORDERABLE-CYCLE</span> ${cyc.length} MRs form a dependency cycle and cannot be safely ordered; coordinate them</div>`;
   } else if (order.length) {
     html += `<div class="hz-order">safe merge order: ` +
       order.map((o) => `<span class="hz-ord">${esc(o.split("·")[0].trim())}</span>`).join(' <span class="hz-arrow">→</span> ') + `</div>`;
