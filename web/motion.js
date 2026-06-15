@@ -58,6 +58,12 @@
 
   function layout(imp) {
     const rings = imp.rings || {}, parents = imp.parents || {};
+    // Number-keyed name map: the definition ids exceed JS safe-integer range, so a String(id)
+    // lookup against imp.names misses the exact key and falls back to a raw "#id". Keying by
+    // Number(k) makes the lookup precision-consistent (the same lossy conversion on both sides),
+    // so the epicenter and ring nodes show their real names. Mirrors the SVG path's _names.
+    const nm = {};
+    Object.keys(imp.names || {}).forEach((k) => { nm[Number(k)] = imp.names[k]; });
     const nodes = [], byId = {};
     Object.keys(rings).map(Number).sort((a, b) => a - b).forEach((r) => {
       const ids = rings[r], R = r * 1.15;            // shell radius (wider spread)
@@ -68,7 +74,7 @@
           const th = ga * i + r * 0.6;
           x = R * Math.sin(phi) * Math.cos(th); y = R * Math.cos(phi) * 0.62; z = R * Math.sin(phi) * Math.sin(th);
         }
-        const node = { id, r, x, y, z, name: (imp.names && imp.names[String(id)]) || ("#" + id), grow: 0 };
+        const node = { id, r, x, y, z, name: nm[id] || ("#" + id), grow: 0 };
         nodes.push(node); byId[id] = node;
       });
     });

@@ -155,7 +155,11 @@ function renderDefList(names) {
 // private internals (_*), test functions/classes, or one-character names. "show all" reveals the
 // rest, and typing in the filter always searches the full set, so nothing is hidden from search.
 function _reviewable(n) {
-  return n.length > 1 && !/^_/.test(n) && !/^test/i.test(n) && !/Tests?$/.test(n) && /[A-Za-z]/.test(n);
+  if (!(n.length > 1 && !/^_/.test(n) && !/^test/i.test(n) && !/Tests?$/.test(n) && /[A-Za-z]/.test(n))) return false;
+  // hide the tool's own frontend/build functions (web/*.js) from the default view; nobody
+  // governs a change to paintStatus or drawBlast. "show all" still reveals them.
+  const f = (STATIC && STATIC.impact && STATIC.impact[n] && STATIC.impact[n].epicenter && STATIC.impact[n].epicenter.file) || "";
+  return !/^web\//.test(f);
 }
 function reviewableDefs() { return STATE.showAll ? STATE.defs : STATE.defs.filter(_reviewable); }
 function currentDefView() {
@@ -583,12 +587,32 @@ function populateMrPicker() {
   }
 }
 
+function _mrMsg(text, kind) {
+  const m = $("#mr-msg");
+  if (m) { m.textContent = text; m.className = "hz-msg " + (kind || ""); }
+  if (kind === "bad") {                                // shake the input so the rejection is felt
+    const add = $("#mr-add");
+    if (add) { add.classList.remove("shake-x"); void add.offsetWidth; add.classList.add("shake-x"); }
+  }
+}
 async function addMr(symbol) {
   const s = (symbol || "").trim();
-  if (!s || !(STATIC && STATIC.impact && STATIC.impact[s]) && !STATE.defs.includes(s)) return;
-  const n = STATE.openMrs.length + 1;
-  STATE.openMrs.push({ id: `MR-${500 + n} · change ${s}`, symbols: [s] });
-  renderCollision(await detectCollisions(STATE.openMrs));
+  if (!s) return;
+  const known = (STATIC && STATIC.impact && STATIC.impact[s]) || STATE.defs.includes(s);
+  if (!known) {                                        // unknown symbol: say so, do not clear silently
+    _mrMsg("'" + s + "' is not in this Orbit index. Try compute_blast_radius, append, or verify.", "bad");
+    return;
+  }
+  if (STATE.openMrs.some((m) => (m.symbols || [])[0] === s)) { _mrMsg(s + " is already an open MR.", ""); return; }
+  const before = (STATE._col && STATE._col.counts && STATE._col.counts.collisions) || 0;
+  const id = `MR-${500 + STATE.openMrs.length + 1} · change ${s}`;
+  STATE.openMrs.push({ id, symbols: [s] });
+  const col = await detectCollisions(STATE.openMrs);
+  STATE._col = col;
+  renderCollision(col);
+  const added = Math.max(0, ((col && col.counts && col.counts.collisions) || 0) - before);
+  _mrMsg("Added " + s + " as " + id.split(" ")[0] + (added ? " - " + added + " new collision(s)." : " - no new collision."), "ok");
+  const box = $("#collision"); if (box) { box.classList.remove("flash-highlight"); void box.offsetWidth; box.classList.add("flash-highlight"); setTimeout(() => box.classList.remove("flash-highlight"), 1600); }
 }
 
 async function resetMrs() {
@@ -758,7 +782,7 @@ function wire() {
   });
   $("#approve").onclick = () => decide("approve");
   $("#reject").onclick = () => decide("reject");
-  $("#verify").onclick = refreshLedger;
+  $("#verify").onclick = verifyChain;
   $("#tamper").onclick = tamperDemo;
   const ex = $("#export-att"); if (ex) ex.onclick = exportAttestation;
   const ov = $("#override"); if (ov) ov.onchange = applyGatePolicy;
@@ -962,12 +986,14 @@ async function decide(decision) {
   // append in-browser so the gate stays interactive (the live local app persists to the
   // hash-chained ledger). Carry the governance fields so the row mirrors a server-recorded one.
   const imp = STATIC.impact[STATE.selected] || {}, ip = imp.policy || {};
-  STATIC.audit.rows.push({
-    seq: STATIC.audit.rows.length, actor: reviewer, change_id: g.cid,
+  const _seq = STATIC.audit.rows.reduce((m, r) => Math.max(m, r.seq || 0), -1) + 1;
+  STATIC.audit.rows.unshift({                          // newest-first, matching the bundle order
+    seq: _seq, actor: reviewer, change_id: g.cid,
     target_symbols: [STATE.selected], decision, rationale: reason,
+    blast_radius_set: (imp.affected_ids || []),        // record the REAL blast, not 0
     signature: imp.signature || "", tier: ip.tier, governance_action: ip.action,
     quorum_status: g.quorum.status, confirmed_approvers: g.quorum.approvers, override: g.overrideUsed,
-    ts: "sample", row_hash: "(in-browser sample)",
+    ts: new Date().toISOString().replace(/\.\d+Z$/, "Z"), row_hash: "(in-browser sample)",
   });
   $("#reason").value = "";
   await refreshLedger(); await select(STATE.selected);   // re-render first (applyGatePolicy resets the status line)
@@ -997,7 +1023,28 @@ async function tamperDemo() {
   });
   $("#chain-chip").innerHTML = `<span class="dot r"></span>chain <b>broken@${idx} (sim)</b>`;
   $("#chain-chip").className = "chip bad";
-  setTimeout(refreshLedger, 2600); // self-heal: re-read real (untampered) chain
+  // Persist the broken state and narrate it; nothing heals automatically. The reviewer must
+  // click VERIFY CHAIN to recompute, which is the whole point: tamper-evidence is detected,
+  // not silently undone.
+  const note = $("#tamper-note");
+  if (note) {
+    note.hidden = false; note.className = "tamper-note bad";
+    note.textContent = "Simulated edit to row " + idx + ": the row hash no longer recomputes, so the chain breaks at link " + idx + " and every link after it. Nothing healed it. Click VERIFY CHAIN to recompute from the rows.";
+  }
+}
+
+// VERIFY CHAIN: recompute and narrate the result (and clear a simulated tamper).
+async function verifyChain() {
+  await refreshLedger();
+  const note = $("#tamper-note");
+  if (note && !note.hidden) {
+    const sample = STATIC_MODE || !!STATIC;
+    note.className = "tamper-note ok";
+    note.textContent = sample
+      ? "Re-verified: recomputed from the real rows. This public bundle uses a published sample key, so the chain badge reads SAMPLE; the local app keys it with a secret per-host key for true tamper-evidence."
+      : "Re-verified: the chain recomputed cleanly from the rows, every link intact.";
+    setTimeout(() => { note.hidden = true; }, 5000);
+  }
 }
 
 boot();
