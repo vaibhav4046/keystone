@@ -44,6 +44,7 @@
         <datalist id="mr-symbols"></datalist>
         <button id="mr-reset" class="btn ghost" type="button">reset</button>
       </div>
+      <div id="mr-msg" class="hz-msg" role="status" aria-live="polite"></div>
     </div>
     <div class="hz-col hz-debt">
       <div class="hz-title">REVIEW DEBT <span class="hz-sub">high blast, no test directly exercises it</span></div>
@@ -149,6 +150,7 @@
     <button id="verify" class="btn ghost">VERIFY CHAIN</button>
     <button id="tamper" class="btn ghost danger-ghost" title="demo: prove tamper-evidence (in-memory only)">SIMULATE TAMPER</button>
   </div>
+  <div id="tamper-note" class="tamper-note" role="status" aria-live="polite" hidden></div>
   <div class="ltable-wrap">
     <table class="ltable">
       <caption class="visually-hidden">Append-only audit ledger: each row binds a decision to its blast radius and the previous row's hash.</caption>
