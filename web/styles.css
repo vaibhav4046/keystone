@@ -115,6 +115,21 @@ body{min-height:100vh;position:relative}
   white-space:nowrap;transition:filter .15s,transform .1s}
 .lede-chip:hover{filter:brightness(1.18)} .lede-chip:active{transform:translateY(1px)}
 .lede-chip:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.lede-tour{background:rgba(43,255,170,.12);border-color:rgba(43,255,170,.55);color:var(--green, #2bffaa)}
+
+/* guided 60-second tour bar (under the lede) */
+.tour-bar{position:relative;z-index:1;margin:6px 18px 0;display:flex;align-items:center;gap:12px;
+  padding:8px 14px;border:1px solid rgba(43,255,170,.45);border-radius:10px;
+  background:rgba(43,255,170,.06);font-family:var(--mono);font-size:12px;color:var(--text-hi)}
+.tour-step{font-weight:700;letter-spacing:.04em}
+.tour-meta{color:var(--text-mid);flex:1 1 auto}
+.tour-stop{font-family:var(--mono);font-size:11px;color:var(--text-hi);
+  background:transparent;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:3px 10px;cursor:pointer}
+.tour-stop:hover{filter:brightness(1.18)}
+
+/* inline coachmark: one-line "what to look for" under a panel title */
+.coach{position:relative;z-index:1;margin:6px 18px -2px;color:var(--text-dim);font-size:11.5px;line-height:1.5}
+.coach b{color:var(--text-mid);font-weight:700}
 
 .ai-brief{color:var(--text-hi);font-size:12.5px;line-height:1.55}
 .brief-note{margin-top:8px;color:var(--text-dim);font-size:10.5px;border-top:1px solid var(--bg-line);padding-top:6px}
