@@ -83,6 +83,10 @@ def build_attestation(*, impact_dict: dict, policy_eval: dict, row: dict, source
             "blastSignature": impact_dict.get("signature"),
             "orbitSnapshotSha256": snap,
             "orbitSourceMode": source_mode,           # LIVE or FALLBACK, disclosed
+            # the live `orbit sql` cross-check that independently reproduced the ring-1 count via
+            # Orbit's own CLI (present on the live path; the engine value is authoritative and the
+            # CLI confirms it). Recorded so the attestation carries the cross-check, not just asserts.
+            "orbitCrossCheck": impact_dict.get("orbit_crosscheck"),
             "ledger": {"seq": row.get("seq"), "rowHash": row.get("row_hash"), "prevHash": row.get("prev_hash")},
             "integrity": {
                 "hmacChained": True,
