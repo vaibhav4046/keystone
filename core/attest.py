@@ -104,7 +104,12 @@ def verify_attestation(att: dict, ledger, *, graph=None) -> dict:
     is present in it. When `graph` is supplied, ALSO re-derive the orbit snapshot digest from the
     current graph for the attestation's subject symbol and assert it still matches the digest the
     attestation was bound to, so a graph that has since drifted is detected (snapshot_matches).
-    Returns {ok, chain_ok, row_present, snapshot_matches, reason}."""
+    Returns {ok, chain_ok, row_present, snapshot_matches, reason}.
+
+    On multi-symbol (MR-level) rows, a single-symbol impact re-derivation is structurally
+    insufficient: the attestation's digest is over the UNION of all touched symbols' blast radii.
+    We fall back to `snapshot_matches = None` (no claim) for those rows rather than falsely
+    failing - the chain + row-present check still gate the verification."""
     v = ledger.verify()
     try:
         row_hash = att["predicate"]["ledger"]["rowHash"]
@@ -115,15 +120,21 @@ def verify_attestation(att: dict, ledger, *, graph=None) -> dict:
     snapshot_matches = None
     if graph is not None:
         try:
-            from . import impact as impact_mod
+            from . import impact as impact_mod, mr as mr_mod
             pred = att.get("predicate") or {}
             want = pred.get("orbitSnapshotSha256")
             syms = pred.get("targetSymbols") or []
-            name = syms[0] if syms else None
-            imp = impact_mod.compute_blast_radius(graph, name) if name else None
-            cur = orbit_snapshot_sha256(imp.to_dict()) if imp else None
-            if cur and want:
-                snapshot_matches = (cur == want)
+            # An MR-level attestation has multiple target symbols - the snapshot digest was
+            # computed over the union impact_dict, not over a single epicenter. Re-deriving
+            # from one symbol's blast would always mismatch; we honestly return None.
+            if not syms or len(syms) > 1:
+                snapshot_matches = None
+            else:
+                name = syms[0]
+                imp = impact_mod.compute_blast_radius(graph, name)
+                cur = orbit_snapshot_sha256(imp.to_dict()) if imp else None
+                if cur and want:
+                    snapshot_matches = (cur == want)
         except Exception:
             snapshot_matches = None
     ok = bool(v["ok"] and present and snapshot_matches is not False)

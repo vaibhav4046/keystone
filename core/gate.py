@@ -167,7 +167,9 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
 
 def evaluate_mr(graph, ledger, *, names, decision: str, reviewer: str,
                 change_id: Optional[str] = None, change_author: Optional[str] = None,
+                author_kind: Optional[str] = None,
                 override: bool = False, max_depth: int = 3, policy: Optional[dict] = None,
+                registry: Optional[dict] = None,
                 ci_identity: Optional[dict] = None) -> dict:
     """Govern and RECORD a decision against a whole merge request (several touched symbols), bound
     to the MR signature and the full touched-symbol set rather than one epicenter. Applies the same
@@ -179,6 +181,7 @@ def evaluate_mr(graph, ledger, *, names, decision: str, reviewer: str,
         return {"ok": False, "status": 404, "error": "NOT_FOUND",
                 "detail": {"error": "NOT_FOUND", "message": "none of the MR symbols resolve in the graph"}}
     union = mr_res["union"]
+    impact_dict = mr_res.get("impact_dict") or {}        # union impact context (epicenter + affected set)
     sig = union["signature"]
     target_symbols = mr_res["resolved"]
     target_fqns = [f for f in (mr_res.get("epicenter_fqns") or []) if f] or None
@@ -200,6 +203,20 @@ def evaluate_mr(graph, ledger, *, names, decision: str, reviewer: str,
     if decision == "approve" and override and not bound and os.environ.get("KEYSTONE_STRICT_OVERRIDE"):
         return {"ok": False, "status": 403, "error": "OVERRIDE_REQUIRES_IDENTITY",
                 "detail": {"error": "OVERRIDE_REQUIRES_IDENTITY"}}
+    # Resolve the author the same way `evaluate` does, so the recorded `author_kind` reflects a
+    # real human / registered-agent / unregistered-agent badge rather than a hardcoded "human".
+    # This keeps the audit trail honest: an MR rubber-stamped by an unregistered agent must not
+    # be recorded as a human decision. Scope is checked against the union's affected file set,
+    # because the MR is the union of every touched symbol's blast.
+    author = agents_mod.resolve_author(reviewer, declared_kind=author_kind, registry=registry)
+    scope = agents_mod.check_scope(author, impact_dict)
+    if not scope["in_scope"]:
+        return {"ok": False, "status": 403, "error": "SCOPE_VIOLATION",
+                "detail": {"error": "SCOPE_VIOLATION", "author": author, "violations": scope["violations"]}}
+    if decision == "approve" and author["badge"] == "AGENT_UNREGISTERED":
+        return {"ok": False, "status": 403, "error": "UNREGISTERED_AGENT",
+                "detail": {"error": "UNREGISTERED_AGENT", "author": author,
+                           "hint": "register this agent in .keystone/agents.json or have a human review"}}
     if decision == "approve" and change_author and reviewer == change_author and not override:
         return {"ok": False, "status": 403, "error": "SELF_APPROVAL",
                 "detail": {"error": "SELF_APPROVAL", "change_author": change_author}}
@@ -226,7 +243,10 @@ def evaluate_mr(graph, ledger, *, names, decision: str, reviewer: str,
     row_extra = {
         "tier": union["tier"], "governance_action": action,
         "policy_version": union["policy_version"], "policy_hash": union["policy_hash"],
-        "orbit_snapshot_sha256": union["orbit_snapshot_sha256"], "author_kind": "human",
+        "orbit_snapshot_sha256": union["orbit_snapshot_sha256"],
+        # Honest: resolve the author through the agent registry so the recorded badge reflects
+        # a real human / registered-agent / unregistered-agent, mirroring the single-symbol path.
+        "author_kind": author["badge"],
         "required_approvers": required, "confirmed_approvers": confirmed,
         "quorum_status": quorum_status, "override": override_used, "self_asserted": self_asserted,
         "mr": True, "mr_symbols": target_symbols,
@@ -238,9 +258,14 @@ def evaluate_mr(graph, ledger, *, names, decision: str, reviewer: str,
         row_extra["change_author"] = change_author
     return {
         "ok": True, "union": union, "per_symbol": mr_res["per_symbol"], "reasons": reasons,
-        "self_asserted": self_asserted, "ci_identity": ci_identity if bound else None,
+        "author": author, "self_asserted": self_asserted,
+        "ci_identity": ci_identity if bound else None,
         "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status,
                    "closed": quorum_status == "APPROVED", "approvers": confirmed, "change_id": cid},
         "sig": sig, "change_id": cid, "target_symbols": target_symbols, "target_fqns": target_fqns,
         "blast_set": union.get("affected_ids") or [], "row_extra": row_extra,
+        # The impact_dict used to derive the orbit_snapshot_sha256 - the attestation builder
+        # needs it to bind the attestation to the exact union context the reviewer was shown.
+        # This is the dict that would NOT roundtrip from a single-symbol lookup.
+        "impact_dict": impact_dict,
     }

@@ -219,3 +219,23 @@ def test_approve_records_and_chain_verifies():
     assert "T" in body["row"]["ts"] and body["row"]["ts"].endswith("Z")   # real ISO timestamp
     after = client.get("/api/audit").json()["verify"]["count"]
     assert after == before + 1
+
+
+def test_approve_mr_returns_attestation_and_records_real_author_kind():
+    """Symmetry: /api/approve-mr now returns an in-toto/SLSA-VSA attestation bound to the
+    UNION impact context (not a single-symbol lookup), so the audit trail is uniform with
+    /api/approve. The recorded author_kind must reflect the actual agent badge, not a
+    hardcoded 'human'."""
+    r = client.post("/api/approve-mr", json={"symbols": ["serialize", "tokenize"],
+                                             "decision": "approve", "reviewer": "tester",
+                                             "rationale": "reviewed the MR", "change_id": "MR-API-1"})
+    assert r.status_code == 200
+    body = r.json()
+    assert "attestation" in body and body["attestation"]["_type"].endswith("/Statement/v1")
+    assert sorted(body["attestation"]["predicate"]["targetSymbols"]) == ["serialize", "tokenize"]
+    assert body["row"]["author_kind"] == "HUMAN"               # a human reviewer -> HUMAN badge
+    # declaring the same reviewer as an UNREGISTERED agent is refused (no rubber-stamp path)
+    bad = client.post("/api/approve-mr", json={"symbols": ["serialize", "tokenize"],
+                                               "decision": "approve", "reviewer": "mystery-bot",
+                                               "rationale": "auto-fix", "author_kind": "agent"})
+    assert bad.status_code == 403 and bad.json()["detail"]["error"] == "UNREGISTERED_AGENT"
