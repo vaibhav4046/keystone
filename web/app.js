@@ -831,6 +831,50 @@ function wire() {
       const gate = document.querySelector(".panel.gate"); if (gate) setTimeout(() => highlightPanel(gate), 250);
     });
   });
+
+  // Guided 60-second tour: auto-runs the canonical sequence so a judge who clicks once
+  // gets the full demo in under a minute, with the panel payoff pulsing on each step.
+  const TOUR_STEPS = [
+    { label: "1/6: the collision demo",     action: () => { select("compute_blast_radius"); scrollTo("hazard"); } },
+    { label: "2/6: blast + orbit sql",      action: () => { scrollTo("blast-radius"); } },
+    { label: "3/6: precedent + BLOCK",      action: () => { select("compute_blast_radius"); scrollTo("precedent"); } },
+    { label: "4/6: the gate",               action: () => { scrollTo("gate"); } },
+    { label: "5/6: tamper + re-verify",     action: () => { scrollTo("audit"); tamperDemo(); } },
+    { label: "6/6: export an attestation",  action: () => { scrollTo("attestation"); } },
+  ];
+  let tourHandle = null;
+  function stopTour() {
+    if (tourHandle) { clearTimeout(tourHandle); tourHandle = null; }
+    const bar = document.getElementById("tour-bar");
+    if (bar) bar.hidden = true;
+  }
+  function startTour() {
+    stopTour();
+    const bar = document.getElementById("tour-bar");
+    const stepEl = document.getElementById("tour-step");
+    const metaEl = document.getElementById("tour-meta");
+    if (!bar || !stepEl || !metaEl) return;
+    bar.hidden = false;
+    let i = 0;
+    const tick = () => {
+      if (i >= TOUR_STEPS.length) { stopTour(); return; }
+      const step = TOUR_STEPS[i];
+      stepEl.textContent = step.label;
+      metaEl.textContent = `step ${i + 1} of ${TOUR_STEPS.length} - auto-advances every 4s`;
+      try { step.action(); } catch (_) { /* never let a tour step break the page */ }
+      i++;
+      tourHandle = setTimeout(tick, 4000);
+    };
+    tick();
+  }
+  function scrollTo(id) {
+    const el = document.getElementById(id);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  const tourBtn = document.getElementById("lede-tour");
+  if (tourBtn) tourBtn.addEventListener("click", startTour);
+  const stopBtn = document.getElementById("tour-stop");
+  if (stopBtn) stopBtn.addEventListener("click", stopTour);
 }
 
 // fnmatch-style path glob, mirroring core/agents._matches (normalise the leading slash, try a

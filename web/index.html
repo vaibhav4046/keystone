@@ -29,6 +29,12 @@
   <span class="lede-txt">A live command center over a real GitLab Orbit index of this repository. It surfaces change risk a normal merge-request review cannot see, then governs the change. New here? Start with one click:</span>
   <button class="lede-chip" type="button" data-pick="compute_blast_radius">see a graph-driven BLOCK</button>
   <button class="lede-chip" type="button" data-pick="append">see a CROSS-TEAM change</button>
+  <button class="lede-chip lede-tour" type="button" id="lede-tour">&#9654; take the 60-second tour</button>
+</div>
+<div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
+  <span class="tour-step" id="tour-step">ready</span>
+  <span class="tour-meta" id="tour-meta"></span>
+  <button class="tour-stop" type="button" id="tour-stop">stop</button>
 </div>
 
 <!-- HAZARD X-RAY: the lead. Risk the Orbit call graph reveals that Git/GitLab cannot see. -->
