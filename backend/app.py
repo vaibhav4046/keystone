@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
                   llm as llm_mod, agent as agent_mod, mr as mr_mod, collision as collision_mod,
-                  graph_audit as graph_audit_mod)
+                  graph_audit as graph_audit_mod, drift as drift_mod)
 from core.audit import Ledger, key_fingerprint, using_public_sample_key
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -309,6 +309,22 @@ def assistant(q: AssistantQuery):
 def policy():
     p = policy_mod.load_policy()
     return {"policy": p, "policy_hash": policy_mod.policy_hash(p)}
+
+
+@app.get("/api/drift")
+def drift(prior: str = Query(..., min_length=1, max_length=512),
+          current: str = Query(..., min_length=1, max_length=512),
+          max_depth: int = Query(default=3, ge=1, le=MAX_DEPTH_CAP),
+          top: int = Query(default=20, ge=1, le=200)):
+    """Blast-radius drift between two Orbit graph snapshots (core/drift.py). Per-symbol deltas
+    in blast radius: which symbols grew, which shrunk, which signatures changed. A change in
+    signature means a prior approval's blast radius no longer matches the current graph, so
+    a reviewer re-reading an older approval deserves to know. Read-only over both inputs."""
+    out = drift_mod.compute_drift(prior_path=prior, current_path=current,
+                                  max_depth=max_depth, top=top)
+    if not out.get("ok"):
+        raise HTTPException(404, out.get("error", "drift failed"))
+    return out
 
 
 @app.get("/api/agent-scope/{name}")

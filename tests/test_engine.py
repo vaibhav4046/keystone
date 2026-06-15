@@ -235,3 +235,24 @@ def test_concurrent_appends_keep_the_chain_intact(tmp_path):
         t.join()
     v = led.verify()
     assert v["ok"] is True and v["count"] == n           # chain intact and every append landed
+
+
+def test_drift_self_against_self_is_zero():
+    """Drift engine sanity: comparing a graph to itself reports zero changes of every kind,
+    so the numbers (added/removed/grew/shrunk/signatures_changed) all sum to a no-op."""
+    from core.drift import compute_drift
+    r = compute_drift(prior_path="data/keystone_self_graph.duckdb",
+                      current_path="data/keystone_self_graph.duckdb", top=5)
+    assert r["ok"] and r["prior_count"] == r["current_count"]
+    assert r["added_count"] == 0 and r["removed_count"] == 0
+    assert r["grew_count"] == 0 and r["shrunk_count"] == 0
+    assert r["signatures_changed"] == 0
+
+
+def test_drift_reports_missing_paths_honestly():
+    """A missing prior or current file is reported with an error code, not an exception."""
+    from core.drift import compute_drift
+    assert compute_drift(prior_path="does/not/exist.duckdb",
+                         current_path="data/keystone_self_graph.duckdb")["error"] == "PRIOR_NOT_FOUND"
+    assert compute_drift(prior_path="data/keystone_self_graph.duckdb",
+                         current_path="does/not/exist.duckdb")["error"] == "CURRENT_NOT_FOUND"
