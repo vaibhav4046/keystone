@@ -211,3 +211,27 @@ def test_contradiction_signature_matches_live_blast(graph):
     imp = impact_mod.compute_blast_radius(graph, "tokenize", max_depth=3)
     seed = [r for r in fixtures.seed_ledger_rows() if r["change_id"] == "MR-203"][0]
     assert impact_mod.blast_radius_signature(seed["blast_radius_set"], seed.get("epicenter_id")) == imp.signature
+
+
+def test_concurrent_appends_keep_the_chain_intact(tmp_path):
+    """N threads append concurrently; the process append-lock must serialise the
+    read-prev-hash-then-write so the chain stays verifiable and every row lands (no two writers
+    share a prev_hash, no lost write). The single-process lock is what this proves; a multi-host
+    deployment still needs an external mutex, as the README states."""
+    import threading
+    led = Ledger(str(tmp_path / "ledger.jsonl"))
+    n = 24
+    barrier = threading.Barrier(n)
+
+    def one(i):
+        barrier.wait()                                   # release all writers at once to force contention
+        led.append(actor=f"r{i}", change_id=f"MR-{i}", target_symbols=["x"], blast_radius_set=[i + 2],
+                   signature=f"sig{i}", decision="approve", rationale="concurrent")
+
+    threads = [threading.Thread(target=one, args=(i,)) for i in range(n)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    v = led.verify()
+    assert v["ok"] is True and v["count"] == n           # chain intact and every append landed
