@@ -363,3 +363,62 @@ def test_key_fingerprint_flags_the_public_sample_key(monkeypatch):
     A._CACHED_KEY = None
     assert A.using_public_sample_key() is False
     A._CACHED_KEY = None
+
+
+def test_evaluate_mr_records_real_author_kind_not_human(graph, tmp_path):
+    """Regression: evaluate_mr used to hardcode author_kind='human', so an agent approving an MR
+    was recorded as a human decision. The audit row must reflect the real badge, mirroring the
+    single-symbol path."""
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    reg = {"agents": {"bot": {"model": "m", "allowed_paths": ["**"], "max_blast_radius": 99}}}
+    names = ["serialize", "tokenize"]
+    res = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="bot",
+                               author_kind="agent", registry=reg, change_id="MR-BOT")
+    assert res["ok"] and res["row_extra"]["author_kind"] == "AGENT_VERIFIED"
+    # a UNREGISTERED agent is refused, just like the single-symbol path
+    bad = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="stranger",
+                               author_kind="agent", registry=reg, change_id="MR-STR")
+    assert bad["ok"] is False and bad["error"] == "UNREGISTERED_AGENT"
+    # a human (no author_kind declared) is recorded as HUMAN
+    human = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="alice",
+                                 change_id="MR-A")
+    assert human["ok"] and human["row_extra"]["author_kind"] == "HUMAN"
+
+
+def test_mr_level_attestation_verifies_chain_and_row_present(graph, tmp_path):
+    """Regression: the new T-3 MR-level attestation must pass offline verification. The earlier
+    implementation re-derived the snapshot only from targetSymbols[0], so MR attestations
+    (targetSymbols=[A,B,...]) never matched. We now honestly return snapshot_matches=None
+    (no claim) for multi-symbol rows; chain_ok + row_present still gate ok=True."""
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    res = gate_mod.evaluate_mr(graph, led, names=["serialize", "tokenize"], decision="approve",
+                               reviewer="alice", change_id="MR-A")
+    assert res["ok"] and "impact_dict" in res
+    row = led.append(actor="alice", change_id=res["change_id"], target_symbols=res["target_symbols"],
+                     target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"],
+                     signature=res["sig"], decision="approve", rationale="ok", extra=res["row_extra"])
+    att = attest_mod.build_attestation(impact_dict=res["impact_dict"], policy_eval=res["union"],
+                                       row=row, source_mode="FALLBACK")
+    assert sorted(att["predicate"]["targetSymbols"]) == ["serialize", "tokenize"]
+    v = attest_mod.verify_attestation(att, led, graph=graph)
+    assert v["ok"] is True and v["chain_ok"] is True and v["row_present"] is True
+    assert v["snapshot_matches"] is None        # honest: not re-derivable from one symbol
+
+
+def test_attestation_against_ledger_without_graph_still_verifies(graph, tmp_path):
+    """The verify_attestation path without a graph (no live graph to re-derive from) must still
+    succeed on chain + row_present. Catches regressions where a hard graph=None check would
+    mis-mark MR attestations as failed even when the chain is intact."""
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    res = gate_mod.evaluate_mr(graph, led, names=["serialize", "tokenize"], decision="approve",
+                               reviewer="alice", change_id="MR-A")
+    row = led.append(actor="alice", change_id=res["change_id"], target_symbols=res["target_symbols"],
+                     blast_radius_set=res["blast_set"], signature=res["sig"], decision="approve",
+                     rationale="ok", extra=res["row_extra"])
+    att = attest_mod.build_attestation(impact_dict=res["impact_dict"], policy_eval=res["union"],
+                                       row=row, source_mode="FALLBACK")
+    v = attest_mod.verify_attestation(att, led)        # no graph -> no snapshot check
+    assert v["ok"] is True and v["snapshot_matches"] is None

@@ -404,6 +404,7 @@ class MRDecision(BaseModel):
     rationale: str = Field(min_length=1, max_length=2048)
     change_id: Optional[str] = Field(default=None, max_length=120)
     change_author: Optional[str] = Field(default=None, max_length=120)
+    author_kind: Optional[str] = Field(default=None, max_length=16)      # "agent" enforces the agent scope manifest
     override: bool = False
     max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
 
@@ -420,9 +421,10 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
         raise HTTPException(401, "override requires a valid X-Keystone-Override-Token")
     if not _rate_ok():
         raise HTTPException(429, "too many approvals; slow down")
-    clean = [s for s in (x.strip() for x in d.symbols) if s][:40]
+    clean = [s for s in (s.strip() for s in d.symbols) if s][:40]
     res = gate_mod.evaluate_mr(_graph, _ledger, names=clean, decision=d.decision, reviewer=d.reviewer,
                                change_id=d.change_id, change_author=d.change_author,
+                               author_kind=d.author_kind,
                                override=d.override, max_depth=d.max_depth)
     if not res["ok"]:
         raise HTTPException(res["status"], res.get("detail") or res["error"])
@@ -432,9 +434,15 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
         decision=d.decision, rationale=d.rationale, extra=res["row_extra"],
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     )
+    # MR-level attestation: same in-toto/SLSA-VSA shape as the single-symbol path, bound to the
+    # union impact_dict so the recorded digest and signature reflect the full MR blast, not a
+    # single-symbol lookup. Symmetric with /api/approve so the audit trail is uniform.
+    att = attest_mod.build_attestation(impact_dict=res["impact_dict"], policy_eval=res["union"],
+                                       row=row, source_mode=_graph.source.mode)
     return {"row": row, "verify": _ledger.verify(), "union": res["union"], "per_symbol": res["per_symbol"],
             "self_asserted": res.get("self_asserted", True),
-            "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")}}
+            "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")},
+            "attestation": att}
 
 
 @app.get("/api/attestation/{name}")

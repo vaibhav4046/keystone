@@ -147,4 +147,8 @@ def compute_mr_impact(graph, target_names, max_depth: int = 3) -> Optional[dict]
         "epicenter_fqns": [s["epicenter"] for s in per_symbol],  # target_fqns for the recorded decision
         "strictest_symbol": strictest,
         "per_symbol": per_symbol,
+        # the full union impact_dict (epicenter / affected_ids / names / owners) so the
+        # attestation builder can re-bind the MR-level decision to the exact Orbit-derived
+        # context the reviewer was shown, not to a single-symbol lookup.
+        "impact_dict": impact_dict,
     }
