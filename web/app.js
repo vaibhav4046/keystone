@@ -116,7 +116,10 @@ function paintStatus(st) {
   if (banner) {
     if (integ2.open_mode) {
       banner.hidden = false;
-      banner.innerHTML = "OPEN MODE - no approve token is set, so identity is self-asserted: any caller can record a decision under any name. The gate still enforces the contradiction BLOCK, four-eyes, and the approver quorum here; it is the identity binding that is advisory. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment.";
+      banner.innerHTML = "OPEN MODE - no approve token is set, so identity is self-asserted: any caller can record a decision under any name. The gate still enforces the contradiction BLOCK, four-eyes, and the approver quorum here; it is the identity binding that is advisory. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment."
+        + (st.source_mode === "SNAPSHOT" || st.source_mode === "FALLBACK"
+           ? " <b>Want the live backend?</b> One-click deploy on <a href=\"https://render.com\" target=\"_blank\" rel=\"noopener\">Render</a> (free, no card): connect this repo and Apply - <code>render.yaml</code> is committed. ~2 min. See <a href=\"https://github.com/vaibhav4046/keystone/blob/main/SUBMISSION/RENDER_DEPLOY.md\" target=\"_blank\" rel=\"noopener\">RENDER_DEPLOY.md</a>."
+           : "");
     } else { banner.hidden = true; }
   }
   const modeLabel = st.source_mode === "LIVE" ? "Orbit Local (live)"
