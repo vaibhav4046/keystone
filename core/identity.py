@@ -54,6 +54,32 @@ def _first_token() -> Optional[str]:
     return None
 
 
+def _validate_claims(claims: dict) -> tuple:
+    """Reject a token that is expired, for a different audience, or from an untrusted issuer.
+    `exp` is always enforced when present (a runner-injected token is fresh, but a replayed or
+    stale token must not bind). `aud` and `iss` are enforced only when KEYSTONE_OIDC_AUD /
+    KEYSTONE_OIDC_ISS are configured, so the open demo still binds without extra setup."""
+    import time
+    exp = claims.get("exp")
+    try:
+        if exp is not None and time.time() >= float(exp):
+            return False, "token expired"
+    except (TypeError, ValueError):
+        pass
+    want_aud = os.environ.get("KEYSTONE_OIDC_AUD")
+    if want_aud:
+        aud = claims.get("aud")
+        auds = aud if isinstance(aud, list) else [aud]
+        if want_aud not in auds:
+            return False, "audience mismatch"
+    iss_allow = os.environ.get("KEYSTONE_OIDC_ISS")
+    if iss_allow:
+        allowed = {s.strip() for s in iss_allow.split(",") if s.strip()}
+        if claims.get("iss") not in allowed:
+            return False, "issuer not allowed"
+    return True, "ok"
+
+
 def ci_identity() -> Optional[dict]:
     """Resolve a bound CI identity from a GitLab OIDC ID token in the environment, or None
     when not running on a token-bearing pipeline. The returned dict is what the gate stamps
@@ -70,6 +96,9 @@ def ci_identity() -> Optional[dict]:
     claims = decode_jwt_claims(token)
     if not claims or not claims.get("sub"):
         return None
+    ok, why = _validate_claims(claims)
+    if not ok:
+        return None                      # expired / wrong audience / untrusted issuer -> not bound
     verified = False
     if os.environ.get("KEYSTONE_VERIFY_OIDC") or os.environ.get("KEYSTONE_OIDC_JWKS"):
         verified = verify_signature(token)

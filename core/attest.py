@@ -95,15 +95,37 @@ def build_attestation(*, impact_dict: dict, policy_eval: dict, row: dict, source
     }
 
 
-def verify_attestation(att: dict, ledger) -> dict:
-    """Offline verification: the chain is intact AND the attestation's referenced
-    ledger row hash is present in it. Returns {ok, chain_ok, row_present, reason}."""
+def verify_attestation(att: dict, ledger, *, graph=None) -> dict:
+    """Offline verification: the chain is intact AND the attestation's referenced ledger row hash
+    is present in it. When `graph` is supplied, ALSO re-derive the orbit snapshot digest from the
+    current graph for the attestation's subject symbol and assert it still matches the digest the
+    attestation was bound to, so a graph that has since drifted is detected (snapshot_matches).
+    Returns {ok, chain_ok, row_present, snapshot_matches, reason}."""
     v = ledger.verify()
     try:
         row_hash = att["predicate"]["ledger"]["rowHash"]
     except Exception:
-        return {"ok": False, "chain_ok": v["ok"], "row_present": False, "reason": "malformed attestation"}
+        return {"ok": False, "chain_ok": v["ok"], "row_present": False,
+                "snapshot_matches": None, "reason": "malformed attestation"}
     present = any(r.get("row_hash") == row_hash for r in ledger.rows())
-    ok = bool(v["ok"] and present)
-    reason = "ok" if ok else ("chain broken" if not v["ok"] else "row hash not found in ledger")
-    return {"ok": ok, "chain_ok": v["ok"], "row_present": present, "reason": reason}
+    snapshot_matches = None
+    if graph is not None:
+        try:
+            from . import impact as impact_mod
+            pred = att.get("predicate") or {}
+            want = pred.get("orbitSnapshotSha256")
+            syms = pred.get("targetSymbols") or []
+            name = syms[0] if syms else None
+            imp = impact_mod.compute_blast_radius(graph, name) if name else None
+            cur = orbit_snapshot_sha256(imp.to_dict()) if imp else None
+            if cur and want:
+                snapshot_matches = (cur == want)
+        except Exception:
+            snapshot_matches = None
+    ok = bool(v["ok"] and present and snapshot_matches is not False)
+    reason = ("ok" if ok else
+              ("chain broken" if not v["ok"] else
+               ("graph snapshot no longer matches the attestation" if snapshot_matches is False
+                else "row hash not found in ledger")))
+    return {"ok": ok, "chain_ok": v["ok"], "row_present": present,
+            "snapshot_matches": snapshot_matches, "reason": reason}

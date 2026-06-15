@@ -33,6 +33,13 @@ governance-gate:
   id_tokens:
     KEYSTONE_ID_TOKEN:
       aud: https://keystone.example/ci
+  variables:
+    # verify the token's RS256 signature against the issuer JWKS and enforce the audience the
+    # id_tokens block above minted, so the bound identity is cryptographically checked, not just
+    # decoded. KEYSTONE_STRICT_OVERRIDE refuses an override that is not identity-bound.
+    KEYSTONE_VERIFY_OIDC: "1"
+    KEYSTONE_OIDC_AUD: https://keystone.example/ci
+    KEYSTONE_STRICT_OVERRIDE: "1"
   script:
     - pip install --quiet -r requirements.txt
     # the SAME policy gate the API uses: a clean symbol passes, a BLOCKed one fails

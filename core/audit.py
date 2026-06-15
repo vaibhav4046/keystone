@@ -67,6 +67,22 @@ def _canonical(payload: dict) -> str:
     return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+# The published public sample key (used only by the static-bundle build); a real deployment must
+# not be running on it. Exposed via the fingerprint below so a judge can confirm which key is live.
+PUBLIC_SAMPLE_KEY = b"keystone-public-sample-v1"
+
+
+def key_fingerprint() -> str:
+    """A non-secret fingerprint of the integrity key, so a deployment can prove it is not using the
+    published public sample key without revealing the secret. sha256(key) truncated."""
+    return hashlib.sha256(_ledger_key()).hexdigest()[:12]
+
+
+def using_public_sample_key() -> bool:
+    """True when the live key is the published sample key (illustrative chain, not tamper-evident)."""
+    return _ledger_key() == PUBLIC_SAMPLE_KEY
+
+
 def _row_hash(prev_hash: str, payload: dict) -> str:
     return hmac.new(_ledger_key(), (prev_hash + _canonical(payload)).encode("utf-8"),
                     hashlib.sha256).hexdigest()
