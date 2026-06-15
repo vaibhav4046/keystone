@@ -13,6 +13,7 @@ The caller appends the ledger row (so the append stays under the ledger's lock).
 from __future__ import annotations
 
 import datetime
+import os
 import time
 from typing import Optional
 
@@ -65,6 +66,21 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
     pol = policy_mod.evaluate(out, prec, policy)
     out["policy"] = pol
     out["orbit_snapshot_sha256"] = attest_mod.orbit_snapshot_sha256(out)
+
+    # Bound-identity enforcement (T-4). On the GitLab OIDC path the actor IS the token's claim, so
+    # a client-supplied reviewer that disagrees with the bound identity is rejected (you cannot
+    # approve as someone else). And when KEYSTONE_STRICT_OVERRIDE is set, an override is refused
+    # unless the actor is cryptographically bound, so an override is never a self-asserted bypass.
+    bound = bool(ci_identity and ci_identity.get("bound"))
+    if bound and reviewer and reviewer not in (ci_identity.get("actor"), ci_identity.get("sub")):
+        return {"ok": False, "status": 403, "error": "IDENTITY_MISMATCH",
+                "detail": {"error": "IDENTITY_MISMATCH",
+                           "bound": ci_identity.get("actor") or ci_identity.get("sub"),
+                           "hint": "the reviewer must match the bound OIDC identity on the CI path"}}
+    if (decision == "approve" and override and not bound and os.environ.get("KEYSTONE_STRICT_OVERRIDE")):
+        return {"ok": False, "status": 403, "error": "OVERRIDE_REQUIRES_IDENTITY",
+                "detail": {"error": "OVERRIDE_REQUIRES_IDENTITY",
+                           "hint": "KEYSTONE_STRICT_OVERRIDE is set: an override requires a cryptographically bound identity (GitLab OIDC), not a self-asserted reviewer"}}
 
     author = agents_mod.resolve_author(reviewer, declared_kind=author_kind, registry=registry)
     scope = agents_mod.check_scope(author, out)

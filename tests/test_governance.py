@@ -282,3 +282,65 @@ def test_is_test_path_predicate_contract(graph):
         lit = "'" + path.replace("'", "''") + "'"        # safe literal; paths are fixed test data
         got = con.execute(f"SELECT {graph._is_test_path(lit)}").fetchone()[0]
         assert bool(got) is expected, (path, got)
+
+
+# ---- T-4 trust-model hardening ----
+
+def test_oidc_rejects_expired_token(monkeypatch):
+    import time
+    from core import identity as identity_mod
+    monkeypatch.setenv("KEYSTONE_ID_TOKEN", _fake_gitlab_oidc_token(exp=int(time.time()) - 60))
+    assert identity_mod.ci_identity() is None                      # an expired token does not bind
+
+
+def test_oidc_enforces_configured_audience(monkeypatch):
+    from core import identity as identity_mod
+    monkeypatch.setenv("KEYSTONE_ID_TOKEN", _fake_gitlab_oidc_token())   # aud = "keystone"
+    monkeypatch.setenv("KEYSTONE_OIDC_AUD", "a-different-audience")
+    assert identity_mod.ci_identity() is None                      # wrong audience rejected
+    monkeypatch.setenv("KEYSTONE_OIDC_AUD", "keystone")
+    assert identity_mod.ci_identity() is not None                  # matching audience binds
+
+
+def test_attestation_detects_graph_drift(graph, tmp_path):
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    out = impact_mod.compute_blast_radius(graph, "tokenize").to_dict()
+    pol = policy_mod.evaluate(out, {})
+    row = led.append(actor="v", change_id="KS-tokenize", target_symbols=["tokenize"],
+                     blast_radius_set=[2, 3, 4, 6, 7], signature=out["signature"],
+                     decision="approve", rationale="reviewed")
+    att = attest_mod.build_attestation(impact_dict=out, policy_eval=pol, row=row, source_mode="FALLBACK")
+    good = attest_mod.verify_attestation(att, led, graph=graph)
+    assert good["snapshot_matches"] is True and good["ok"] is True
+    att["predicate"]["orbitSnapshotSha256"] = "deadbeef"           # the graph drifted away from it
+    bad = attest_mod.verify_attestation(att, led, graph=graph)
+    assert bad["snapshot_matches"] is False and bad["ok"] is False
+
+
+def test_bound_identity_mismatch_is_rejected(graph, tmp_path):
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    ci = {"bound": True, "actor": "alice", "sub": "project_path:g/p:ref:main"}
+    bad = gate_mod.evaluate(graph, led, name="parse", decision="approve", reviewer="mallory", ci_identity=ci)
+    assert bad["ok"] is False and bad["error"] == "IDENTITY_MISMATCH"
+    ok = gate_mod.evaluate(graph, led, name="parse", decision="approve", reviewer="alice", ci_identity=ci)
+    assert ok["ok"] is True                                        # the bound actor may approve
+
+
+def test_strict_override_requires_bound_identity(graph, tmp_path, monkeypatch):
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    monkeypatch.setenv("KEYSTONE_STRICT_OVERRIDE", "1")
+    res = gate_mod.evaluate(graph, led, name="tokenize", decision="approve", reviewer="x", override=True)
+    assert res["ok"] is False and res["error"] == "OVERRIDE_REQUIRES_IDENTITY"
+
+
+def test_key_fingerprint_flags_the_public_sample_key(monkeypatch):
+    from core import audit as A
+    monkeypatch.setenv("KEYSTONE_LEDGER_KEY", "keystone-public-sample-v1")
+    A._CACHED_KEY = None
+    assert A.using_public_sample_key() is True and len(A.key_fingerprint()) == 12
+    monkeypatch.setenv("KEYSTONE_LEDGER_KEY", "a-real-secret-per-host-key")
+    A._CACHED_KEY = None
+    assert A.using_public_sample_key() is False
+    A._CACHED_KEY = None

@@ -28,7 +28,7 @@ from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
                   llm as llm_mod, agent as agent_mod, mr as mr_mod, collision as collision_mod,
                   graph_audit as graph_audit_mod)
-from core.audit import Ledger
+from core.audit import Ledger, key_fingerprint, using_public_sample_key
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA = os.path.join(ROOT, "data")
@@ -175,7 +175,11 @@ def status():
                       "reviewer_verified": False,
                       # fail-loud: no token => any reachable caller can record decisions
                       "open_mode": APPROVE_TOKEN is None,
-                      "override_token_required": OVERRIDE_TOKEN is not None},
+                      "override_token_required": OVERRIDE_TOKEN is not None,
+                      # non-secret fingerprint of the integrity key, so a judge can confirm the
+                      # deployment is NOT running on the published public sample key.
+                      "key_fingerprint": key_fingerprint(),
+                      "public_sample_key": using_public_sample_key()},
         "window_enforced": bool(policy_mod.load_policy().get("window_enforced")),
         "llm_providers": llm_mod.available_providers(),   # names only; brief is AI when present, else deterministic
     }
