@@ -335,6 +335,25 @@ def test_strict_override_requires_bound_identity(graph, tmp_path, monkeypatch):
     assert res["ok"] is False and res["error"] == "OVERRIDE_REQUIRES_IDENTITY"
 
 
+def test_mr_level_decision_records_full_set_and_contradicts(graph, tmp_path):
+    """A decision on a multi-symbol MR is recorded against the WHOLE touched set and the MR
+    signature; a later MR over the same set then hits an identical-signature contradiction."""
+    from core import gate as gate_mod
+    led = Ledger(str(tmp_path / "l.jsonl"))
+    names = ["serialize", "tokenize"]                              # a real multi-symbol MR in the fixture
+    rej = gate_mod.evaluate_mr(graph, led, names=names, decision="reject", reviewer="r1", change_id="MR-1")
+    assert rej["ok"] and sorted(rej["target_symbols"]) == sorted(names) and rej["row_extra"]["mr"] is True
+    led.append(actor="r1", change_id=rej["change_id"], target_symbols=rej["target_symbols"],
+               target_fqns=rej["target_fqns"], blast_radius_set=rej["blast_set"], signature=rej["sig"],
+               decision="reject", rationale="not safe", extra=rej["row_extra"])
+    # a new MR over the SAME set + union hits the identical-MR-signature contradiction -> BLOCK
+    blocked = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="r2", change_id="MR-2")
+    assert blocked["ok"] is False and blocked["error"] == "GOVERNANCE_BLOCK"
+    # an accountable override proceeds and records the MR-level approval
+    ovr = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="r2", change_id="MR-2", override=True)
+    assert ovr["ok"] is True and ovr["row_extra"]["override"] is True
+
+
 def test_key_fingerprint_flags_the_public_sample_key(monkeypatch):
     from core import audit as A
     monkeypatch.setenv("KEYSTONE_LEDGER_KEY", "keystone-public-sample-v1")

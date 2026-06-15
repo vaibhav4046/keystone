@@ -17,7 +17,8 @@ import os
 import time
 from typing import Optional
 
-from . import impact as impact_mod, policy as policy_mod, attest as attest_mod, agents as agents_mod
+from . import (impact as impact_mod, policy as policy_mod, attest as attest_mod,
+               agents as agents_mod, mr as mr_mod)
 
 
 def _parse_ts(ts: str):
@@ -161,4 +162,85 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
                    "approvers": confirmed, "change_id": cid},
         "sig": imp.signature, "change_id": cid, "target_fqns": fqns,
         "blast_set": imp.affected_ids, "row_extra": row_extra,
+    }
+
+
+def evaluate_mr(graph, ledger, *, names, decision: str, reviewer: str,
+                change_id: Optional[str] = None, change_author: Optional[str] = None,
+                override: bool = False, max_depth: int = 3, policy: Optional[dict] = None,
+                ci_identity: Optional[dict] = None) -> dict:
+    """Govern and RECORD a decision against a whole merge request (several touched symbols), bound
+    to the MR signature and the full touched-symbol set rather than one epicenter. Applies the same
+    governance as the single-symbol gate -- an identical-signature contradiction forces BLOCK,
+    four-eyes, an accountable override, bound-identity checks, and a per-change quorum -- so a
+    multi-symbol MR is recorded as the real unit it is. The caller appends the returned row."""
+    mr_res = mr_mod.compute_mr_impact(graph, list(names or []), max_depth=max_depth)
+    if mr_res is None:
+        return {"ok": False, "status": 404, "error": "NOT_FOUND",
+                "detail": {"error": "NOT_FOUND", "message": "none of the MR symbols resolve in the graph"}}
+    union = mr_res["union"]
+    sig = union["signature"]
+    target_symbols = mr_res["resolved"]
+    target_fqns = [f for f in (mr_res.get("epicenter_fqns") or []) if f] or None
+    prec = ledger.precedent(target_symbols=target_symbols, signature=sig, target_fqns=target_fqns)
+
+    active = policy or policy_mod.load_policy()
+    action = union["action"]
+    reasons = list(union.get("reasons") or [])
+    if active.get("block_on_identical_contradiction") and prec.get("contradiction_strength") == "identical":
+        action = "BLOCK"
+        c = prec.get("contradiction") or {}
+        reasons.append(f"BLOCK: an identical MR blast radius was rejected before "
+                       f"({c.get('change_id', '?')} by {c.get('actor', '?')})")
+
+    bound = bool(ci_identity and ci_identity.get("bound"))
+    if bound and reviewer and reviewer not in (ci_identity.get("actor"), ci_identity.get("sub")):
+        return {"ok": False, "status": 403, "error": "IDENTITY_MISMATCH",
+                "detail": {"error": "IDENTITY_MISMATCH", "bound": ci_identity.get("actor") or ci_identity.get("sub")}}
+    if decision == "approve" and override and not bound and os.environ.get("KEYSTONE_STRICT_OVERRIDE"):
+        return {"ok": False, "status": 403, "error": "OVERRIDE_REQUIRES_IDENTITY",
+                "detail": {"error": "OVERRIDE_REQUIRES_IDENTITY"}}
+    if decision == "approve" and change_author and reviewer == change_author and not override:
+        return {"ok": False, "status": 403, "error": "SELF_APPROVAL",
+                "detail": {"error": "SELF_APPROVAL", "change_author": change_author}}
+    if decision == "approve" and action == "BLOCK" and not override:
+        return {"ok": False, "status": 409, "error": "GOVERNANCE_BLOCK",
+                "detail": {"error": "GOVERNANCE_BLOCK", "reasons": reasons,
+                           "hint": "set override=true with a rationale to record an accountable override"}}
+
+    cid = change_id or ("KS-MR-" + "+".join(sorted(target_symbols)))
+    # Quorum over the MR: distinct approvers of the same change_id + MR signature, counted only
+    # after the most recent rejection (a rejection resets the count), mirroring the single gate.
+    rows = ledger.rows()
+    rel = [r for r in rows if not r.get("seeded") and r.get("change_id") == cid and r.get("signature") == sig]
+    last_reject = max([r["seq"] for r in rel if r.get("decision") == "reject"], default=-1)
+    prior = sorted({r["actor"] for r in rel if r.get("decision") == "approve" and r["seq"] > last_reject})
+    confirmed = sorted(set(prior) | ({reviewer} if decision == "approve" else set()))
+    required = union["required_approvers"]
+    quorum_status = ("REJECTED" if decision == "reject"
+                     else ("APPROVED" if len(confirmed) >= required else "PENDING_APPROVAL"))
+
+    self_asserted = not bound
+    override_used = bool(override) and (action == "BLOCK"
+                                        or (decision == "approve" and bool(change_author) and reviewer == change_author))
+    row_extra = {
+        "tier": union["tier"], "governance_action": action,
+        "policy_version": union["policy_version"], "policy_hash": union["policy_hash"],
+        "orbit_snapshot_sha256": union["orbit_snapshot_sha256"], "author_kind": "human",
+        "required_approvers": required, "confirmed_approvers": confirmed,
+        "quorum_status": quorum_status, "override": override_used, "self_asserted": self_asserted,
+        "mr": True, "mr_symbols": target_symbols,
+    }
+    if bound:
+        row_extra["ci_identity"] = {k: ci_identity.get(k) for k in
+                                    ("source", "sub", "iss", "project_path", "ref", "signature_verified")}
+    if change_author:
+        row_extra["change_author"] = change_author
+    return {
+        "ok": True, "union": union, "per_symbol": mr_res["per_symbol"], "reasons": reasons,
+        "self_asserted": self_asserted, "ci_identity": ci_identity if bound else None,
+        "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status,
+                   "closed": quorum_status == "APPROVED", "approvers": confirmed, "change_id": cid},
+        "sig": sig, "change_id": cid, "target_symbols": target_symbols, "target_fqns": target_fqns,
+        "blast_set": union.get("affected_ids") or [], "row_extra": row_extra,
     }

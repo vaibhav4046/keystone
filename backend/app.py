@@ -397,6 +397,46 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
             "attestation": att}
 
 
+class MRDecision(BaseModel):
+    symbols: list[str] = Field(min_length=1, max_length=40)              # the symbols this MR touches
+    decision: Literal["approve", "reject"]
+    reviewer: str = Field(min_length=1, max_length=120)
+    rationale: str = Field(min_length=1, max_length=2048)
+    change_id: Optional[str] = Field(default=None, max_length=120)
+    change_author: Optional[str] = Field(default=None, max_length=120)
+    override: bool = False
+    max_depth: int = Field(default=3, ge=1, le=MAX_DEPTH_CAP)
+
+
+@app.post("/api/approve-mr")
+def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=None),
+               x_keystone_override_token: Optional[str] = Header(default=None)):
+    """Record ONE governed decision against a whole merge request (several touched symbols), bound
+    to the MR signature and the full touched-symbol set via core/gate.evaluate_mr. The strictest
+    constituent tier applies, and a prior identical-MR-signature rejection forces BLOCK."""
+    if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
+        raise HTTPException(401, "invalid or missing X-Keystone-Token")
+    if d.override and OVERRIDE_TOKEN is not None and not hmac.compare_digest(x_keystone_override_token or "", OVERRIDE_TOKEN):
+        raise HTTPException(401, "override requires a valid X-Keystone-Override-Token")
+    if not _rate_ok():
+        raise HTTPException(429, "too many approvals; slow down")
+    clean = [s for s in (x.strip() for x in d.symbols) if s][:40]
+    res = gate_mod.evaluate_mr(_graph, _ledger, names=clean, decision=d.decision, reviewer=d.reviewer,
+                               change_id=d.change_id, change_author=d.change_author,
+                               override=d.override, max_depth=d.max_depth)
+    if not res["ok"]:
+        raise HTTPException(res["status"], res.get("detail") or res["error"])
+    row = _ledger.append(
+        actor=d.reviewer, change_id=res["change_id"], target_symbols=res["target_symbols"],
+        target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"], signature=res["sig"],
+        decision=d.decision, rationale=d.rationale, extra=res["row_extra"],
+        ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    return {"row": row, "verify": _ledger.verify(), "union": res["union"], "per_symbol": res["per_symbol"],
+            "self_asserted": res.get("self_asserted", True),
+            "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")}}
+
+
 @app.get("/api/attestation/{name}")
 def attestation(name: str = Path(max_length=256)):
     _imp, out = _impact_with_governance(name, 3)
