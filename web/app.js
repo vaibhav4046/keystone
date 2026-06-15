@@ -6,6 +6,12 @@ const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-mo
 
 // Live-API-first, static-bundle fallback so the hero deploys with no backend.
 let STATIC = null, STATIC_MODE = false;
+function _isStaticHost() {
+  const h = location.hostname || "";
+  // Known static hosts with no live backend. localhost is deliberately excluded so local
+  // dev with a running backend still hits the live API first.
+  return /github\.io$|gitlab\.io$|pages\.dev$|\.netlify\.app$|\.vercel\.app$/.test(h) || location.protocol === "file:";
+}
 async function ensureStatic() {
   if (STATIC) return STATIC;
   STATIC = await fetch("data.json").then((r) => r.json());
@@ -31,13 +37,17 @@ function fromStatic(p) {
   throw new Error("no static route " + p);
 }
 const api = async (p) => {
+  // On a known static host (GitHub Pages, local file://, etc.) go straight to the
+  // static bundle so the browser never logs a failed /api/* fetch.
+  if (!STATIC_MODE && _isStaticHost()) {
+    try { await ensureStatic(); STATIC_MODE = true; } catch (e) { /* data.json 404: fall through to live */ }
+  }
   if (!STATIC_MODE) {
     try {
       const r = await fetch(p);
       if (r.ok) return await r.json();
       throw new Error(p + " " + r.status);
     } catch (e) {
-      // first failure: switch to static bundle for the rest of the session
       try { await ensureStatic(); STATIC_MODE = true; } catch (e2) { throw e; }
     }
   }
