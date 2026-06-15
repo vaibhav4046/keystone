@@ -141,7 +141,10 @@ def compute_mr_impact(graph, target_names, max_depth: int = 3) -> Optional[dict]
             "counts": pol["counts"], "reasons": reasons,
             "signature": sig, "orbit_snapshot_sha256": impact_dict["orbit_snapshot_sha256"],
             "policy_version": pol["policy_version"], "policy_hash": pol["policy_hash"],
+            "affected_ids": union_def_ids,                       # the recorded blast set for the MR
+            "epicenter_ids": epi_ids,
         },
+        "epicenter_fqns": [s["epicenter"] for s in per_symbol],  # target_fqns for the recorded decision
         "strictest_symbol": strictest,
         "per_symbol": per_symbol,
     }
