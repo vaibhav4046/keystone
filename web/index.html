@@ -3,9 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Keystone - X-ray hazards in the Orbit graph, then govern the change</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='%23080A0D'/><text x='12' y='17' text-anchor='middle' font-size='15' font-family='monospace' fill='%23FF5C66'>K</text></svg>" />
+<title>Keystone — Hazard X-Ray + Governed Review</title>
+<meta name="description" content="Keystone: X-ray hazards in the GitLab Orbit graph, then govern the change. A live command center for code risk analysis and governed review." />
+<meta property="og:title" content="Keystone — Hazard X-Ray + Governed Review" />
+<meta property="og:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
+<meta property="og:type" content="website" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='%23080A0D'/><text x='12' y='17' text-anchor='middle' font-size='15' font-family='monospace' fill='%23FF5C66'>K</text></svg>" />
 </head>
 <body>
 <a class="skip-link" href="#blast-radius">Skip to blast radius</a>
@@ -13,13 +17,68 @@
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
 
+<!-- Sidebar Navigation -->
+<nav class="sidebar" id="sidebar" aria-label="Main navigation">
+  <div class="sidebar-brand">
+    <span class="sidebar-logo">K</span>
+    <span class="sidebar-brand-text">KEYSTONE</span>
+  </div>
+  <div class="sidebar-nav">
+    <button class="sidebar-item active" data-section="overview" title="Overview">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="sidebar-label">Overview</span>
+    </button>
+    <button class="sidebar-item" data-section="symbols" title="Symbols">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M7 4L3 10l4 6M13 4l4 6-4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11 3l-2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="sidebar-label">Symbols</span>
+    </button>
+    <button class="sidebar-item" data-section="impact" title="Impact">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="sidebar-label">Impact</span>
+    </button>
+    <button class="sidebar-item" data-section="audit" title="Audit">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 2L3 5.5v4.5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V5.5L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="sidebar-label">Audit</span>
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-meta">v1.0</div>
+  </div>
+</nav>
+
+<!-- App Shell -->
+<div class="app-shell">
+
+<!-- Topbar -->
 <header class="topbar">
-  <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">hazard x-ray + governed review</span></div>
-  <div class="status" id="status" aria-live="polite">
-    <span class="chip" id="src-chip">source ...</span>
-    <span class="chip" id="orbit-chip">orbit ...</span>
-    <span class="chip" id="chain-chip">chain ...</span>
-    <span class="chip" id="integ-chip">integrity ...</span>
+  <div class="topbar-left">
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">hazard x-ray + governed review</span></div>
+  </div>
+  <div class="topbar-right">
+    <div class="status" id="status" aria-live="polite">
+      <span class="chip" id="src-chip">source ...</span>
+      <span class="chip" id="orbit-chip">orbit ...</span>
+      <span class="chip" id="chain-chip">chain ...</span>
+      <span class="chip" id="integ-chip">integrity ...</span>
+    </div>
   </div>
 </header>
 
@@ -38,7 +97,9 @@
   <button class="tour-stop" type="button" id="tour-stop">stop</button>
 </div>
 
-<!-- HAZARD X-RAY: the lead. Risk the Orbit call graph reveals that Git/GitLab cannot see. -->
+<main>
+
+<!-- HAZARD X-RAY -->
 <section class="hazard panel" data-reveal aria-labelledby="hazard-h">
   <div class="p-h" id="hazard-h">HAZARD X-RAY
     <span class="hint">risk the Orbit graph sees that Git can't</span></div>
@@ -60,72 +121,75 @@
   </div>
 </section>
 
-<main class="grid">
-  <!-- left rail -->
-  <section class="rail panel" data-reveal>
-    <div class="rail-h" id="symbols-h">SYMBOLS</div>
-    <input id="search" class="search" placeholder="filter symbols..." autocomplete="off" aria-label="filter symbols" />
-    <div class="rail-hint">try <b>compute_blast_radius</b> (BLOCKed by precedent) or <b>append</b> (3-ring blast)</div>
-    <button id="show-all" type="button" class="rail-toggle" aria-pressed="false">show all</button>
-    <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
-    <div class="rail-foot">
-      <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
-      <div class="kv"><span>defs</span><b id="def-count">...</b></div>
-      <div class="kv"><span>db</span><b id="db-path" title="">...</b></div>
-      <div class="kv"><span>orbit cli</span><b id="orbit-cli" title="">-</b></div>
-    </div>
-  </section>
+<!-- 2-Panel Workspace -->
+<div class="workspace">
 
-  <!-- center: blast radius -->
-  <section class="stage panel" data-reveal id="blast-radius" tabindex="-1">
-    <div class="stage-h">
-      <span>BLAST RADIUS</span>
-      <span class="epi" id="epi">select a symbol</span>
-    </div>
-    <div class="canvas-wrap">
-      <canvas id="g3d" aria-hidden="true"></canvas>
-      <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="bsvg-title"><title id="bsvg-title">Blast-radius graph; the exact rings and names are listed in the IMPACT panel.</title></svg>
-      <p class="visually-hidden">The blast radius is also listed as text in the IMPACT panel to the right.</p>
-      <div class="counter"><span id="counter">0000</span><small>affected</small></div>
-    </div>
-    <div class="legend">
-      <span class="lg lg0">epicenter</span>
-      <span class="lg lg1">direct</span>
-      <span class="lg lg2">transitive</span>
-      <span class="lg lg3">at risk</span>
-      <span class="lg lgU">unaffected</span>
-    </div>
-  </section>
+  <!-- Primary Panel: Symbol Explorer + Blast Radius -->
+  <div class="primary-panel">
+    <section class="rail panel" data-reveal>
+      <div class="rail-h" id="symbols-h">SYMBOLS</div>
+      <input id="search" class="search" placeholder="filter symbols… (press / to focus)" autocomplete="off" aria-label="filter symbols" />
+      <div class="rail-hint">try <b>compute_blast_radius</b> (BLOCKed by precedent) or <b>append</b> (3-ring blast)</div>
+      <button id="show-all" type="button" class="rail-toggle" aria-pressed="false">show all</button>
+      <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
+      <div class="rail-foot">
+        <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
+        <div class="kv"><span>defs</span><b id="def-count">...</b></div>
+        <div class="kv"><span>db</span><b id="db-path" title="">...</b></div>
+        <div class="kv"><span>orbit cli</span><b id="orbit-cli" title="">-</b></div>
+      </div>
+    </section>
 
-  <!-- right: impact + precedent + gate -->
-  <section class="side" data-reveal>
+    <section class="stage panel" data-reveal id="blast-radius" tabindex="-1">
+      <div class="stage-h">
+        <span>BLAST RADIUS</span>
+        <span class="epi" id="epi">select a symbol</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="g3d" aria-hidden="true"></canvas>
+        <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="bsvg-title"><title id="bsvg-title">Blast-radius graph; the exact rings and names are listed in the IMPACT panel.</title></svg>
+        <p class="visually-hidden">The blast radius is also listed as text in the IMPACT panel.</p>
+        <div class="counter"><span id="counter">0000</span><small>affected</small></div>
+      </div>
+      <div class="legend">
+        <span class="lg lg0">epicenter</span>
+        <span class="lg lg1">direct</span>
+        <span class="lg lg2">transitive</span>
+        <span class="lg lg3">at risk</span>
+        <span class="lg lgU">unaffected</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- Detail Panel -->
+  <aside class="detail-panel">
     <div class="panel impact">
-      <div class="p-h">IMPACT</div>
-      <div id="rings" class="rings" aria-live="polite" role="group" aria-label="blast radius by severity ring, the text alternative to the graph"><div class="muted">No symbol selected.</div></div>
+      <div class="p-h panel-header" data-collapse="rings-body">IMPACT <span class="chevron">▾</span></div>
+      <div id="rings" class="rings panel-body" aria-live="polite" role="group" aria-label="blast radius by severity ring, the text alternative to the graph"><div class="muted">No symbol selected.</div></div>
     </div>
 
     <div class="panel precedent">
-      <div class="p-h">PRECEDENT <span class="hint">prior decisions on this symbol</span></div>
-      <div id="precedent" class="prec" aria-live="polite"><div class="muted">-</div></div>
+      <div class="p-h panel-header" data-collapse="prec-body">PRECEDENT <span class="hint">prior decisions on this symbol</span> <span class="chevron">▾</span></div>
+      <div id="precedent" class="prec panel-body" aria-live="polite"><div class="muted">-</div></div>
     </div>
 
     <div class="panel brief">
-      <div class="p-h">REVIEW BRIEF <span class="hint" id="brief-src"></span></div>
-      <div id="brief" class="prec" aria-live="polite"><div class="muted">select a symbol</div></div>
+      <div class="p-h panel-header" data-collapse="brief-body">REVIEW BRIEF <span class="hint" id="brief-src"></span> <span class="chevron">▾</span></div>
+      <div id="brief" class="prec panel-body" aria-live="polite"><div class="muted">select a symbol</div></div>
     </div>
 
     <div class="panel assistant">
-      <div class="p-h">AI ASSISTANT <span class="agentic-badge" id="assistant-src" title="a bounded agent that calls the deterministic engine tools, then recommends a next step - it proposes, it never decides">tool-using agent</span></div>
-      <div id="assistant" class="assistant-body" aria-live="polite"><div class="muted">select a symbol - the agent will inspect it with engine tools</div></div>
+      <div class="p-h panel-header" data-collapse="assistant-body">AI ASSISTANT <span class="agentic-badge" id="assistant-src" title="a bounded agent that calls the deterministic engine tools, then recommends a next step - it proposes, it never decides">tool-using agent</span> <span class="chevron">▾</span></div>
+      <div id="assistant" class="assistant-body panel-body" aria-live="polite"><div class="muted">select a symbol - the agent will inspect it with engine tools</div></div>
       <div class="assistant-ask">
         <input id="assistant-q" class="ip" placeholder="ask the agent (e.g. who should review this?)" aria-label="ask the review assistant" maxlength="400" />
         <button id="assistant-go" class="btn ghost" disabled>ASK</button>
       </div>
     </div>
 
-    <div class="panel gate">
-      <div class="p-h">APPROVAL GATE</div>
-      <div class="gate-body">
+    <div class="panel gate" id="gate">
+      <div class="p-h panel-header" data-collapse="gate-body-inner">APPROVAL GATE <span class="chevron">▾</span></div>
+      <div class="gate-body panel-body" id="gate-body-inner">
         <select id="authorkind" class="ip" aria-label="author kind">
           <option value="human">human reviewer</option>
           <option value="agent">AI agent (enforce scope)</option>
@@ -146,11 +210,14 @@
         <div id="sample-note" class="gate-note" style="opacity:0;color:var(--gold);transition:opacity .3s"></div>
       </div>
     </div>
-  </section>
+  </aside>
+
+</div><!-- /workspace -->
+
 </main>
 
-<!-- audit ledger -->
-<section class="ledger panel" data-reveal>
+<!-- Audit Ledger -->
+<section class="ledger panel" data-reveal id="audit">
   <div class="p-h">
     AUDIT LEDGER
     <span id="chain-verdict" class="verdict" role="status" aria-live="assertive">...</span>
@@ -161,16 +228,20 @@
   <div class="ltable-wrap">
     <table class="ltable">
       <caption class="visually-hidden">Append-only audit ledger: each row binds a decision to its blast radius and the previous row's hash.</caption>
-      <thead><tr><th scope="col">#</th><th scope="col">time</th><th scope="col">change</th><th scope="col">blast</th><th scope="col">reviewer</th><th scope="col">decision</th><th scope="col">hash (prev to this)</th></tr></thead>
+      <thead><tr><th scope="col">#</th><th scope="col">time</th><th scope="col">change</th><th scope="col">blast</th><th scope="col">reviewer</th><th scope="col">decision</th><th scope="col">hash (prev → this)</th></tr></thead>
       <tbody id="lrows"></tbody>
     </table>
   </div>
 </section>
 
+<section id="attestation" class="visually-hidden" aria-label="attestation anchor"></section>
+
 <footer class="foot">
   <span>Keystone reads the GitLab Orbit Local code graph. Every number is computed from the graph, never invented. The ledger proves its own integrity.</span>
   <span id="foot-src" class="foot-src"></span>
 </footer>
+
+</div><!-- /app-shell -->
 
 <script src="app.js"></script>
 <script src="motion.js"></script>

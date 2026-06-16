@@ -1,22 +1,19 @@
 "use strict";
-// Keystone premium motion layer (presentation only; never touches engine numbers).
-// A pixelated-terminal 3D blast-radius visualization rendered in pure Canvas:
-//   - a receding perspective pixel-grid floor (depth)
-//   - nodes drawn as glowing PIXEL BLOCKS (not smooth circles), depth-fogged
-//   - edges as marching data-flow lines with travelling pixel packets
-//   - a faint CRT scanline pass and a terminal HUD line that types in
-// Plus an ambient particle field and entrance/scroll reveals. All disabled under
-// prefers-reduced-motion, where the handwritten SVG in app.js is the static fallback.
+// ============================================================================
+// Keystone v2 motion layer (presentation only; never touches engine numbers).
+// Improvements: softer particle colors, gradient washes, smoother rotation,
+// improved label rendering, and subtle micro-animations.
+// ============================================================================
 (function () {
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let STILL = false;
-  window.__ksFreeze = function () { STILL = true; };   // freeze all loops on the next frame
+  window.__ksFreeze = function () { STILL = true; };
   const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
   const ringColor = (r) => RING_COLOR[r] || "#7A8494";
   const DPR = Math.min(2, window.devicePixelRatio || 1);
-  const PX = Math.max(2, Math.round(2 * DPR));     // logical pixel-block size
+  const PX = Math.max(2, Math.round(2 * DPR));
 
-  // ---------- ambient particle field ----------
+  // ---------- ambient particle field (softer, lower density) ----------
   function initBackground() {
     const c = document.getElementById("bg");
     if (!c || reduce) return;
@@ -26,28 +23,41 @@
       W = c.width = Math.max(1, Math.floor((innerWidth || 1200) * DPR));
       H = c.height = Math.max(1, Math.floor((innerHeight || 800) * DPR));
       c.style.width = (innerWidth || 1200) + "px"; c.style.height = (innerHeight || 800) + "px";
-      const n = Math.min(80, Math.floor((innerWidth || 1200) * (innerHeight || 800) / 30000));
+      // Lower density: fewer particles for a calmer feel
+      const n = Math.min(50, Math.floor((innerWidth || 1200) * (innerHeight || 800) / 45000));
       pts = Array.from({ length: n }, () => ({
         x: Math.random() * W, y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.1 * DPR, vy: (Math.random() - 0.5) * 0.1 * DPR,
+        vx: (Math.random() - 0.5) * 0.08 * DPR, vy: (Math.random() - 0.5) * 0.08 * DPR,
       }));
     }
     resize(); addEventListener("resize", resize);
     function frame() {
       ctx.clearRect(0, 0, W, H);
+
+      // Subtle gradient wash at the bottom for depth
+      const grad = ctx.createLinearGradient(0, H * 0.7, 0, H);
+      grad.addColorStop(0, "rgba(255,138,43,0)");
+      grad.addColorStop(1, "rgba(255,138,43,0.015)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, H * 0.7, W, H * 0.3);
+
       for (const p of pts) {
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0 || p.x > W) p.vx *= -1;
         if (p.y < 0 || p.y > H) p.vy *= -1;
       }
+      // Softer connection lines
       for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
         const a = pts[i], b = pts[j], d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < 130 * DPR) {
-          ctx.strokeStyle = "rgba(255,138,43," + (0.05 * (1 - d / (130 * DPR))).toFixed(3) + ")";
+        if (d < 150 * DPR) {
+          const alpha = 0.035 * (1 - d / (150 * DPR));
+          ctx.strokeStyle = "rgba(155,163,174," + alpha.toFixed(4) + ")";
+          ctx.lineWidth = 0.5 * DPR;
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
         }
       }
-      for (const p of pts) { ctx.fillStyle = "rgba(155,163,174,0.22)"; ctx.fillRect(p.x, p.y, DPR, DPR); }
+      // Softer dot colors — muted blue-grey
+      for (const p of pts) { ctx.fillStyle = "rgba(155,163,174,0.15)"; ctx.fillRect(p.x, p.y, DPR, DPR); }
       if (!STILL) requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
@@ -58,15 +68,11 @@
 
   function layout(imp) {
     const rings = imp.rings || {}, parents = imp.parents || {};
-    // Number-keyed name map: the definition ids exceed JS safe-integer range, so a String(id)
-    // lookup against imp.names misses the exact key and falls back to a raw "#id". Keying by
-    // Number(k) makes the lookup precision-consistent (the same lossy conversion on both sides),
-    // so the epicenter and ring nodes show their real names. Mirrors the SVG path's _names.
     const nm = {};
     Object.keys(imp.names || {}).forEach((k) => { nm[Number(k)] = imp.names[k]; });
     const nodes = [], byId = {};
     Object.keys(rings).map(Number).sort((a, b) => a - b).forEach((r) => {
-      const ids = rings[r], R = r * 1.15;            // shell radius (wider spread)
+      const ids = rings[r], R = r * 1.15;
       ids.forEach((id, i) => {
         let x = 0, y = 0, z = 0;
         if (r > 0) {
@@ -99,12 +105,12 @@
     return { sx: cx + x * scale * depth, sy: cy + y2 * scale * depth, depth, z: z2 };
   }
 
-  // a crisp glowing pixel block
+  // crisp glowing pixel block with softer glow
   function block(ctx, x, y, size, color, alpha) {
     const s = Math.max(PX, Math.round(size / PX) * PX);
     const px = Math.round(x / PX) * PX, py = Math.round(y / PX) * PX;
-    ctx.globalAlpha = Math.min(1, alpha) * 0.5;
-    ctx.shadowColor = color; ctx.shadowBlur = s * 2.2;
+    ctx.globalAlpha = Math.min(1, alpha) * 0.4;
+    ctx.shadowColor = color; ctx.shadowBlur = s * 1.8;
     ctx.fillStyle = color; ctx.fillRect(px - s, py - s, s * 2, s * 2);
     ctx.shadowBlur = 0; ctx.globalAlpha = Math.min(1, alpha);
     ctx.fillRect(px - s / 2, py - s / 2, s, s);
@@ -118,11 +124,13 @@
     const W = canvas.width, H = canvas.height, cx = W / 2, cy = H * 0.52;
     const scale = Math.min(W, H) / 4.6;
     ctx.clearRect(0, 0, W, H);
-    G.yaw += 0.0030;
+
+    // Smoother, slower rotation
+    G.yaw += 0.0020;
     const pitch = -0.40;
 
-    // perspective pixel-grid floor
-    ctx.strokeStyle = "rgba(255,138,43,0.05)"; ctx.lineWidth = DPR;
+    // perspective pixel-grid floor — softer
+    ctx.strokeStyle = "rgba(155,163,174,0.03)"; ctx.lineWidth = DPR;
     for (let gx = -3; gx <= 3; gx++) {
       const a = project({ x: gx * 0.7, y: 1.5, z: -3 }, cx, cy, scale, G.yaw, pitch);
       const b = project({ x: gx * 0.7, y: 1.5, z: 3 }, cx, cy, scale, G.yaw, pitch);
@@ -134,21 +142,21 @@
       ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
     }
 
-    for (const n of target.nodes) n.grow = Math.min(1, n.grow + 0.045);
+    for (const n of target.nodes) n.grow = Math.min(1, n.grow + 0.035);
     const P = new Map();
     for (const n of target.nodes) P.set(n, project(n, cx, cy, scale, G.yaw, pitch));
 
-    // edges: marching dashes + a travelling data packet
+    // edges: marching dashes + travelling data packet
     ctx.lineWidth = DPR;
     for (const [a, b] of target.edges) {
       const pa = P.get(a), pb = P.get(b), g = Math.min(a.grow, b.grow);
       if (g <= 0) continue;
-      ctx.setLineDash([2 * DPR, 4 * DPR]); ctx.lineDashOffset = -(ts / 26) % 1000;
-      ctx.strokeStyle = "rgba(120,130,150," + (0.5 * g).toFixed(3) + ")";
+      ctx.setLineDash([2 * DPR, 4 * DPR]); ctx.lineDashOffset = -(ts / 30) % 1000;
+      ctx.strokeStyle = "rgba(120,130,150," + (0.4 * g).toFixed(3) + ")";
       ctx.beginPath(); ctx.moveTo(pa.sx, pa.sy); ctx.lineTo(pb.sx, pb.sy); ctx.stroke();
       ctx.setLineDash([]);
-      const tt = ((ts / 1300) + (a.id % 5) / 5) % 1;
-      block(ctx, pa.sx + (pb.sx - pa.sx) * tt, pa.sy + (pb.sy - pa.sy) * tt, PX, ringColor(b.r), 0.9 * g);
+      const tt = ((ts / 1500) + (a.id % 5) / 5) % 1;
+      block(ctx, pa.sx + (pb.sx - pa.sx) * tt, pa.sy + (pb.sy - pa.sy) * tt, PX, ringColor(b.r), 0.8 * g);
     }
 
     // nodes as depth-sorted glowing pixel blocks
@@ -156,39 +164,47 @@
     for (const n of order) {
       const p = P.get(n), isEpi = n.id === target.epi;
       const size = (isEpi ? 7 : 3.4) * DPR * (0.55 + 0.45 * p.depth);
-      const a = (isEpi ? 1 : (0.45 + 0.55 * p.depth)) * n.grow;     // depth fog
-      const sz = isEpi ? size * (1 + 0.14 * Math.sin(ts / 300)) : size;
+      const a = (isEpi ? 1 : (0.45 + 0.55 * p.depth)) * n.grow;
+      const sz = isEpi ? size * (1 + 0.10 * Math.sin(ts / 400)) : size;
       block(ctx, p.sx, p.sy, sz, ringColor(n.r), a);
     }
 
-    // labels: epicenter + ring-1, terminal style
-    ctx.textAlign = "center"; ctx.font = "700 " + (11 * DPR) + "px monospace";
+    // labels: epicenter + ring-1, clearer rendering with background
+    ctx.textAlign = "center";
     const epi = target.nodes.find((n) => n.id === target.epi);
     if (epi) {
       const pe = P.get(epi);
-      ctx.fillStyle = "#EDEDED"; ctx.fillText(epi.name, pe.sx, pe.sy - 16 * DPR);
+      ctx.font = "700 " + (12 * DPR) + "px 'Inter', monospace";
+      // Label background for readability
+      const labelText = epi.name;
+      const metrics = ctx.measureText(labelText);
+      const lx = pe.sx - metrics.width / 2 - 4 * DPR;
+      const ly = pe.sy - 24 * DPR;
+      ctx.fillStyle = "rgba(9,9,11,0.7)";
+      ctx.fillRect(lx, ly, metrics.width + 8 * DPR, 16 * DPR);
+      ctx.fillStyle = "#F0F0F5"; ctx.fillText(labelText, pe.sx, pe.sy - 12 * DPR);
     }
     for (const n of (target.nodes.filter((x) => x.r === 1))) {
       if ((target.nodes.filter((x) => x.r === 1)).length > 8) break;
-      const p = P.get(n); ctx.fillStyle = "rgba(155,163,174," + (0.7 * n.grow).toFixed(2) + ")";
+      const p = P.get(n); ctx.fillStyle = "rgba(155,163,174," + (0.65 * n.grow).toFixed(2) + ")";
       ctx.font = (9.5 * DPR) + "px monospace";
-      ctx.fillText(n.name.length > 12 ? n.name.slice(0, 11) + "…" : n.name, p.sx, p.sy + 16 * DPR);
+      ctx.fillText(n.name.length > 14 ? n.name.slice(0, 13) + "…" : n.name, p.sx, p.sy + 16 * DPR);
     }
 
-    // terminal HUD line (types in), top-left
+    // terminal HUD line (types in)
     const elapsed = (ts - G.t0);
     const hud = "> blast_radius(" + target.name + ")  ::  " + target.total + " affected";
-    const shown = Math.min(hud.length, Math.floor(elapsed / 22));
+    const shown = Math.min(hud.length, Math.floor(elapsed / 25));
     ctx.textAlign = "left"; ctx.font = (11 * DPR) + "px monospace";
-    ctx.fillStyle = "rgba(59,224,129,0.9)";
+    ctx.fillStyle = "rgba(59,224,129,0.85)";
     ctx.fillText(hud.slice(0, shown), 14 * DPR, 22 * DPR);
-    if (Math.floor(ts / 480) % 2 === 0) {               // blinking block cursor
+    if (Math.floor(ts / 520) % 2 === 0) {
       const w = ctx.measureText(hud.slice(0, shown)).width;
       ctx.fillRect(14 * DPR + w + 2 * DPR, 13 * DPR, 7 * DPR, 12 * DPR);
     }
 
-    // faint CRT scanlines over the canvas
-    ctx.globalAlpha = 0.06; ctx.fillStyle = "#000";
+    // subtle CRT scanlines (reduced opacity)
+    ctx.globalAlpha = 0.04; ctx.fillStyle = "#000";
     for (let y = 0; y < H; y += 3 * DPR) ctx.fillRect(0, y, W, DPR);
     ctx.globalAlpha = 1;
 
@@ -219,7 +235,7 @@
       if (reduce || !G.ctx || !imp || !imp.epicenter) return;
       document.querySelector(".canvas-wrap").classList.add("has-3d");
       const svg = document.getElementById("bsvg");
-      if (svg) svg.setAttribute("aria-hidden", "true");   // 3D canvas is the visual; IMPACT panel carries topology for SR
+      if (svg) svg.setAttribute("aria-hidden", "true");
       G.target = layout(imp); G.t0 = 0;
       if (!G.raf) G.raf = requestAnimationFrame(renderFrame);
     } catch (e) {
