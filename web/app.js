@@ -21,7 +21,7 @@ let API_URL = localStorage.getItem("ks-api-url") || "";
 
 async function ensureStatic() {
   if (STATIC) return STATIC;
-  STATIC = await fetch("data.json").then((r) => r.json());
+  STATIC = await fetch("data.json?v=" + new Date().getTime()).then((r) => r.json());
   return STATIC;
 }
 function fromStatic(p) {
@@ -1159,6 +1159,43 @@ function wire() {
       if (sidebar && sidebar.classList.contains("mobile-open")) sidebar.classList.remove("mobile-open");
     }
   });
+
+  // Hero CTA listeners
+  const ctaRunDemo = $("#cta-run-demo");
+  if (ctaRunDemo) {
+    ctaRunDemo.onclick = () => {
+      const simSec = $("#simulation-section");
+      if (simSec && simSec.scrollIntoView) {
+        simSec.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      const step1 = document.querySelector('.sim-step[data-step="1"]');
+      if (step1) step1.click();
+      highlightPanel(simSec);
+    };
+  }
+
+  const ctaCompare = $("#cta-compare");
+  if (ctaCompare) {
+    ctaCompare.onclick = () => {
+      const compSec = $("#orbit-diff-section");
+      if (compSec && compSec.scrollIntoView) {
+        compSec.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      highlightPanel(compSec);
+    };
+  }
+
+  const ctaCockpit = $("#cta-cockpit");
+  if (ctaCockpit) {
+    ctaCockpit.onclick = () => {
+      const cockSec = $("#reviewer-cockpit-intro");
+      if (cockSec && cockSec.scrollIntoView) {
+        cockSec.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      highlightPanel(cockSec);
+    };
+  }
+
   // guided first-click: a lede chip deep-selects a money-shot symbol and scrolls to the stage
   document.querySelectorAll(".lede-chip[data-pick]").forEach((b) => {
     b.addEventListener("click", () => {
@@ -1180,7 +1217,7 @@ function wire() {
     const prevBtn = $("#sim-prev");
     if (!nextBtn || !prevBtn) return;
     let currentStep = 1;
-    const maxSteps = 4;
+    const maxSteps = 5;
 
     function showStep(step) {
       currentStep = step;
