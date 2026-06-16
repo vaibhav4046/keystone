@@ -202,12 +202,13 @@ def definitions():
                 details[n] = {
                     "kind": kind,
                     "tier": pol.get("tier", "ISOLATED"),
-                    "action": pol.get("action", "ALLOW")
+                    "action": pol.get("action", "ALLOW"),
+                    "total_affected": d["counts"].get("total_affected", 0)
                 }
             else:
-                details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW"}
+                details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW", "total_affected": 0}
         except Exception:
-            details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW"}
+            details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW", "total_affected": 0}
     return {"names": names, "details": details}
 
 

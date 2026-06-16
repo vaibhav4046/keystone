@@ -12,6 +12,17 @@ A GitLab-native extension, not a standalone product: it consumes Orbit, drives O
 
 Live demo: https://vaibhav4046.github.io/keystone/ - status SNAPSHOT: a committed real `orbit index` of this repo (262 definitions) with every figure cross-verified by `orbit sql`, served static. Stand up the live backend (one-click `render.yaml`) to interact with the agent and the live hazard detection.
 
+## 3-Minute Demo Script (For Judges)
+
+Evaluate Keystone's core capabilities in 180 seconds flat:
+
+1. **0:00 - The Hook (Core Thesis)**: Look at the Hero Banner at the top of the page. Read the headline: *"Stop safe-looking merge requests from breaking production."* Note the three-card comparison: Git Diff sees files; Orbit sees relationships; Keystone sees structural, graph-wide consequences.
+2. **0:30 - The Simulator**: Run the step-by-step **Future Merge Simulator**. Click "Next Step" to trace how `MR-204` and `MR-211` edit separate files (no Git conflict), yet collide on the Orbit call graph because `compute_blast_radius` calls `append`. Click through to see Keystone intercept and BLOCK the unsafe merge.
+3. **1:00 - The Difference Matrix**: Scroll down to the **Orbit Difference Matrix**. Observe how Keystone compares to Git Diff, CODEOWNERS, and standard GitLab Orbit. Keystone is the only solution that deterministically flags cross-MR collisions and enforces cryptographic, ledger-backed governance gates.
+4. **1:20 - Blast Radius & Precedent**: Pick the symbol `compute_blast_radius` from the explorer. Watch the 3D blast radius graph spin, exposing its 12 dependent definitions. Scroll to the **Precedent** panel on the right. See the prior identical-signature rejection by a reviewer on record—Keystone has recalled this past decision and issued a hard BLOCK.
+5. **2:00 - Bounded AI Review Advisory**: Scroll to the **AI Assistant** panel on the right. See how the bounded agent (powered by the new Gemini `gemini-3.5-flash` model via the direct `google-genai` SDK) runs a ReAct loop over the deterministic engine. The agent proposes review paths but never fabricates figures or verdicts.
+6. **2:30 - Cryptographic Ledger Verification**: Scroll to the bottom **Audit Ledger**. Click **Simulate Tamper** to edit a row in memory. Watch the chain status instantly turn red (BROKEN). Click **Verify Chain** to re-validate, proving that no platform administrator can quietly alter prior approvals or rejections without detection.
+
 ## Who it is for, and what breaks today
 
 A staff engineer about to approve a risky refactor needs to see what the change actually touches before they say yes, not after. A platform or CODEOWNERS team enforcing review needs the precedent on a symbol they do not own by heart. A compliance or audit lead, after an incident, has to answer who approved this change, what it touched, and why, from a record nobody could have quietly edited.

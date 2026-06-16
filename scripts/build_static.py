@@ -163,7 +163,8 @@ def main():
         details[n] = {
             "kind": kind,
             "tier": pol.get("tier", "ISOLATED"),
-            "action": pol.get("action", "ALLOW")
+            "action": pol.get("action", "ALLOW"),
+            "total_affected": d["counts"].get("total_affected", 0)
         }
 
     bundle = {
