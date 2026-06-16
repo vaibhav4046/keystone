@@ -8,6 +8,9 @@
 <meta property="og:title" content="Keystone — Hazard X-Ray + Governed Review" />
 <meta property="og:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
 <meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Keystone — Hazard X-Ray + Governed Review" />
+<meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
 <link rel="stylesheet" href="styles.css" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='%23080A0D'/><text x='12' y='17' text-anchor='middle' font-size='15' font-family='monospace' fill='%23FF5C66'>K</text></svg>" />
 </head>
@@ -16,6 +19,7 @@
 <noscript><div class="noscript-msg">Keystone is a live command center that needs JavaScript to render. Enable JavaScript, or run it locally - see the README.</div></noscript>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
+<div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
 
 <!-- Sidebar Navigation -->
 <nav class="sidebar" id="sidebar" aria-label="Main navigation">
@@ -57,7 +61,15 @@
     </button>
   </div>
   <div class="sidebar-footer">
-    <div class="sidebar-meta">v1.0</div>
+    <button class="sidebar-item help" data-section="help" title="Help & Keyboard Shortcuts">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 7.5a2 2 0 1 1 2.5 1.94c-.29.1-.5.37-.5.68V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="10" cy="13.5" r="0.75" fill="currentColor"/>
+      </svg>
+      <span class="sidebar-label">Help</span>
+    </button>
+    <div class="sidebar-meta">v2.0</div>
   </div>
 </nav>
 
