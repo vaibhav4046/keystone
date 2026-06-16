@@ -880,14 +880,18 @@ function computeCollisionsLocal(mrs) {
 STATE.openMrs = DEMO_MRS.slice();
 
 async function detectCollisions(mrs) {
-  if (!STATIC_MODE) {
+  if (API_MODE === "live") {
+    const baseUrl = API_URL || "";
+    const url = baseUrl.replace(/\/$/, "") + "/api/collisions";
     try {
-      const r = await fetch("/api/collisions", {
+      const r = await fetch(url, {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ mrs }),
       });
       if (r.ok) return await r.json();
-    } catch (e) { /* fall through to client-side */ }
+    } catch (e) {
+      console.warn("Live API collisions request failed, falling back to static", e);
+    }
   }
   await ensureStatic();
   return computeCollisionsLocal(mrs) || (STATIC && STATIC.collisions);
@@ -1020,16 +1024,18 @@ function renderGraphAudit(ga) {
 // plan (and a REAL recorded run for headline symbols). The agent PROPOSES; the
 // deterministic gate DECIDES - so this never touches the trust path.
 async function callAssistant(symbol, question) {
-  if (!STATIC_MODE) {
+  if (API_MODE === "live") {
+    const baseUrl = API_URL || "";
+    const url = baseUrl.replace(/\/$/, "") + "/api/assistant";
     try {
-      const r = await fetch("/api/assistant", {
+      const r = await fetch(url, {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ symbol, question: question || undefined }),
       });
       if (r.ok) return await r.json();
       throw new Error("assistant " + r.status);
     } catch (e) {
-      try { await ensureStatic(); STATIC_MODE = true; } catch (e2) { throw e; }
+      console.warn("Live API assistant request failed, falling back to static", e);
     }
   }
   await ensureStatic();
