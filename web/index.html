@@ -90,6 +90,9 @@
       <span class="chip" id="orbit-chip">orbit ...</span>
       <span class="chip" id="chain-chip">chain ...</span>
       <span class="chip" id="integ-chip">integrity ...</span>
+      <button id="connection-toggle" class="chip ok" aria-label="Connection settings" title="Switch between static and live backend mode" style="cursor: pointer; display: inline-flex; align-items: center; border: 1px solid var(--border-subtle); outline: none;">
+        <span class="dot g" id="conn-dot"></span><span id="conn-text">mode: snapshot</span>
+      </button>
     </div>
     <button id="theme-toggle" class="btn ghost theme-toggle" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
       <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -288,6 +291,36 @@
       <button class="btn ghost btn-sm" id="onboard-prev">Back</button>
       <div class="onboard-dots" id="onboard-dots"></div>
       <button class="btn approve btn-sm" id="onboard-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Connection Settings Modal -->
+<div class="onboarding-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+  <div class="onboarding-card" style="width: min(400px, 100%);">
+    <div class="onboarding-header">
+      <h2 id="settings-title" class="onboard-title">Connection Settings</h2>
+      <button class="onboard-close" id="settings-close" aria-label="Close settings">&times;</button>
+    </div>
+    <div class="onboarding-body" style="padding: var(--sp-4) var(--sp-5);">
+      <div style="display: flex; flex-direction: column; gap: var(--sp-3);">
+        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px;">
+          <input type="radio" name="api-mode" value="static" id="mode-static" style="accent-color: var(--orange);" />
+          <span>Static Snapshot Mode (data.json)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px;">
+          <input type="radio" name="api-mode" value="live" id="mode-live" style="accent-color: var(--orange);" />
+          <span>Live Backend Mode (FastAPI)</span>
+        </label>
+        <div id="api-url-group" style="display: flex; flex-direction: column; gap: 6px; margin-left: 24px;">
+          <span style="font-size: 11px; color: var(--text-secondary);">Backend API URL:</span>
+          <input id="api-url" class="ip" placeholder="http://127.0.0.1:8787" style="height: 36px; min-height: 36px; padding: 6px 10px;" aria-label="Backend API URL" />
+        </div>
+      </div>
+    </div>
+    <div class="onboarding-footer">
+      <button class="btn ghost btn-sm" id="settings-cancel">Cancel</button>
+      <button class="btn approve btn-sm" id="settings-save">Save Settings</button>
     </div>
   </div>
 </div>
