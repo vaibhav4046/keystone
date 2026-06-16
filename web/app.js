@@ -69,7 +69,9 @@ function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
 // === BOOT ===
 async function boot() {
   initSidebar();
+  initScrollSpy();
   initCollapsiblePanels();
+  initCommandPalette();
   try {
     const st = await api("/api/status");
     paintStatus(st);
@@ -102,8 +104,10 @@ function initSidebar() {
 
   toggle.addEventListener("click", () => {
     const isMobile = window.innerWidth <= 768;
+    const backdrop = $("#sidebar-backdrop");
     if (isMobile) {
       sidebar.classList.toggle("mobile-open");
+      if (backdrop) backdrop.classList.toggle("visible", sidebar.classList.contains("mobile-open"));
     } else {
       sidebar.classList.toggle("expanded");
       localStorage.setItem("ks-sidebar", sidebar.classList.contains("expanded") ? "expanded" : "collapsed");
@@ -112,28 +116,65 @@ function initSidebar() {
 
   // Close mobile sidebar on outside click
   document.addEventListener("click", (e) => {
+    const backdrop = $("#sidebar-backdrop");
     if (window.innerWidth <= 768 && sidebar.classList.contains("mobile-open") &&
         !sidebar.contains(e.target) && e.target !== toggle) {
       sidebar.classList.remove("mobile-open");
+      if (backdrop) backdrop.classList.remove("visible");
     }
+  });
+  // Backdrop click closes sidebar
+  const bdEl = $("#sidebar-backdrop");
+  if (bdEl) bdEl.addEventListener("click", () => {
+    sidebar.classList.remove("mobile-open");
+    bdEl.classList.remove("visible");
   });
 
   // Sidebar nav items — scroll to sections
-  const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit" };
+  const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit", help: "__cmd" };
   document.querySelectorAll(".sidebar-item").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".sidebar-item").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const target = sectionMap[btn.dataset.section];
-      if (target) {
+      if (target === "__cmd") {
+        // Help opens the command palette
+        if (window.__ksCmdOpen) window.__ksCmdOpen();
+      } else if (target) {
         const el = document.getElementById(target);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
-      if (window.innerWidth <= 768) sidebar.classList.remove("mobile-open");
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove("mobile-open");
+        const backdrop = $("#sidebar-backdrop");
+        if (backdrop) backdrop.classList.remove("visible");
+      }
     });
   });
+}
+
+// Scroll-spy: update sidebar active state on scroll
+function initScrollSpy() {
+  const sections = [
+    { id: null, btn: 'overview' },
+    { id: 'symbols-h', btn: 'symbols' },
+    { id: 'blast-radius', btn: 'impact' },
+    { id: 'audit', btn: 'audit' },
+  ];
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const match = sections.find(s => s.id && document.getElementById(s.id) === entry.target);
+      if (match) {
+        document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`.sidebar-item[data-section="${match.btn}"]`);
+        if (btn) btn.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+  sections.forEach(s => { if (s.id) { const el = document.getElementById(s.id); if (el) observer.observe(el); } });
 }
 
 // === COLLAPSIBLE PANELS ===
@@ -148,6 +189,79 @@ function initCollapsiblePanels() {
       if (chevron) chevron.classList.toggle("collapsed", body.classList.contains("collapsed"));
     });
   });
+}
+
+// === COMMAND PALETTE ===
+function initCommandPalette() {
+  // Build overlay DOM
+  const overlay = document.createElement('div');
+  overlay.className = 'cmd-overlay';
+  overlay.id = 'cmd-overlay';
+  overlay.innerHTML = `
+    <div class="cmd-palette">
+      <div class="cmd-input-wrap">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input class="cmd-input" id="cmd-input" placeholder="Search symbols, actions…" autocomplete="off" />
+        <span class="cmd-kbd">ESC</span>
+      </div>
+      <div class="cmd-results" id="cmd-results"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const input = $('#cmd-input');
+  const results = $('#cmd-results');
+  let cmdIdx = -1;
+
+  function openPalette() {
+    overlay.classList.add('open');
+    input.value = '';
+    cmdIdx = -1;
+    renderCmdResults('');
+    requestAnimationFrame(() => input.focus());
+  }
+  function closePalette() {
+    overlay.classList.remove('open');
+    input.blur();
+  }
+  function renderCmdResults(q) {
+    const lq = q.toLowerCase();
+    const actions = [
+      { name: '▶ Take the 60-second tour', action: () => { const t = $('#lede-tour'); if (t) t.click(); } },
+      { name: '⟳ Verify audit chain', action: () => { const v = $('#verify'); if (v) v.click(); } },
+      { name: '⚡ Show all symbols', action: () => { STATE.showAll = true; renderDefList(currentDefView()); updateShowAllLabel(); } },
+    ];
+    const syms = (STATE.defs || []).filter(n => !lq || n.toLowerCase().includes(lq)).slice(0, 12);
+    const acts = actions.filter(a => !lq || a.name.toLowerCase().includes(lq));
+    if (!syms.length && !acts.length) {
+      results.innerHTML = '<div class="cmd-empty">No results</div>';
+      return;
+    }
+    let html = '';
+    if (acts.length) {
+      html += acts.map((a, i) => `<div class="cmd-item" data-action="${i}"><span class="cmd-item-name">${esc(a.name)}</span><span class="cmd-item-badge">action</span></div>`).join('');
+    }
+    if (syms.length) {
+      html += syms.map(s => `<div class="cmd-item" data-sym="${esc(s)}"><svg class="cmd-item-icon" viewBox="0 0 16 16" fill="none"><path d="M5 3L2 8l3 5M11 3l3 5-3 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cmd-item-name">${esc(s)}</span><span class="cmd-item-badge">symbol</span></div>`).join('');
+    }
+    results.innerHTML = html;
+    cmdIdx = -1;
+    results.querySelectorAll('.cmd-item').forEach(el => {
+      el.addEventListener('click', () => {
+        if (el.dataset.sym) { select(el.dataset.sym); closePalette(); }
+        else if (el.dataset.action !== undefined) { acts[Number(el.dataset.action)].action(); closePalette(); }
+      });
+    });
+  }
+  input.addEventListener('input', () => renderCmdResults(input.value));
+  input.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.cmd-item');
+    if (e.key === 'ArrowDown') { e.preventDefault(); cmdIdx = Math.min(cmdIdx + 1, items.length - 1); items.forEach((el, i) => el.classList.toggle('active', i === cmdIdx)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); cmdIdx = Math.max(cmdIdx - 1, 0); items.forEach((el, i) => el.classList.toggle('active', i === cmdIdx)); }
+    else if (e.key === 'Enter' && cmdIdx >= 0 && items[cmdIdx]) { items[cmdIdx].click(); }
+  });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closePalette(); });
+  window.__ksCmdOpen = openPalette;
+  window.__ksCmdClose = closePalette;
 }
 
 // === STATUS DISPLAY ===
@@ -272,6 +386,25 @@ function highlightPanel(el) {
   if (!el) return;
   el.classList.remove("flash-highlight"); void el.offsetWidth; el.classList.add("flash-highlight");
   setTimeout(() => el.classList.remove("flash-highlight"), 1700);
+}
+
+// Animated number counter roll-up
+function animateCounter(target) {
+  const el = $("#counter");
+  if (!el || reduceMotion) { el.textContent = String(target).padStart(4, '0'); return; }
+  const start = parseInt(el.textContent) || 0;
+  const diff = target - start;
+  const duration = Math.min(600, Math.max(200, Math.abs(diff) * 8));
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min(1, (now - t0) / duration);
+    const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    const v = Math.round(start + diff * ease);
+    el.textContent = String(v).padStart(4, '0');
+    if (p < 1) requestAnimationFrame(tick);
+    else { el.textContent = String(target).padStart(4, '0'); el.parentElement.classList.add('counter-animate'); setTimeout(() => el.parentElement.classList.remove('counter-animate'), 500); }
+  }
+  requestAnimationFrame(tick);
 }
 
 async function select(name) {
@@ -410,6 +543,9 @@ function drawBlast(imp) {
   order.forEach(({ id, r }) => {
     const g = document.createElementNS(ns, "g");
     g.setAttribute("class", "node");
+    g.dataset.name = nameOf(imp, id);
+    g.dataset.ring = String(r);
+    g.style.cursor = 'pointer';
     const isEpi = id === imp.epicenter.id;
     const full = nameOf(imp, id);
     const ttl = document.createElementNS(ns, "title");
@@ -444,7 +580,7 @@ function drawBlast(imp) {
   if (reduceMotion) {
     nodeEls.forEach((n) => n.g.classList.add("show"));
     eEls.forEach((e) => e.classList.add("show"));
-    $("#counter").textContent = pad(total);
+    animateCounter(total);
     return;
   }
   $("#counter").textContent = "0000";
@@ -460,6 +596,46 @@ function drawBlast(imp) {
   _timers.push(setTimeout(() => $("#counter").textContent = pad(total), 200 + maxRing * 230 + 400));
   imp._names = imp._names || idNames(imp);
   if (window.__ksRenderGraph) window.__ksRenderGraph(imp);   // premium 3D graph (motion.js); SVG stays as fallback
+  initGraphTooltips();
+}
+
+// SVG graph hover tooltips
+function initGraphTooltips() {
+  const wrap = document.querySelector('.canvas-wrap');
+  if (!wrap) return;
+  let tip = wrap.querySelector('.graph-tooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.className = 'graph-tooltip';
+    wrap.appendChild(tip);
+  }
+  const svg = $('#bsvg');
+  if (!svg) return;
+  svg.addEventListener('mouseover', (e) => {
+    const node = e.target.closest('.node');
+    if (!node) { tip.classList.remove('visible'); return; }
+    const name = node.dataset.name || '';
+    const ring = node.dataset.ring;
+    const ringNames = { '0': 'epicenter', '1': 'direct caller', '2': 'transitive', '3': 'at risk' };
+    const colors = { '0': '#FF5C66', '1': '#FF8A2B', '2': '#F5C542', '3': '#5BBFD6' };
+    tip.innerHTML = `<div class="tt-name">${esc(name)}</div><div class="tt-ring"><span class="tt-dot" style="background:${colors[ring] || '#7A8494'}"></span>${ringNames[ring] || 'unknown'} ring</div>`;
+    tip.classList.add('visible');
+  });
+  svg.addEventListener('mousemove', (e) => {
+    const rect = wrap.getBoundingClientRect();
+    tip.style.left = (e.clientX - rect.left + 12) + 'px';
+    tip.style.top = (e.clientY - rect.top - 30) + 'px';
+  });
+  svg.addEventListener('mouseout', (e) => {
+    if (!e.target.closest('.node')) tip.classList.remove('visible');
+  });
+  // click-to-navigate: clicking a node in the graph selects it
+  svg.addEventListener('click', (e) => {
+    const node = e.target.closest('.node');
+    if (node && node.dataset.name && node.dataset.name !== STATE.selected) {
+      select(node.dataset.name);
+    }
+  });
 }
 let _ctv = 0, _timers = [];
 function animateCounterTo(v) { _ctv = v; $("#counter").textContent = pad(v); }
@@ -899,17 +1075,18 @@ function wire() {
   // === KEYBOARD SHORTCUTS ===
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-    // Ctrl+K / Cmd+K — global search shortcut
+    // Ctrl+K / Cmd+K — open command palette
     if ((e.ctrlKey || e.metaKey) && e.key === "k") {
       e.preventDefault();
-      const searchEl = $("#search");
-      if (searchEl) { searchEl.focus(); searchEl.select(); }
+      if (window.__ksCmdOpen) window.__ksCmdOpen();
       return;
     }
     // "/" focuses symbol search
     if (e.key === "/" && !typing) { e.preventDefault(); $("#search").focus(); }
-    // Escape clears search or closes mobile sidebar
+    // Escape closes command palette, clears search, or closes mobile sidebar
     else if (e.key === "Escape") {
+      const cmdOverlay = $("#cmd-overlay");
+      if (cmdOverlay && cmdOverlay.classList.contains("open")) { if (window.__ksCmdClose) window.__ksCmdClose(); return; }
       if (document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(currentDefView()); }
       const sidebar = $("#sidebar");
       if (sidebar && sidebar.classList.contains("mobile-open")) sidebar.classList.remove("mobile-open");

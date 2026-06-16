@@ -144,4 +144,16 @@ The GitLab integration is `skills/keystone/SKILL.md`, an Open Agent Skills defin
 
 It does not learn or self-evolve; the ledger is memory by recall, never by mutation. It does not let a model recommend or decide a verdict; precedent informs, the human decides. It does not use embeddings or fuzzy matching; precedent matches on exact symbol, owner, and blast signature. Memory proves; it does not pretend.
 
+## UI architecture (v2)
+
+The web command center (`web/`) is a vanilla HTML/CSS/JS single-page application with no build step. It loads Inter from Google Fonts for prose and uses system monospace for code and data. The design system is token-based: CSS custom properties in `:root` define the color palette, spacing scale (4 px multiples), border radii, and shadow levels, with backward-compatible aliases for every variable the JavaScript references.
+
+**Layout.** A fixed 64 px sidebar (`nav.sidebar`) holds icon-only navigation buttons for Overview, Symbols, Impact, and Audit; it expands to 240 px on toggle and persists the state in `localStorage`. The main content sits in `.app-shell` with a 52 px sticky topbar carrying the brand, status chips, and the sidebar toggle. Below the topbar, the hazard X-ray section spans the full width, then a two-column workspace (`.workspace`: CSS Grid `1fr 400px`) splits the symbol explorer + blast radius on the left from a sticky scrollable detail panel (impact, precedent, brief, AI assistant, governance gate) on the right. The audit ledger sits below as a full-width section. Four responsive breakpoints (1440+, 1080–1439, 768–1079, <768) progressively collapse the sidebar, stack the panels, and increase touch targets.
+
+**Keyboard shortcuts.** `Ctrl+K` / `Cmd+K` opens a command palette overlay for instant symbol search and action dispatch. `/` focuses the symbol filter. `↑`/`↓` navigate the symbol listbox. `Escape` closes the command palette, clears the search, or dismisses the mobile sidebar.
+
+**Motion layer.** `motion.js` renders an ambient particle field on a fixed `<canvas>` (capped at 50 particles, muted blue-grey, with subtle gradient washes). When a blast radius is computed, a pixelated 3D graph rotates slowly on the stage canvas with depth-sorted glow blocks, marching-dash edges, and a terminal HUD line. All animations respect `prefers-reduced-motion: reduce` and degrade to the static SVG fallback.
+
+**Data flow.** `app.js` tries the live FastAPI backend first (`/api/*`), falls back to a pre-built `data.json` bundle on static hosts (GitHub Pages, file://), and labels the mode honestly in the status chips. The client-side governance gate mirrors `core/gate.py` exactly, so the static deploy enforces the full approval flow (four-eyes, contradiction BLOCK, agent scope, quorum) with decisions recorded in the browser only.
+
 MIT licensed. See LICENSE.
