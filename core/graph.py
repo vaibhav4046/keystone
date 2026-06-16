@@ -169,14 +169,14 @@ class Graph:
 
     def owning_file_and_dir(self, def_id: int) -> dict:
         rows = self._con.execute(
-            "SELECT name, file_path FROM gl_definition WHERE id = ?", [def_id]
+            "SELECT name, file_path, definition_type FROM gl_definition WHERE id = ?", [def_id]
         ).fetchall()
         if not rows:
             return {}
-        name, fpath = rows[0]
+        name, fpath, dtype = rows[0]
         fpath = fpath or ""
         d = posixpath.dirname(fpath.replace("\\", "/")) if fpath else ""
-        return {"name": name, "file": fpath, "dir": d}
+        return {"name": name, "file": fpath, "dir": d, "kind": dtype or ""}
 
     def name_of(self, def_id: int) -> str:
         rows = self._con.execute("SELECT name FROM gl_definition WHERE id = ?", [def_id]).fetchall()

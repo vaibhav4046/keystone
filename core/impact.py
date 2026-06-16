@@ -36,11 +36,13 @@ class Impact:
     parents: dict            # {child_def_id: parent_def_id} real BFS edges within the blast set
     epicenter_fqn: str = ""  # fully-qualified name, to disambiguate same-short-name symbols
     epicenter_file: str = "" # owning file path of the epicenter
+    epicenter_kind: str = "" # definition type (Function, Class, etc.)
 
     def to_dict(self) -> dict:
         return {
             "epicenter": {"id": self.epicenter_id, "name": self.epicenter_name,
-                          "fqn": self.epicenter_fqn, "file": self.epicenter_file},
+                          "fqn": self.epicenter_fqn, "file": self.epicenter_file,
+                          "kind": self.epicenter_kind},
             "rings": {str(k): v for k, v in self.rings.items()},
             "affected_ids": self.affected_ids,
             "counts": self.counts,
@@ -118,4 +120,5 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
         parents={c: p for c, p in parents.items()},
         epicenter_fqn=epi.get("fqn", "") or "",
         epicenter_file=epi.get("file", "") or "",
+        epicenter_kind=epi.get("kind", "") or "",
     )
