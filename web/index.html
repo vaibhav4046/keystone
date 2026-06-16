@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="Keystone: Hazard X-Ray + Governed Review" />
 <meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=2.2" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='4' fill='%23080A0D'/><text x='12' y='17' text-anchor='middle' font-size='15' font-family='monospace' fill='%23FF5C66'>K</text></svg>" />
 </head>
 <body>
@@ -117,6 +117,18 @@
 <div id="hero-strip" class="hero-strip" role="note">
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
   <p class="hero-thesis">Git sees files. Orbit sees relationships. Keystone sees consequences.</p>
+
+  <div class="hero-manifesto">
+    <div class="manifesto-lead">
+      <span class="m-git">Git sees no conflict.</span>
+      <span class="m-orbit">Orbit sees the dependency.</span>
+      <span class="m-keystone">Keystone prevents the risky merge.</span>
+    </div>
+    <div class="manifesto-sub font-mono">
+      The model explains. The engine decides. Same graph + same policy = same decision.
+    </div>
+  </div>
+
   <div class="hero-cards">
     <div class="hero-card hero-git">
       <div class="card-tag">GIT</div>
@@ -132,10 +144,10 @@
     </div>
   </div>
   <div class="hero-actions">
-    <span class="actions-label">New here? Start with one click:</span>
-    <button class="lede-chip" type="button" data-pick="compute_blast_radius">see a graph-driven BLOCK</button>
-    <button class="lede-chip" type="button" data-pick="append">see a CROSS-TEAM change</button>
-    <button class="lede-chip lede-tour" type="button" id="lede-tour">&#9654; take the 60-second tour</button>
+    <button class="btn primary hero-cta" type="button" id="cta-run-demo">Run hidden collision demo</button>
+    <button class="btn secondary hero-cta" type="button" id="cta-compare">Compare Git vs Orbit</button>
+    <button class="btn ghost hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
+    <button class="btn ghost lede-tour hero-cta" type="button" id="lede-tour">&#9654; Take the 60-second tour</button>
   </div>
 </div>
 <div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
@@ -171,41 +183,49 @@
     <div class="sim-stepper">
       <div class="sim-step active" data-step="1">
         <div class="step-num">1</div>
-        <div class="step-label">Git Analysis</div>
+        <div class="step-label">Isolated Files</div>
       </div>
       <div class="sim-step" data-step="2">
         <div class="step-num">2</div>
-        <div class="step-label">Orbit Graph Scan</div>
+        <div class="step-label">Git Diff</div>
       </div>
       <div class="sim-step" data-step="3">
         <div class="step-num">3</div>
-        <div class="step-label">Keystone Verdict</div>
+        <div class="step-label">Orbit Scan</div>
       </div>
       <div class="sim-step" data-step="4">
         <div class="step-num">4</div>
-        <div class="step-label">Merge Order</div>
+        <div class="step-label">Collision</div>
+      </div>
+      <div class="sim-step" data-step="5">
+        <div class="step-num">5</div>
+        <div class="step-label">Gate Verdict</div>
       </div>
     </div>
 
     <div class="sim-display" aria-live="polite">
       <div class="sim-step-content active" id="sim-content-1">
-        <div class="sim-status-badge success">GIT CONFLICT: NONE</div>
-        <p class="sim-desc">Git analyzes file paths. Since MR-204 and MR-211 edit separate files (graph.py and audit.py), Git reports zero textual conflicts. Standard CI pipelines will greenlight both merges.</p>
+        <div class="sim-status-badge info">STEP 1: ISOLATED FILES</div>
+        <p class="sim-desc">Two merge requests touch completely different files. <code>MR-204</code> edits <code>core/graph.py</code> and <code>MR-211</code> edits <code>core/audit.py</code>. In Git's eyes, these changes are completely isolated.</p>
       </div>
       <div class="sim-step-content" id="sim-content-2" style="display:none;">
-        <div class="sim-status-badge warning">DEPENDENCY EXPOSED</div>
-        <p class="sim-desc">Orbit scans the code call-graph. It reveals that <code>compute_blast_radius</code> calls and depends directly on <code>append</code>. The MRs are structurally connected.</p>
+        <div class="sim-status-badge success">GIT CONFLICT: NONE</div>
+        <p class="sim-desc">Git analyzes file paths. Since they edit entirely different files, Git's file-based diff finds zero conflicts. Traditional CI/CD and reviews will greenlight both, risking a broken build in production.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-3" style="display:none;">
+        <div class="sim-status-badge warning">ORBIT SCAN ACTIVE</div>
+        <p class="sim-desc">Orbit scans the codebase call-graph and symbols. It reveals that <code>compute_blast_radius</code> (changed in MR-204) depends directly on and calls <code>append</code> (changed in MR-211).</p>
         <div class="sim-visual-connection">
           <code>compute_blast_radius</code> <span class="conn-arrow">&rarr;</span> <code>append</code>
         </div>
       </div>
-      <div class="sim-step-content" id="sim-content-3" style="display:none;">
-        <div class="sim-status-badge danger">VERDICT: BLOCK</div>
-        <p class="sim-desc">Keystone intercepts the merge. Because <code>compute_blast_radius</code> depends on <code>append</code>, merging MR-204 before MR-211's signature change is validated introduces an untracked, silent runtime failure. Keystone issues a hard governance block.</p>
-      </div>
       <div class="sim-step-content" id="sim-content-4" style="display:none;">
-        <div class="sim-status-badge info">SAFE MERGE ORDER FOUND</div>
-        <p class="sim-desc">Keystone computes a safe merge sequence. To prevent breaking production, <code>MR-211</code> (dependency definition) must be merged and audited first, followed by <code>MR-204</code> (caller definition).</p>
+        <div class="sim-status-badge danger">COLLISION DETECTED</div>
+        <p class="sim-desc">Keystone crosses the open MRs with the Orbit graph and detects a blast collision. Merging them in the wrong order breaks the call-site at runtime.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-5" style="display:none;">
+        <div class="sim-status-badge success">VERDICT: BLOCK / SAFE SEQUENCE</div>
+        <p class="sim-desc">Keystone blocks the merge and computes the safe merge sequence to prevent runtime failure: <code>MR-211</code> (dependency definition) must be merged first, followed by <code>MR-204</code> (caller).</p>
         <div class="sim-safe-sequence">
           <span class="seq-badge">1</span> <code>MR-211</code> &rarr; <span class="seq-badge">2</span> <code>MR-204</code>
         </div>
@@ -223,55 +243,34 @@
   <div class="p-h">ORBIT DIFFERENCE MATRIX
     <span class="hint">how Keystone compares to traditional review guardrails</span>
   </div>
-  <div class="matrix-scroll">
-    <table class="matrix-table">
-      <thead>
-        <tr>
-          <th>Capability</th>
-          <th>Git Diff</th>
-          <th>CODEOWNERS</th>
-          <th>GitLab Orbit</th>
-          <th>Keystone</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Inspects File Content</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-        </tr>
-        <tr>
-          <td>Detects File Path Changes</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-        </tr>
-        <tr>
-          <td>Builds Call Dependency Graph</td>
-          <td class="no">No</td>
-          <td class="no">No</td>
-          <td class="yes">Yes</td>
-          <td class="yes">Yes</td>
-        </tr>
-        <tr>
-          <td>Flags Cross-MR Blast Collisions</td>
-          <td class="no">No</td>
-          <td class="no">No</td>
-          <td class="no">No</td>
-          <td class="yes">Yes (Deterministic)</td>
-        </tr>
-        <tr>
-          <td>Enforces Cryptographic Governance Gate</td>
-          <td class="no">No</td>
-          <td class="no">No</td>
-          <td class="no">No</td>
-          <td class="yes">Yes (OIDC & Ledger-backed)</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="comparison-cards">
+    <div class="comp-card">
+      <div class="comp-card-title">Git / MR Diff</div>
+      <ul class="comp-card-list">
+        <li class="pro">Sees changed files and textual conflicts.</li>
+        <li class="con">Cannot see transitive dependency risk.</li>
+      </ul>
+    </div>
+    <div class="comp-card">
+      <div class="comp-card-title">CODEOWNERS</div>
+      <ul class="comp-card-list">
+        <li class="pro">Sees ownership rules.</li>
+        <li class="con">Cannot see runtime graph consequences.</li>
+      </ul>
+    </div>
+    <div class="comp-card highlight">
+      <div class="comp-card-title">GitLab Orbit <span class="comp-card-badge">Foundation</span></div>
+      <ul class="comp-card-list">
+        <li class="pro">Sees symbols, callers, dependents, and graph relationships.</li>
+        <li class="pro">Makes blast radius possible.</li>
+      </ul>
+    </div>
+    <div class="comp-card keystone-highlight">
+      <div class="comp-card-title">Keystone</div>
+      <ul class="comp-card-list">
+        <li class="pro">Uses Orbit to detect hidden collisions, compute blast radius, and gate decisions.</li>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -296,6 +295,11 @@
     </div>
   </div>
 </section>
+
+<div id="reviewer-cockpit-intro" class="cockpit-intro">
+  <h2 class="cockpit-title">Reviewer Cockpit</h2>
+  <p class="cockpit-subtitle">Engine-computed from the Orbit graph. AI explains; the deterministic gate decides.</p>
+</div>
 
 <!-- 2-Panel Workspace -->
 <div class="workspace">
@@ -426,6 +430,16 @@
       <tbody id="lrows"></tbody>
     </table>
   </div>
+  <div id="trust-layer" class="trust-layer">
+    <div class="trust-title">Trust boundary:</div>
+    <ul class="trust-list">
+      <li><b>Static demo:</b> reviewer identity is self-asserted.</li>
+      <li><b>Live/CI path:</b> actor can be bound with GitLab OIDC.</li>
+      <li><b>AI assistant:</b> advisory only.</li>
+      <li><b>Gate decision:</b> deterministic.</li>
+      <li><b>Ledger:</b> HMAC hash-chained and tamper-evident.</li>
+    </ul>
+  </div>
 </section>
 
 <section id="attestation" class="visually-hidden" aria-label="attestation anchor"></section>
@@ -484,7 +498,7 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<script src="app.js?v=2.2"></script>
 <script src="motion.js"></script>
 </body>
 </html>
