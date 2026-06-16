@@ -130,7 +130,7 @@ function initSidebar() {
     bdEl.classList.remove("visible");
   });
 
-  // Sidebar nav items — scroll to sections
+  // Sidebar nav items: scroll to sections
   const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit", help: "__cmd" };
   document.querySelectorAll(".sidebar-item").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1075,7 +1075,7 @@ function wire() {
   // === KEYBOARD SHORTCUTS ===
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
-    // Ctrl+K / Cmd+K — open command palette
+    // Ctrl+K / Cmd+K: open command palette
     if ((e.ctrlKey || e.metaKey) && e.key === "k") {
       e.preventDefault();
       if (window.__ksCmdOpen) window.__ksCmdOpen();

@@ -56,7 +56,7 @@
           ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
         }
       }
-      // Softer dot colors — muted blue-grey
+      // Softer dot colors: muted blue-grey
       for (const p of pts) { ctx.fillStyle = "rgba(155,163,174,0.15)"; ctx.fillRect(p.x, p.y, DPR, DPR); }
       if (!STILL) requestAnimationFrame(frame);
     }
@@ -129,7 +129,7 @@
     G.yaw += 0.0020;
     const pitch = -0.40;
 
-    // perspective pixel-grid floor — softer
+    // perspective pixel-grid floor: softer
     ctx.strokeStyle = "rgba(155,163,174,0.03)"; ctx.lineWidth = DPR;
     for (let gx = -3; gx <= 3; gx++) {
       const a = project({ x: gx * 0.7, y: 1.5, z: -3 }, cx, cy, scale, G.yaw, pitch);
