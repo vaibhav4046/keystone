@@ -1,6 +1,10 @@
 "use strict";
-// Keystone web hero. Talks to the FastAPI core. Every number shown comes from
-// the API (engine-computed); this script only renders and animates.
+// ============================================================================
+// Keystone web hero v2. Talks to the FastAPI core. Every number shown comes
+// from the API (engine-computed); this script only renders and animates.
+// Sections: API → STATE → STATUS → SYMBOLS → BLAST RADIUS → HAZARD X-RAY →
+//           AI → GOVERNANCE → AUDIT → NAVIGATION → KEYBOARD → TOUR
+// ============================================================================
 const $ = (s) => document.querySelector(s);
 const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -55,13 +59,17 @@ const api = async (p) => {
   return fromStatic(p);
 };
 
+// === STATE ===
 let STATE = { defs: [], selected: null, impact: null, showAll: false };
 window.STATE = STATE;                       // exposed for the motion layer (motion.js)
 
 const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
 function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
 
+// === BOOT ===
 async function boot() {
+  initSidebar();
+  initCollapsiblePanels();
   try {
     const st = await api("/api/status");
     paintStatus(st);
@@ -82,6 +90,67 @@ async function boot() {
   wire();
 }
 
+// === SIDEBAR NAVIGATION ===
+function initSidebar() {
+  const sidebar = $("#sidebar");
+  const toggle = $("#sidebar-toggle");
+  if (!sidebar || !toggle) return;
+
+  // Restore sidebar state from localStorage
+  const saved = localStorage.getItem("ks-sidebar");
+  if (saved === "expanded") sidebar.classList.add("expanded");
+
+  toggle.addEventListener("click", () => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      sidebar.classList.toggle("mobile-open");
+    } else {
+      sidebar.classList.toggle("expanded");
+      localStorage.setItem("ks-sidebar", sidebar.classList.contains("expanded") ? "expanded" : "collapsed");
+    }
+  });
+
+  // Close mobile sidebar on outside click
+  document.addEventListener("click", (e) => {
+    if (window.innerWidth <= 768 && sidebar.classList.contains("mobile-open") &&
+        !sidebar.contains(e.target) && e.target !== toggle) {
+      sidebar.classList.remove("mobile-open");
+    }
+  });
+
+  // Sidebar nav items — scroll to sections
+  const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit" };
+  document.querySelectorAll(".sidebar-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sidebar-item").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = sectionMap[btn.dataset.section];
+      if (target) {
+        const el = document.getElementById(target);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      if (window.innerWidth <= 768) sidebar.classList.remove("mobile-open");
+    });
+  });
+}
+
+// === COLLAPSIBLE PANELS ===
+function initCollapsiblePanels() {
+  document.querySelectorAll(".panel-header[data-collapse]").forEach((header) => {
+    header.addEventListener("click", () => {
+      const targetId = header.dataset.collapse;
+      const body = document.getElementById(targetId) || header.nextElementSibling;
+      if (!body) return;
+      const chevron = header.querySelector(".chevron");
+      body.classList.toggle("collapsed");
+      if (chevron) chevron.classList.toggle("collapsed", body.classList.contains("collapsed"));
+    });
+  });
+}
+
+// === STATUS DISPLAY ===
 function paintStatus(st) {
   const src = $("#src-chip"), orbit = $("#orbit-chip"), chain = $("#chain-chip"), integ = $("#integ-chip");
   const live = st.source_mode === "LIVE";
@@ -272,7 +341,7 @@ async function exportAttestation() {
   }
 }
 
-// ---- blast radius SVG reveal ----
+// === BLAST RADIUS SVG ===
 function drawBlast(imp) {
   const svg = $("#bsvg");
   svg.innerHTML = "";
@@ -491,7 +560,7 @@ function renderBrief(b) {
   }
 }
 
-// ---- HAZARD X-RAY: cross-MR collisions + review debt (the reframe lead) ----
+// === HAZARD X-RAY: cross-MR collisions + review debt ===
 // The demo scenario: three open MRs on the real self-index. MR-204 refactors the blast
 // engine; MR-207 changes the impact API that CALLS it (a different file -> NO Git text
 // conflict); MR-211 touches the ledger. The graph reveals the entanglement Git cannot.
@@ -703,7 +772,7 @@ function renderGraphAudit(ga) {
   box.innerHTML = html;
 }
 
-// ---- AI assistant (bounded tool-using agent) ----
+// === AI ASSISTANT (bounded tool-using agent) ===
 // Live backend runs a fresh agent loop (POST); the static deploy serves the baked
 // plan (and a REAL recorded run for headline symbols). The agent PROPOSES; the
 // deterministic gate DECIDES - so this never touches the trust path.
@@ -786,6 +855,7 @@ async function refreshLedger() {
 
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
+// === EVENT WIRING ===
 function wire() {
   $("#search").addEventListener("input", () => renderDefList(currentDefView()));
   const showAllBtn = $("#show-all");
@@ -826,11 +896,24 @@ function wire() {
     ag.onclick = ask;
     aq.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); ask(); } });
   }
-  // premium keyboard layer: "/" focuses symbol search, Escape clears it
+  // === KEYBOARD SHORTCUTS ===
   document.addEventListener("keydown", (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    // Ctrl+K / Cmd+K — global search shortcut
+    if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+      e.preventDefault();
+      const searchEl = $("#search");
+      if (searchEl) { searchEl.focus(); searchEl.select(); }
+      return;
+    }
+    // "/" focuses symbol search
     if (e.key === "/" && !typing) { e.preventDefault(); $("#search").focus(); }
-    else if (e.key === "Escape" && document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(currentDefView()); }
+    // Escape clears search or closes mobile sidebar
+    else if (e.key === "Escape") {
+      if (document.activeElement === $("#search")) { $("#search").value = ""; renderDefList(currentDefView()); }
+      const sidebar = $("#sidebar");
+      if (sidebar && sidebar.classList.contains("mobile-open")) sidebar.classList.remove("mobile-open");
+    }
   });
   // guided first-click: a lede chip deep-selects a money-shot symbol and scrolls to the stage
   document.querySelectorAll(".lede-chip[data-pick]").forEach((b) => {
@@ -934,12 +1017,9 @@ function checkScope(authorCtx, imp) {
   return { in_scope: violations.length === 0, violations };
 }
 
-// Client-side governance gate: mirrors core/gate.py over the in-browser sample ledger so the
-// STATIC deploy ENFORCES the full flow (agent scope + unregistered-agent refusal, four-eyes
-// self-approval refusal, contradiction BLOCK + accountable override, and a real per-change quorum
-// that accumulates across distinct approvers), not just records a row. Same deterministic logic
-// the server runs. Identity stays self-asserted on the public demo and is labeled as such, so
-// four-eyes and the agent id bind an honest name, not a cryptographically verified one.
+// === CLIENT-SIDE GOVERNANCE GATE ===
+// Mirrors core/gate.py over the in-browser sample ledger so the STATIC deploy
+// ENFORCES the full flow (agent scope, four-eyes, contradiction BLOCK, quorum).
 function clientGate(name, decision, reviewer, changeAuthor, override, authorKind) {
   const imp = (STATIC && STATIC.impact && STATIC.impact[name]) || {};
   const pol = imp.policy || {};
@@ -1072,9 +1152,8 @@ async function decide(decision) {
   if (note) { note.textContent = "recorded in this browser only - the live local app persists to the hash-chained ledger"; note.style.opacity = "1"; }
 }
 
-// in-memory tamper demo: re-render the ledger as if a row were edited, flip the badge red.
-// This does NOT write to disk; it visualizes what verify() detects. (The real test in
-// tests/test_engine.py proves disk-level tamper detection.)
+// === TAMPER DEMO ===
+// In-memory tamper demo: re-render the ledger as if a row were edited.
 async function tamperDemo() {
   const a = await api("/api/audit");
   if (!a.rows.length) return;
