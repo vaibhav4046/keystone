@@ -91,6 +91,10 @@
       <span class="chip" id="chain-chip">chain ...</span>
       <span class="chip" id="integ-chip">integrity ...</span>
     </div>
+    <button id="theme-toggle" class="btn ghost theme-toggle" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
+      <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
   </div>
 </header>
 
@@ -141,6 +145,22 @@
     <section class="rail panel" data-reveal>
       <div class="rail-h" id="symbols-h">SYMBOLS</div>
       <input id="search" class="search" placeholder="filter symbols… (press / to focus)" autocomplete="off" aria-label="filter symbols" />
+      <div class="rail-filters">
+        <select id="filter-type" class="ip filter-select" aria-label="Filter by Type">
+          <option value="all">all types</option>
+          <option value="function">functions</option>
+          <option value="class">classes</option>
+          <option value="other">others</option>
+        </select>
+        <select id="filter-hazard" class="ip filter-select" aria-label="Filter by Hazard Severity">
+          <option value="all">all hazards</option>
+          <option value="block">BLOCK tier</option>
+          <option value="hold">HOLD tier</option>
+          <option value="allow">ALLOW tier</option>
+          <option value="collision">collisions</option>
+          <option value="debt">review debt</option>
+        </select>
+      </div>
       <div class="rail-hint">try <b>compute_blast_radius</b> (BLOCKed by precedent) or <b>append</b> (3-ring blast)</div>
       <button id="show-all" type="button" class="rail-toggle" aria-pressed="false">show all</button>
       <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
@@ -254,6 +274,23 @@
 </footer>
 
 </div><!-- /app-shell -->
+
+<!-- Onboarding Walkthrough Wizard Modal -->
+<div class="onboarding-overlay" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboard-title" hidden>
+  <div class="onboarding-card">
+    <div class="onboarding-header">
+      <h2 id="onboard-title" class="onboard-title">Welcome to Keystone</h2>
+      <button class="onboard-close" id="onboard-close" aria-label="Close onboarding">&times;</button>
+    </div>
+    <div class="onboard-progress"><div class="onboard-progress-bar" id="onboard-progress" style="width: 25%"></div></div>
+    <div class="onboarding-body" id="onboard-body"></div>
+    <div class="onboarding-footer">
+      <button class="btn ghost btn-sm" id="onboard-prev">Back</button>
+      <div class="onboard-dots" id="onboard-dots"></div>
+      <button class="btn approve btn-sm" id="onboard-next">Next</button>
+    </div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 <script src="motion.js"></script>

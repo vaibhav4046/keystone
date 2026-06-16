@@ -187,7 +187,28 @@ def status():
 
 @app.get("/api/definitions")
 def definitions():
-    return {"names": _graph.all_definition_names()}
+    names = _graph.all_definition_names()
+    details = {}
+    for n in names:
+        defn = _graph.find_definition(n)
+        kind = defn.get("kind", "") if defn else ""
+        try:
+            imp = impact_mod.compute_blast_radius(_graph, n, max_depth=3)
+            if imp:
+                d = imp.to_dict()
+                prec = _ledger.precedent(target_symbols=[n], signature=imp.signature,
+                                         target_fqns=[imp.epicenter_fqn] if imp.epicenter_fqn else None)
+                pol = policy_mod.evaluate(d, prec)
+                details[n] = {
+                    "kind": kind,
+                    "tier": pol.get("tier", "ISOLATED"),
+                    "action": pol.get("action", "ALLOW")
+                }
+            else:
+                details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW"}
+        except Exception:
+            details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW"}
+    return {"names": names, "details": details}
 
 
 def _impact_with_governance(name: str, max_depth: int):

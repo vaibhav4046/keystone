@@ -24,7 +24,7 @@ async function ensureStatic() {
 function fromStatic(p) {
   const s = STATIC;
   if (p === "/api/status") return s.status;
-  if (p === "/api/definitions") return { names: s.definitions };
+  if (p === "/api/definitions") return s.definitions.names ? s.definitions : { names: s.definitions };
   if (p === "/api/audit") return s.audit;
   if (p === "/api/audit/verify") return s.audit.verify;
   if (p === "/api/policy") return s.policy || {};
@@ -68,6 +68,7 @@ function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
 
 // === BOOT ===
 async function boot() {
+  initTheme();
   initSidebar();
   initScrollSpy();
   initCollapsiblePanels();
@@ -78,6 +79,7 @@ async function boot() {
   } catch (e) { /* status optional */ }
   const d = await api("/api/definitions");
   STATE.defs = d.names;
+  STATE.details = d.details || {};
   renderDefList(reviewableDefs());
   updateShowAllLabel();
   await refreshLedger();
@@ -90,6 +92,9 @@ async function boot() {
     select(demo);
   }
   wire();
+  if (!localStorage.getItem("keystone-onboarded")) {
+    showOnboarding(0);
+  }
 }
 
 // === SIDEBAR NAVIGATION ===
@@ -131,15 +136,14 @@ function initSidebar() {
   });
 
   // Sidebar nav items: scroll to sections
-  const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit", help: "__cmd" };
+  const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit", help: "__onboard" };
   document.querySelectorAll(".sidebar-item").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".sidebar-item").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const target = sectionMap[btn.dataset.section];
-      if (target === "__cmd") {
-        // Help opens the command palette
-        if (window.__ksCmdOpen) window.__ksCmdOpen();
+      if (target === "__onboard") {
+        showOnboarding(0);
       } else if (target) {
         const el = document.getElementById(target);
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -360,7 +364,52 @@ function _reviewable(n) {
 function reviewableDefs() { return STATE.showAll ? STATE.defs : STATE.defs.filter(_reviewable); }
 function currentDefView() {
   const q = (($("#search") && $("#search").value) || "").trim().toLowerCase();
-  return q ? STATE.defs.filter((n) => n.toLowerCase().includes(q)) : reviewableDefs();
+  const typeFilter = ($("#filter-type") && $("#filter-type").value) || "all";
+  const hazardFilter = ($("#filter-hazard") && $("#filter-hazard").value) || "all";
+
+  let list = reviewableDefs();
+  if (q) {
+    list = STATE.defs.filter((n) => n.toLowerCase().includes(q));
+  }
+
+  if (typeFilter !== "all") {
+    list = list.filter((n) => {
+      const details = STATE.details && STATE.details[n];
+      if (!details) return false;
+      const kind = (details.kind || "").toLowerCase();
+      if (typeFilter === "function") return kind === "function";
+      if (typeFilter === "class") return kind === "class";
+      if (typeFilter === "other") return kind !== "function" && kind !== "class";
+      return true;
+    });
+  }
+
+  if (hazardFilter !== "all") {
+    list = list.filter((n) => {
+      const details = STATE.details && STATE.details[n];
+      if (!details) return false;
+      const action = (details.action || "").toLowerCase();
+
+      if (hazardFilter === "block") return action === "block";
+      if (hazardFilter === "hold") return action === "hold";
+      if (hazardFilter === "allow") return action === "allow";
+      if (hazardFilter === "collision") {
+        const cs = (STATE._col && STATE._col.collisions) || [];
+        return cs.some(c => {
+          const symsA = STATE.openMrs.find(m => m.id === c.mr_a)?.symbols || [];
+          const symsB = STATE.openMrs.find(m => m.id === c.mr_b)?.symbols || [];
+          return symsA.includes(n) || symsB.includes(n);
+        });
+      }
+      if (hazardFilter === "debt") {
+        const gaItems = (STATE.graphAudit && STATE.graphAudit.items) || [];
+        return gaItems.some(item => item.name === n && item.untested);
+      }
+      return true;
+    });
+  }
+
+  return list;
 }
 function updateShowAllLabel() {
   const b = $("#show-all"); if (!b) return;
@@ -833,8 +882,13 @@ async function detectCollisions(mrs) {
 
 async function loadHazards() {
   const col = await detectCollisions(STATE.openMrs);
+  STATE._col = col;
   if (col && col.collisions) renderCollision(col);
-  try { renderGraphAudit(await api("/api/graph-audit")); } catch (e) {}
+  try {
+    const ga = await api("/api/graph-audit");
+    STATE.graphAudit = ga;
+    renderGraphAudit(ga);
+  } catch (e) {}
   populateMrPicker();
 }
 
@@ -1148,6 +1202,34 @@ function wire() {
   if (tourBtn) tourBtn.addEventListener("click", startTour);
   const stopBtn = document.getElementById("tour-stop");
   if (stopBtn) stopBtn.addEventListener("click", stopTour);
+
+  // Filters change listeners
+  const filterType = $("#filter-type");
+  const filterHazard = $("#filter-hazard");
+  if (filterType) filterType.addEventListener("change", () => renderDefList(currentDefView()));
+  if (filterHazard) filterHazard.addEventListener("change", () => renderDefList(currentDefView()));
+
+  // Onboarding controls listeners
+  const onboardingModal = $("#onboarding-modal");
+  if (onboardingModal) {
+    onboardingModal.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { e.preventDefault(); closeOnboarding(); }
+      else trapModalFocus(e, onboardingModal);
+    });
+    const closeBtn = $("#onboard-close");
+    if (closeBtn) closeBtn.onclick = closeOnboarding;
+    const prevBtn = $("#onboard-prev");
+    if (prevBtn) prevBtn.onclick = () => { if (onboardingStep > 0) { onboardingStep--; renderOnboardingStep(); } };
+    const nextBtn = $("#onboard-next");
+    if (nextBtn) nextBtn.onclick = () => {
+      if (onboardingStep < onboardingSteps.length - 1) {
+        onboardingStep++;
+        renderOnboardingStep();
+      } else {
+        closeOnboarding();
+      }
+    };
+  }
 }
 
 // fnmatch-style path glob, mirroring core/agents._matches (normalise the leading slash, try a
@@ -1365,6 +1447,130 @@ async function verifyChain() {
       ? "Re-verified: recomputed from the real rows. This public bundle uses a published sample key, so the chain badge reads SAMPLE; the local app keys it with a secret per-host key for true tamper-evidence."
       : "Re-verified: the chain recomputed cleanly from the rows, every link intact.";
     setTimeout(() => { note.hidden = true; }, 5000);
+  }
+}
+
+// === THEME MANAGER ===
+function initTheme() {
+  const toggle = $("#theme-toggle");
+  if (!toggle) return;
+  const currentTheme = localStorage.getItem("ks-theme");
+  if (currentTheme === "light") {
+    document.body.classList.add("light-theme");
+  }
+  toggle.addEventListener("click", () => {
+    document.body.classList.toggle("light-theme");
+    const isLight = document.body.classList.contains("light-theme");
+    localStorage.setItem("ks-theme", isLight ? "light" : "dark");
+  });
+}
+
+// === ONBOARDING WIZARD DATA & LOGIC ===
+const onboardingSteps = [
+  {
+    title: "Welcome to Keystone",
+    body: `
+      <p>Keystone is a live command center for code risk analysis and governed change review in the GitLab Orbit graph.</p>
+      <p>It surfaces change risk that Git merge reviews cannot see, and enables you to define policies to manage and approve changes.</p>
+      <p>Click <b>Next</b> to learn how to navigate the dashboard.</p>
+    `
+  },
+  {
+    title: "1. Hazard X-Ray",
+    body: `
+      <p>The <b>HAZARD X-RAY</b> panel at the top surfaces two critical risk areas:</p>
+      <ul>
+        <li><b>Cross-MR Blast Collision:</b> Detects when separate merge requests touch different files but silently break each other due to call graph dependencies.</li>
+        <li><b>Review Debt:</b> Highlights high-impact symbols that lack direct test coverage.</li>
+      </ul>
+    `
+  },
+  {
+    title: "2. Blast Radius Stage",
+    body: `
+      <p>Select any symbol in the <b>Symbols</b> rail to compute its blast radius.</p>
+      <p>The <b>BLAST RADIUS</b> visualizes the epicenter, direct caller, and transitive caller rings. The <b>IMPACT</b> panel shows precise details on affected systems.</p>
+    `
+  },
+  {
+    title: "3. Governance & Audit Ledger",
+    body: `
+      <p>Verify prior decisions in the <b>Precedent</b> tab. Approve or reject changes in the <b>Approval Gate</b>.</p>
+      <p>Every decision is recorded to the append-only, tamper-evident <b>Audit Ledger</b>, securing the integrity of your code repository.</p>
+    `
+  }
+];
+
+let onboardingStep = 0;
+
+function showOnboarding(step = 0) {
+  const modal = $("#onboarding-modal");
+  if (!modal) return;
+  onboardingStep = step;
+  modal.removeAttribute("hidden");
+  renderOnboardingStep();
+  modal.focus();
+}
+
+function closeOnboarding() {
+  const modal = $("#onboarding-modal");
+  if (modal) modal.setAttribute("hidden", "true");
+  localStorage.setItem("keystone-onboarded", "true");
+}
+
+function renderOnboardingStep() {
+  const step = onboardingSteps[onboardingStep];
+  if (!step) return;
+
+  $("#onboard-title").textContent = step.title;
+  $("#onboard-body").innerHTML = step.body;
+
+  const dots = $("#onboard-dots");
+  if (dots) {
+    dots.innerHTML = onboardingSteps.map((_, i) => 
+      `<span class="onboard-dot ${i === onboardingStep ? "active" : ""}" data-step="${i}"></span>`
+    ).join("");
+    dots.querySelectorAll(".onboard-dot").forEach(dot => {
+      dot.onclick = () => {
+        onboardingStep = Number(dot.dataset.step);
+        renderOnboardingStep();
+      };
+    });
+  }
+
+  const pct = ((onboardingStep + 1) / onboardingSteps.length) * 100;
+  const progress = $("#onboard-progress");
+  if (progress) progress.style.width = pct + "%";
+
+  const prev = $("#onboard-prev");
+  const next = $("#onboard-next");
+  if (prev) prev.disabled = onboardingStep === 0;
+  if (next) {
+    if (onboardingStep === onboardingSteps.length - 1) {
+      next.textContent = "Finish";
+    } else {
+      next.textContent = "Next";
+    }
+  }
+}
+
+function trapModalFocus(e, modalEl) {
+  if (e.key !== 'Tab') return;
+  const focusables = modalEl.querySelectorAll('button, [tabindex="0"], a');
+  if (!focusables.length) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      last.focus();
+      e.preventDefault();
+    }
+  } else {
+    if (document.activeElement === last) {
+      first.focus();
+      e.preventDefault();
+    }
   }
 }
 

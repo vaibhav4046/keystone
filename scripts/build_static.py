@@ -149,6 +149,23 @@ def main():
     tx = _orbit_transcript(prov, sample_symbol)
     cli_ran = any(e.get("ok") for e in tx)
     verified_n = prov.get("symbols_verified", 0)
+    details = {}
+    for n in names:
+        defn = g.find_definition(n)
+        kind = defn.get("kind", "") if defn else ""
+        imp = impact_mod.compute_blast_radius(g, n)
+        if not imp:
+            details[n] = {"kind": kind, "tier": "ISOLATED", "action": "ALLOW"}
+            continue
+        d = imp.to_dict()
+        prec = led.precedent(target_symbols=[n], signature=imp.signature)
+        pol = policy_mod.evaluate(d, prec)
+        details[n] = {
+            "kind": kind,
+            "tier": pol.get("tier", "ISOLATED"),
+            "action": pol.get("action", "ALLOW")
+        }
+
     bundle = {
         "static": True,
         "status": {
@@ -172,7 +189,7 @@ def main():
                                 "is reproduced by the exact `orbit sql` command shown ({} symbols cross-verified)."
                                 .format(g.total_definitions(), verified_n)),
         },
-        "definitions": names,
+        "definitions": {"names": names, "details": details},
         "impact": {},
         "precedent": {},
         "brief": {},
