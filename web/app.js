@@ -393,10 +393,19 @@ function currentDefView() {
       const details = STATE.details && STATE.details[n];
       if (!details) return false;
       const action = (details.action || "").toLowerCase();
+      const tier = (details.tier || "").toLowerCase();
 
-      if (hazardFilter === "block") return action === "block";
+      if (hazardFilter === "block") {
+        const hasContradiction = (STATIC && STATIC.precedent && STATIC.precedent[n] && STATIC.precedent[n].contradiction);
+        return action === "block" || hasContradiction;
+      }
       if (hazardFilter === "hold") return action === "hold";
       if (hazardFilter === "allow") return action === "allow";
+      if (hazardFilter === "cross-team") return tier === "cross_team";
+      if (hazardFilter === "high-blast") {
+        const count = details.total_affected || 0;
+        return count >= 10;
+      }
       if (hazardFilter === "collision") {
         const cs = (STATE._col && STATE._col.collisions) || [];
         return cs.some(c => {
@@ -1165,47 +1174,139 @@ function wire() {
 
   // Guided 60-second tour: auto-runs the canonical sequence so a judge who clicks once
   // gets the full demo in under a minute, with the panel payoff pulsing on each step.
+  // Future Merge Simulator controls
+  function initSimulator() {
+    const nextBtn = $("#sim-next");
+    const prevBtn = $("#sim-prev");
+    if (!nextBtn || !prevBtn) return;
+    let currentStep = 1;
+    const maxSteps = 4;
+
+    function showStep(step) {
+      currentStep = step;
+      document.querySelectorAll(".sim-step").forEach((el) => {
+        const s = parseInt(el.dataset.step);
+        el.classList.toggle("active", s === currentStep);
+        el.classList.toggle("done", s < currentStep);
+      });
+      for (let s = 1; s <= maxSteps; s++) {
+        const content = $(`#sim-content-${s}`);
+        if (content) {
+          content.style.display = s === currentStep ? "block" : "none";
+        }
+      }
+      prevBtn.disabled = currentStep === 1;
+      if (currentStep === maxSteps) {
+        nextBtn.textContent = "Restart";
+      } else {
+        nextBtn.textContent = "Next Step";
+      }
+    }
+
+    nextBtn.onclick = () => {
+      if (currentStep === maxSteps) {
+        showStep(1);
+      } else {
+        showStep(currentStep + 1);
+      }
+    };
+
+    prevBtn.onclick = () => {
+      if (currentStep > 1) {
+        showStep(currentStep - 1);
+      }
+    };
+
+    document.querySelectorAll(".sim-step").forEach((el) => {
+      el.addEventListener("click", () => {
+        const s = parseInt(el.dataset.step);
+        if (s) showStep(s);
+      });
+    });
+  }
+  initSimulator();
+
+  // Manual guided tour with 9 precise steps
   const TOUR_STEPS = [
-    { label: "1/6: the collision demo",     action: () => { select("compute_blast_radius"); scrollTo("hazard"); } },
-    { label: "2/6: blast + orbit sql",      action: () => { scrollTo("blast-radius"); } },
-    { label: "3/6: precedent + BLOCK",      action: () => { select("compute_blast_radius"); scrollTo("precedent"); } },
-    { label: "4/6: the gate",               action: () => { scrollTo("gate"); } },
-    { label: "5/6: tamper + re-verify",     action: () => { scrollTo("audit"); tamperDemo(); } },
-    { label: "6/6: export an attestation",  action: () => { scrollTo("attestation"); } },
+    { label: "1/9: Core Value Proposition", action: () => { scrollTo("hero-strip"); } },
+    { label: "2/9: Cross-MR Blast Simulator", action: () => { scrollTo("simulation-section"); } },
+    { label: "3/9: Codebase Security Matrix", action: () => { scrollTo("orbit-diff-section"); } },
+    { label: "4/9: Selection of Epicenter Symbol", action: () => { select("compute_blast_radius"); scrollTo("search"); } },
+    { label: "5/9: Blast Radius Visualization", action: () => { scrollTo("blast-radius"); const stage = $("#blast-radius"); if (stage) highlightPanel(stage); } },
+    { label: "6/9: Precedent Contradiction Recalled", action: () => { scrollTo("precedent"); const prec = $(".panel.precedent"); if (prec) highlightPanel(prec); } },
+    { label: "7/9: Bounded AI Review Advisory", action: () => { scrollTo("assistant"); const asst = $(".panel.assistant"); if (asst) highlightPanel(asst); } },
+    { label: "8/9: The Enforcement Gate", action: () => { scrollTo("gate"); const gate = $("#gate"); if (gate) highlightPanel(gate); } },
+    { label: "9/9: Cryptographic Ledger Audit", action: () => { scrollTo("audit"); const aud = $("#audit"); if (aud) highlightPanel(aud); } },
   ];
-  let tourHandle = null;
+  
+  let tourIndex = 0;
+
   function stopTour() {
-    if (tourHandle) { clearTimeout(tourHandle); tourHandle = null; }
     const bar = document.getElementById("tour-bar");
     if (bar) bar.hidden = true;
   }
+
   function startTour() {
-    stopTour();
     const bar = document.getElementById("tour-bar");
     const stepEl = document.getElementById("tour-step");
     const metaEl = document.getElementById("tour-meta");
     if (!bar || !stepEl || !metaEl) return;
     bar.hidden = false;
-    let i = 0;
-    const tick = () => {
-      if (i >= TOUR_STEPS.length) { stopTour(); return; }
-      const step = TOUR_STEPS[i];
-      stepEl.textContent = step.label;
-      metaEl.textContent = `step ${i + 1} of ${TOUR_STEPS.length} - auto-advances every 4s`;
-      try { step.action(); } catch (_) { /* never let a tour step break the page */ }
-      i++;
-      tourHandle = setTimeout(tick, 4000);
-    };
-    tick();
+    showTourStep(0);
   }
-  function scrollTo(id) {
-    const el = document.getElementById(id);
-    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  function showTourStep(index) {
+    tourIndex = index;
+    const step = TOUR_STEPS[tourIndex];
+    const stepEl = document.getElementById("tour-step");
+    const metaEl = document.getElementById("tour-meta");
+    if (stepEl) stepEl.textContent = step.label;
+    if (metaEl) metaEl.textContent = `Step ${tourIndex + 1} of ${TOUR_STEPS.length}`;
+    
+    try {
+      step.action();
+    } catch (_) {}
+
+    const prevBtn = document.getElementById("tour-prev");
+    const nextBtn = document.getElementById("tour-next");
+    if (prevBtn) prevBtn.disabled = tourIndex === 0;
+    if (nextBtn) {
+      nextBtn.textContent = tourIndex === TOUR_STEPS.length - 1 ? "Finish" : "Next Step";
+    }
   }
+
+  function scrollTo(idOrSelector) {
+    const el = idOrSelector.startsWith(".") || idOrSelector.startsWith("#")
+      ? $(idOrSelector)
+      : document.getElementById(idOrSelector);
+    if (el && el.scrollIntoView) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
   const tourBtn = document.getElementById("lede-tour");
   if (tourBtn) tourBtn.addEventListener("click", startTour);
+  
   const stopBtn = document.getElementById("tour-stop");
   if (stopBtn) stopBtn.addEventListener("click", stopTour);
+
+  const tourPrev = document.getElementById("tour-prev");
+  if (tourPrev) {
+    tourPrev.onclick = () => {
+      if (tourIndex > 0) showTourStep(tourIndex - 1);
+    };
+  }
+
+  const tourNext = document.getElementById("tour-next");
+  if (tourNext) {
+    tourNext.onclick = () => {
+      if (tourIndex < TOUR_STEPS.length - 1) {
+        showTourStep(tourIndex + 1);
+      } else {
+        stopTour();
+      }
+    };
+  }
 
   // Filters change listeners
   const filterType = $("#filter-type");

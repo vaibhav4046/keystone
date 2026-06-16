@@ -22,7 +22,14 @@ import os
 import urllib.request
 from typing import Optional, Tuple
 
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
+
 _TIMEOUT = float(os.environ.get("KEYSTONE_LLM_TIMEOUT", "9"))
+
 _ENV_LOADED = False
 
 
@@ -58,8 +65,187 @@ _PROVIDERS = [
     ("openrouter", _OR_URL, "OPENROUTER_API_KEY", "OPENROUTER_MODEL", "google/gemma-4-31b-it:free"),
     ("openrouter", _OR_URL, "OPENROUTER_API_KEY", "OPENROUTER_MODEL_2", "meta-llama/llama-3.3-70b-instruct:free"),
     ("openrouter", _OR_URL, "OPENROUTER_API_KEY", "OPENROUTER_MODEL_3", "qwen/qwen-2.5-72b-instruct:free"),
-    ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GEMINI_API_KEY", "GEMINI_MODEL", "gemini-2.0-flash"),
+    ("gemini", "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GEMINI_API_KEY", "GEMINI_MODEL", "gemini-3.5-flash"),
 ]
+
+
+def _get_gemini_tools() -> list[types.Tool]:
+    if not genai:
+        return []
+    return [
+        types.Tool(function_declarations=[
+            types.FunctionDeclaration(
+                name="blast_radius",
+                description="Deterministic blast radius and governance tier for a symbol from the Orbit code graph.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "symbol": types.Schema(
+                            type=types.Type.STRING,
+                            description="the symbol/definition name to analyze"
+                        )
+                    },
+                    required=["symbol"]
+                )
+            ),
+            types.FunctionDeclaration(
+                name="precedent",
+                description="Prior governed decisions on a symbol: approvals, rejections, and any signature-identical contradiction.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "symbol": types.Schema(
+                            type=types.Type.STRING,
+                            description="the symbol/definition name to check precedent for"
+                        )
+                    },
+                    required=["symbol"]
+                )
+            ),
+            types.FunctionDeclaration(
+                name="propose_reviewers",
+                description="Suggested reviewers for a symbol: who approved it before and the policy-required owner.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    properties={
+                        "symbol": types.Schema(
+                            type=types.Type.STRING,
+                            description="the symbol/definition name to propose reviewers for"
+                        )
+                    },
+                    required=["symbol"]
+                )
+            )
+        ])
+    ]
+
+
+def _convert_messages_to_gemini(messages: list) -> Tuple[Optional[str], list]:
+    if not genai:
+        return None, []
+    import json as _json
+    system_instruction = None
+    contents = []
+    
+    for msg in messages:
+        role = msg.get("role")
+        content = msg.get("content") or ""
+        
+        if role == "system":
+            system_instruction = content
+            continue
+            
+        parts = []
+        
+        if role == "user":
+            parts.append(types.Part.from_text(text=content))
+            contents.append(types.Content(role="user", parts=parts))
+            
+        elif role == "assistant":
+            if content:
+                parts.append(types.Part.from_text(text=content))
+            
+            tool_calls = msg.get("tool_calls") or []
+            for tc in tool_calls:
+                fn = tc.get("function") or {}
+                try:
+                    args = _json.loads(fn.get("arguments") or "{}")
+                except Exception:
+                    args = {}
+                parts.append(types.Part.from_function_call(
+                    name=fn.get("name"),
+                    args=args
+                ))
+            contents.append(types.Content(role="model", parts=parts))
+            
+        elif role == "tool":
+            try:
+                result = _json.loads(content)
+            except Exception:
+                result = {"result": content}
+            
+            parts.append(types.Part.from_function_response(
+                name=msg.get("name"),
+                response=result,
+                id=msg.get("tool_call_id")
+            ))
+            contents.append(types.Content(role="tool", parts=parts))
+            
+    return system_instruction, contents
+
+
+def _call_gemini_sdk_generate(prompt: str, system: str, max_tokens: int, timeout: float) -> Optional[str]:
+    if not genai:
+        return None
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        return None
+    model = os.environ.get("GEMINI_MODEL") or "gemini-3.5-flash"
+    try:
+        client = genai.Client(api_key=key)
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=max_tokens,
+                temperature=0.2
+            )
+        )
+        if response.text:
+            return response.text.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _call_gemini_sdk_chat(messages: list, tools: Optional[list], max_tokens: int) -> Optional[dict]:
+    if not genai:
+        return None
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        return None
+    model = os.environ.get("GEMINI_MODEL") or "gemini-3.5-flash"
+    try:
+        system_instruction, contents = _convert_messages_to_gemini(messages)
+        
+        config_args = {
+            "max_output_tokens": max_tokens,
+            "temperature": 0.2
+        }
+        if system_instruction:
+            config_args["system_instruction"] = system_instruction
+        if tools:
+            config_args["tools"] = _get_gemini_tools()
+            
+        client = genai.Client(api_key=key)
+        response = client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=types.GenerateContentConfig(**config_args)
+        )
+        
+        translated = {"content": response.text or ""}
+        
+        tool_calls = []
+        if response.function_calls:
+            for call in response.function_calls:
+                cid = getattr(call, "id", None) or call.name
+                tool_calls.append({
+                    "id": cid,
+                    "type": "function",
+                    "function": {
+                        "name": call.name,
+                        "arguments": json.dumps(call.args)
+                    }
+                })
+        if tool_calls:
+            translated["tool_calls"] = tool_calls
+            
+        return translated
+    except Exception:
+        pass
+    return None
 
 
 def available_providers() -> list:
@@ -67,11 +253,15 @@ def available_providers() -> list:
     Deduped so multiple models behind one provider (e.g. OpenRouter) list once."""
     _load_dotenv()
     seen, out = set(), []
+    if os.environ.get("GEMINI_API_KEY"):
+        seen.add("gemini-sdk")
+        out.append("gemini-sdk")
     for (name, _u, ke, _me, _dm) in _PROVIDERS:
         if os.environ.get(ke) and name not in seen:
             seen.add(name)
             out.append(name)
     return out
+
 
 
 def _call(url: str, key: str, model: str, system: str, prompt: str, max_tokens: int, timeout: float) -> Optional[str]:
@@ -114,6 +304,10 @@ def chat(messages: list, *, tools: Optional[list] = None, max_tokens: int = 380,
     if os.environ.get("KEYSTONE_LLM_DISABLED"):
         return None, None
     _load_dotenv()
+    if os.environ.get("GEMINI_API_KEY"):
+        res = _call_gemini_sdk_chat(messages, tools, max_tokens)
+        if res is not None:
+            return res, "gemini-sdk"
     t = timeout if timeout is not None else _TIMEOUT
     for (name, url, key_env, model_env, default_model) in _PROVIDERS:
         key = os.environ.get(key_env)
@@ -137,6 +331,10 @@ def generate(prompt: str, *, system: str = "You are Keystone's review assistant.
     if os.environ.get("KEYSTONE_LLM_DISABLED"):
         return None, None                       # offline / tests / CI: deterministic only, no network
     _load_dotenv()
+    if os.environ.get("GEMINI_API_KEY"):
+        res = _call_gemini_sdk_generate(prompt, system, max_tokens, timeout or _TIMEOUT)
+        if res:
+            return res, "gemini-sdk"
     t = timeout if timeout is not None else _TIMEOUT
     for (name, url, key_env, model_env, default_model) in _PROVIDERS:
         key = os.environ.get(key_env)

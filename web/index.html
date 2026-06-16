@@ -1,6 +1,16 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script>
+  // Force unregister all service workers immediately to prevent routing conflicts
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+</script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Keystone: Hazard X-Ray + Governed Review</title>
@@ -104,19 +114,166 @@
 <div id="open-banner" class="open-banner" role="note" hidden></div>
 <div id="data-provenance" class="data-prov" role="note" hidden></div>
 
-<div class="lede" role="note">
-  <span class="lede-txt">A live command center over a real GitLab Orbit index of this repository. It surfaces change risk a normal merge-request review cannot see, then governs the change. New here? Start with one click:</span>
-  <button class="lede-chip" type="button" data-pick="compute_blast_radius">see a graph-driven BLOCK</button>
-  <button class="lede-chip" type="button" data-pick="append">see a CROSS-TEAM change</button>
-  <button class="lede-chip lede-tour" type="button" id="lede-tour">&#9654; take the 60-second tour</button>
+<div id="hero-strip" class="hero-strip" role="note">
+  <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
+  <p class="hero-thesis">Git sees files. Orbit sees relationships. Keystone sees consequences.</p>
+  <div class="hero-cards">
+    <div class="hero-card hero-git">
+      <div class="card-tag">GIT</div>
+      <div class="card-desc">No textual conflict.</div>
+    </div>
+    <div class="hero-card hero-orbit">
+      <div class="card-tag">ORBIT</div>
+      <div class="card-desc">Shared dependency found.</div>
+    </div>
+    <div class="hero-card hero-keystone">
+      <div class="card-tag">KEYSTONE</div>
+      <div class="card-desc">Block, hold, or merge in safe order.</div>
+    </div>
+  </div>
+  <div class="hero-actions">
+    <span class="actions-label">New here? Start with one click:</span>
+    <button class="lede-chip" type="button" data-pick="compute_blast_radius">see a graph-driven BLOCK</button>
+    <button class="lede-chip" type="button" data-pick="append">see a CROSS-TEAM change</button>
+    <button class="lede-chip lede-tour" type="button" id="lede-tour">&#9654; take the 60-second tour</button>
+  </div>
 </div>
 <div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
   <span class="tour-step" id="tour-step">ready</span>
   <span class="tour-meta" id="tour-meta"></span>
-  <button class="tour-stop" type="button" id="tour-stop">stop</button>
+  <button class="btn ghost btn-sm" type="button" id="tour-prev" style="margin-left: 12px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">&larr; Back</button>
+  <button class="btn primary btn-sm" type="button" id="tour-next" style="margin-left: 6px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">Next &rarr;</button>
+  <button class="btn ghost btn-sm" type="button" id="tour-stop" style="margin-left: 6px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">Skip</button>
 </div>
 
 <main>
+
+<section id="simulation-section" class="simulation panel" data-reveal>
+  <div class="p-h">FUTURE MERGE SIMULATOR
+    <span class="hint">simulate cross-MR blast collisions in real-time</span>
+  </div>
+  <div class="sim-container">
+    <div class="sim-mrs">
+      <div class="sim-mr mr-a">
+        <div class="mr-badge">MR-204</div>
+        <div class="mr-title">speed up the blast engine</div>
+        <code class="mr-file">core/graph.py</code>
+        <code class="mr-symbol">compute_blast_radius</code>
+      </div>
+      <div class="sim-mr mr-b">
+        <div class="mr-badge">MR-211</div>
+        <div class="mr-title">ledger append fix</div>
+        <code class="mr-file">core/audit.py</code>
+        <code class="mr-symbol">append</code>
+      </div>
+    </div>
+
+    <div class="sim-stepper">
+      <div class="sim-step active" data-step="1">
+        <div class="step-num">1</div>
+        <div class="step-label">Git Analysis</div>
+      </div>
+      <div class="sim-step" data-step="2">
+        <div class="step-num">2</div>
+        <div class="step-label">Orbit Graph Scan</div>
+      </div>
+      <div class="sim-step" data-step="3">
+        <div class="step-num">3</div>
+        <div class="step-label">Keystone Verdict</div>
+      </div>
+      <div class="sim-step" data-step="4">
+        <div class="step-num">4</div>
+        <div class="step-label">Merge Order</div>
+      </div>
+    </div>
+
+    <div class="sim-display" aria-live="polite">
+      <div class="sim-step-content active" id="sim-content-1">
+        <div class="sim-status-badge success">GIT CONFLICT: NONE</div>
+        <p class="sim-desc">Git analyzes file paths. Since MR-204 and MR-211 edit separate files (graph.py and audit.py), Git reports zero textual conflicts. Standard CI pipelines will greenlight both merges.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-2" style="display:none;">
+        <div class="sim-status-badge warning">DEPENDENCY EXPOSED</div>
+        <p class="sim-desc">Orbit scans the code call-graph. It reveals that <code>compute_blast_radius</code> calls and depends directly on <code>append</code>. The MRs are structurally connected.</p>
+        <div class="sim-visual-connection">
+          <code>compute_blast_radius</code> <span class="conn-arrow">&rarr;</span> <code>append</code>
+        </div>
+      </div>
+      <div class="sim-step-content" id="sim-content-3" style="display:none;">
+        <div class="sim-status-badge danger">VERDICT: BLOCK</div>
+        <p class="sim-desc">Keystone intercepts the merge. Because <code>compute_blast_radius</code> depends on <code>append</code>, merging MR-204 before MR-211's signature change is validated introduces an untracked, silent runtime failure. Keystone issues a hard governance block.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-4" style="display:none;">
+        <div class="sim-status-badge info">SAFE MERGE ORDER FOUND</div>
+        <p class="sim-desc">Keystone computes a safe merge sequence. To prevent breaking production, <code>MR-211</code> (dependency definition) must be merged and audited first, followed by <code>MR-204</code> (caller definition).</p>
+        <div class="sim-safe-sequence">
+          <span class="seq-badge">1</span> <code>MR-211</code> &rarr; <span class="seq-badge">2</span> <code>MR-204</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-controls">
+      <button id="sim-prev" class="btn ghost" disabled>Back</button>
+      <button id="sim-next" class="btn primary">Next Step</button>
+    </div>
+  </div>
+</section>
+
+<section id="orbit-diff-section" class="orbit-diff panel" data-reveal>
+  <div class="p-h">ORBIT DIFFERENCE MATRIX
+    <span class="hint">how Keystone compares to traditional review guardrails</span>
+  </div>
+  <div class="matrix-scroll">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Git Diff</th>
+          <th>CODEOWNERS</th>
+          <th>GitLab Orbit</th>
+          <th>Keystone</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Inspects File Content</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Detects File Path Changes</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Builds Call Dependency Graph</td>
+          <td class="no">No</td>
+          <td class="no">No</td>
+          <td class="yes">Yes</td>
+          <td class="yes">Yes</td>
+        </tr>
+        <tr>
+          <td>Flags Cross-MR Blast Collisions</td>
+          <td class="no">No</td>
+          <td class="no">No</td>
+          <td class="no">No</td>
+          <td class="yes">Yes (Deterministic)</td>
+        </tr>
+        <tr>
+          <td>Enforces Cryptographic Governance Gate</td>
+          <td class="no">No</td>
+          <td class="no">No</td>
+          <td class="no">No</td>
+          <td class="yes">Yes (OIDC & Ledger-backed)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
 
 <!-- HAZARD X-RAY -->
 <section class="hazard panel" data-reveal aria-labelledby="hazard-h">
@@ -157,9 +314,11 @@
         </select>
         <select id="filter-hazard" class="ip filter-select" aria-label="Filter by Hazard Severity">
           <option value="all">all hazards</option>
-          <option value="block">BLOCK tier</option>
+          <option value="block">BLOCK / contradiction</option>
           <option value="hold">HOLD tier</option>
           <option value="allow">ALLOW tier</option>
+          <option value="cross-team">CROSS_TEAM tier</option>
+          <option value="high-blast">high blast (&ge; 10)</option>
           <option value="collision">collisions</option>
           <option value="debt">review debt</option>
         </select>
