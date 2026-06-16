@@ -64,7 +64,7 @@ app = FastAPI(title="Keystone", version="1.0.0", lifespan=lifespan)
 # so even if the backend is exposed beyond localhost an arbitrary site cannot POST a
 # decision (CSRF). Override with KEYSTONE_CORS_ORIGINS (comma-separated) if needed.
 _origins = os.environ.get("KEYSTONE_CORS_ORIGINS",
-                          "http://127.0.0.1:8787,http://localhost:8787").split(",")
+                          "http://127.0.0.1:8787,http://localhost:8787,https://vaibhav4046.github.io").split(",")
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins if o.strip()],
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 

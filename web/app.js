@@ -16,6 +16,9 @@ function _isStaticHost() {
   // dev with a running backend still hits the live API first.
   return /github\.io$|gitlab\.io$|pages\.dev$|\.netlify\.app$|\.vercel\.app$/.test(h) || location.protocol === "file:";
 }
+let API_MODE = localStorage.getItem("ks-api-mode") || (_isStaticHost() ? "static" : "live");
+let API_URL = localStorage.getItem("ks-api-url") || "";
+
 async function ensureStatic() {
   if (STATIC) return STATIC;
   STATIC = await fetch("data.json").then((r) => r.json());
@@ -41,18 +44,17 @@ function fromStatic(p) {
   throw new Error("no static route " + p);
 }
 const api = async (p) => {
-  // On a known static host (GitHub Pages, local file://, etc.) go straight to the
-  // static bundle so the browser never logs a failed /api/* fetch.
-  if (!STATIC_MODE && _isStaticHost()) {
-    try { await ensureStatic(); STATIC_MODE = true; } catch (e) { /* data.json 404: fall through to live */ }
-  }
-  if (!STATIC_MODE) {
+  if (API_MODE === "live") {
+    const baseUrl = API_URL || "";
+    const url = baseUrl.replace(/\/$/, "") + p;
     try {
-      const r = await fetch(p);
+      const r = await fetch(url);
       if (r.ok) return await r.json();
-      throw new Error(p + " " + r.status);
+      throw new Error(url + " " + r.status);
     } catch (e) {
-      try { await ensureStatic(); STATIC_MODE = true; } catch (e2) { throw e; }
+      console.warn("Live API request failed, falling back to static", e);
+      await ensureStatic();
+      return fromStatic(p);
     }
   }
   await ensureStatic();
@@ -69,6 +71,8 @@ function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
 // === BOOT ===
 async function boot() {
   initTheme();
+  initSettings();
+  updateConnectionStatus();
   initSidebar();
   initScrollSpy();
   initCollapsiblePanels();
@@ -1571,6 +1575,100 @@ function trapModalFocus(e, modalEl) {
       first.focus();
       e.preventDefault();
     }
+  }
+}
+
+// === CONNECTION SETTINGS MANAGER ===
+function updateConnectionStatus() {
+  const btn = $("#connection-toggle");
+  const dot = $("#conn-dot");
+  const text = $("#conn-text");
+  if (!btn || !dot || !text) return;
+
+  if (API_MODE === "live") {
+    text.textContent = "mode: live backend";
+    dot.className = "dot g";
+    btn.className = "chip ok";
+    btn.title = "Connected to live backend at " + (API_URL || "same origin") + ". Click to change settings.";
+  } else {
+    text.textContent = "mode: snapshot";
+    dot.className = "dot a";
+    btn.className = "chip warn";
+    btn.title = "Using pre-baked static snapshot (data.json). Click to change settings.";
+  }
+}
+
+function initSettings() {
+  const btn = $("#connection-toggle");
+  const modal = $("#settings-modal");
+  if (!btn || !modal) return;
+
+  btn.onclick = () => {
+    const mode = API_MODE;
+    const staticRadio = $("#mode-static");
+    const liveRadio = $("#mode-live");
+    if (staticRadio) staticRadio.checked = mode === "static";
+    if (liveRadio) liveRadio.checked = mode === "live";
+    const urlInput = $("#api-url");
+    if (urlInput) urlInput.value = API_URL;
+    const urlGroup = $("#api-url-group");
+    if (urlGroup) urlGroup.style.display = mode === "live" ? "flex" : "none";
+
+    modal.removeAttribute("hidden");
+    modal.focus();
+  };
+
+  const close = () => modal.setAttribute("hidden", "true");
+  const closeBtn = $("#settings-close");
+  if (closeBtn) closeBtn.onclick = close;
+  const cancelBtn = $("#settings-cancel");
+  if (cancelBtn) cancelBtn.onclick = close;
+
+  const modeStatic = $("#mode-static");
+  const modeLive = $("#mode-live");
+  const urlGroup = $("#api-url-group");
+  if (modeStatic && modeLive && urlGroup) {
+    modeStatic.onchange = () => { if (modeStatic.checked) urlGroup.style.display = "none"; };
+    modeLive.onchange = () => { if (modeLive.checked) urlGroup.style.display = "flex"; };
+  }
+
+  const save = $("#settings-save");
+  if (save) {
+    save.onclick = async () => {
+      const staticRadio = $("#mode-static");
+      const mode = (staticRadio && staticRadio.checked) ? "static" : "live";
+      const urlInput = $("#api-url");
+      const url = urlInput ? urlInput.value.trim() : "";
+      
+      API_MODE = mode;
+      API_URL = url;
+      localStorage.setItem("ks-api-mode", mode);
+      localStorage.setItem("ks-api-url", url);
+
+      close();
+      updateConnectionStatus();
+
+      // Refresh app data live
+      try {
+        const st = await api("/api/status");
+        paintStatus(st);
+      } catch (e) {}
+      try {
+        const d = await api("/api/definitions");
+        STATE.defs = d.names;
+        STATE.details = d.details || {};
+        renderDefList(currentDefView());
+        updateShowAllLabel();
+        
+        if (STATE.defs.length) {
+          const demo = STATE.defs.includes("compute_blast_radius") ? "compute_blast_radius"
+            : (STATE.defs.includes("tokenize") ? "tokenize" : STATE.defs[0]);
+          select(demo);
+        }
+      } catch (e) {}
+      await refreshLedger();
+      loadHazards();
+    };
   }
 }
 
