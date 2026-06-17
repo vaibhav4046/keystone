@@ -8,8 +8,8 @@
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let STILL = false;
   window.__ksFreeze = function () { STILL = true; };
-  const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
-  const ringColor = (r) => RING_COLOR[r] || "#7A8494";
+  const RING_COLOR = { 0: "#ef4444", 1: "#ff7a2f", 2: "#f5b72c", 3: "#38bdf8" };
+  const ringColor = (r) => RING_COLOR[r] || "#6b6d7c";
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   const PX = Math.max(2, Math.round(2 * DPR));
 
@@ -36,8 +36,8 @@
 
       // Subtle gradient wash at the bottom for depth
       const grad = ctx.createLinearGradient(0, H * 0.7, 0, H);
-      grad.addColorStop(0, "rgba(255,138,43,0)");
-      grad.addColorStop(1, "rgba(255,138,43,0.015)");
+      grad.addColorStop(0, "rgba(255,122,47,0)");
+      grad.addColorStop(1, "rgba(255,122,47,0.012)");
       ctx.fillStyle = grad;
       ctx.fillRect(0, H * 0.7, W, H * 0.3);
 
