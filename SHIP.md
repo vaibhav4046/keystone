@@ -74,12 +74,18 @@ embed Loom reliably, so use YouTube. One take, screen plus mic. Shot list:
 
 Keep it honest: say "sample fixture" if you ever show the FALLBACK label; never call it live.
 
-## 4. Publish the AI Catalog agent (browser, optional bonus)
+## 4. Publish the AI Catalog agent (browser, strongly recommended)
 
-In GitLab, publish `skills/keystone/SKILL.md` as a public AI Catalog agent (visibility public,
-no review queue, free). This strengthens the "meaningful Orbit use via the skill interface"
-gate beyond the in-repo SKILL.md. Your call; the SKILL.md + its runnable `run_review.py` are
-already the gate artifact.
+In GitLab, publish the Keystone agent to the AI Catalog:
+
+- Agent definition: `.gitlab/agents/keystone/agent.yml`
+- Skill interface: `skills/keystone/SKILL.md`
+- Runnable proof: `skills/keystone/run_review.py`
+
+Publish with visibility public (no review queue, free for the hackathon). This satisfies the
+Showcase Track requirement that at least one agent or flow be published to the AI Catalog and
+that it "meaningfully uses GitLab Orbit via its API, CLI, or skill interface" to perform a
+specific action rather than chat.
 
 ## 5. Devpost submission (after 1-3 are done)
 
