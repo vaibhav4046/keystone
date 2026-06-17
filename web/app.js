@@ -66,6 +66,8 @@ let STATE = { defs: [], selected: null, impact: null, showAll: false };
 window.STATE = STATE;                       // exposed for the motion layer (motion.js)
 
 const RING_COLOR = { 0: "#ef4444", 1: "#ff7a2f", 2: "#f5b72c", 3: "#38bdf8" };
+const RING_FILL = { 0: "rgba(239,68,68,0.10)", 1: "rgba(255,122,47,0.08)", 2: "rgba(245,183,44,0.06)", 3: "rgba(56,189,248,0.06)" };
+const RING_LABEL = { 0: "epicenter", 1: "direct", 2: "transitive", 3: "at risk" };
 function ringColor(r) { return RING_COLOR[r] || "#6b6d7c"; }
 
 // === BOOT ===
@@ -571,13 +573,29 @@ function drawBlast(imp) {
   });
 
   const ns = "http://www.w3.org/2000/svg";
-  // concentric severity ring guides
+  // concentric severity ring guides + subtle fills + labels
   for (let r = 1; r <= maxRing; r++) {
-    const c = document.createElementNS(ns, "ellipse");
-    c.setAttribute("cx", cx); c.setAttribute("cy", cy);
-    c.setAttribute("rx", radii[r]); c.setAttribute("ry", radii[r] * 0.82);
-    c.setAttribute("class", "ring-guide");
-    svg.appendChild(c);
+    const fill = document.createElementNS(ns, "ellipse");
+    fill.setAttribute("cx", cx); fill.setAttribute("cy", cy);
+    fill.setAttribute("rx", radii[r]); fill.setAttribute("ry", radii[r] * 0.82);
+    fill.setAttribute("class", "ring-fill");
+    fill.setAttribute("fill", RING_FILL[r] || "transparent");
+    svg.appendChild(fill);
+
+    const guide = document.createElementNS(ns, "ellipse");
+    guide.setAttribute("cx", cx); guide.setAttribute("cy", cy);
+    guide.setAttribute("rx", radii[r]); guide.setAttribute("ry", radii[r] * 0.82);
+    guide.setAttribute("class", "ring-guide");
+    svg.appendChild(guide);
+
+    const lbl = document.createElementNS(ns, "text");
+    lbl.setAttribute("x", cx + radii[r] - 10);
+    lbl.setAttribute("y", cy - radii[r] * 0.82 + 14);
+    lbl.setAttribute("text-anchor", "end");
+    lbl.setAttribute("class", "ring-label");
+    lbl.setAttribute("fill", ringColor(r));
+    lbl.textContent = RING_LABEL[r] || ("R" + r);
+    svg.appendChild(lbl);
   }
   // edges follow the REAL BFS parent (who actually calls whom), not an arbitrary hub,
   // so the diagram's topology matches the graph. parents = {childId: parentId}.
