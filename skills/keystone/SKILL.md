@@ -1,8 +1,21 @@
 ---
 name: keystone
-description: Governed change review on the GitLab Orbit code knowledge graph. Given a symbol that is about to change, it uses Orbit Local to fetch the dependency graph, computes the deterministic blast radius (direct callers, transitive dependents, owning files), surfaces prior governance decisions and any contradicting rejection, and records the human decision into a tamper-evident sha256 hash-chained audit ledger. Use this skill to review a code change before merge, to answer who-approved-what-and-why, or to gate an AI-agent-proposed change through the same human-auditable workflow as a human.
+id: keystone
+version: 1.0.0
+description: |
+  Governed change review on the GitLab Orbit code knowledge graph. Given a
+  symbol that is about to change, fetch its Orbit dependency graph, compute the
+  deterministic blast radius (direct callers, transitive dependents, owning
+  files), surface prior governance decisions and any contradicting rejection,
+  and record the human decision into a tamper-evident sha256 hash-chained audit
+  ledger. Use this skill to review a code change before merge, to answer
+  who-approved-what-and-why, or to gate an AI-agent-proposed change through the
+  same human-auditable workflow as a human.
 metadata:
   slash-command: enabled
+  author: vaibhav4046
+  catalog: agents
+  license: MIT
 ---
 
 # Keystone governed change review

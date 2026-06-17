@@ -65,8 +65,8 @@ const api = async (p) => {
 let STATE = { defs: [], selected: null, impact: null, showAll: false };
 window.STATE = STATE;                       // exposed for the motion layer (motion.js)
 
-const RING_COLOR = { 0: "#FF5C66", 1: "#FF8A2B", 2: "#F5C542", 3: "#5BBFD6" };
-function ringColor(r) { return RING_COLOR[r] || "#7A8494"; }
+const RING_COLOR = { 0: "#ef4444", 1: "#ff7a2f", 2: "#f5b72c", 3: "#38bdf8" };
+function ringColor(r) { return RING_COLOR[r] || "#6b6d7c"; }
 
 // === BOOT ===
 async function boot() {
@@ -234,9 +234,9 @@ function initCommandPalette() {
   function renderCmdResults(q) {
     const lq = q.toLowerCase();
     const actions = [
-      { name: '▶ Take the 60-second tour', action: () => { const t = $('#lede-tour'); if (t) t.click(); } },
-      { name: '⟳ Verify audit chain', action: () => { const v = $('#verify'); if (v) v.click(); } },
-      { name: '⚡ Show all symbols', action: () => { STATE.showAll = true; renderDefList(currentDefView()); updateShowAllLabel(); } },
+      { name: 'Take the 60-second tour', action: () => { const t = $('#lede-tour'); if (t) t.click(); } },
+      { name: 'Verify audit chain', action: () => { const v = $('#verify'); if (v) v.click(); } },
+      { name: 'Show all symbols', action: () => { STATE.showAll = true; renderDefList(currentDefView()); updateShowAllLabel(); } },
     ];
     const syms = (STATE.defs || []).filter(n => !lq || n.toLowerCase().includes(lq)).slice(0, 12);
     const acts = actions.filter(a => !lq || a.name.toLowerCase().includes(lq));
@@ -571,12 +571,12 @@ function drawBlast(imp) {
   });
 
   const ns = "http://www.w3.org/2000/svg";
-  // ring guides
+  // concentric severity ring guides
   for (let r = 1; r <= maxRing; r++) {
     const c = document.createElementNS(ns, "ellipse");
     c.setAttribute("cx", cx); c.setAttribute("cy", cy);
     c.setAttribute("rx", radii[r]); c.setAttribute("ry", radii[r] * 0.82);
-    c.setAttribute("fill", "none"); c.setAttribute("stroke", "#1c1e24"); c.setAttribute("stroke-dasharray", "3 5");
+    c.setAttribute("class", "ring-guide");
     svg.appendChild(c);
   }
   // edges follow the REAL BFS parent (who actually calls whom), not an arbitrary hub,
@@ -1167,30 +1167,6 @@ function wire() {
   });
 
   // Hero CTA listeners
-  const ctaRunDemo = $("#cta-run-demo");
-  if (ctaRunDemo) {
-    ctaRunDemo.onclick = () => {
-      const simSec = $("#simulation-section");
-      if (simSec && simSec.scrollIntoView) {
-        simSec.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      const step1 = document.querySelector('.sim-step[data-step="1"]');
-      if (step1) step1.click();
-      highlightPanel(simSec);
-    };
-  }
-
-  const ctaCompare = $("#cta-compare");
-  if (ctaCompare) {
-    ctaCompare.onclick = () => {
-      const compSec = $("#orbit-diff-section");
-      if (compSec && compSec.scrollIntoView) {
-        compSec.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      highlightPanel(compSec);
-    };
-  }
-
   const ctaCockpit = $("#cta-cockpit");
   if (ctaCockpit) {
     ctaCockpit.onclick = () => {
