@@ -272,9 +272,11 @@ body.light-theme .ltable th { background: var(--ks-bg-surface); }
   font-family: var(--ks-font-sans);
   font-size: var(--ks-text-lg);
   letter-spacing: 0.04em;
-  background: none;
-  -webkit-text-fill-color: var(--ks-fg);
-  color: var(--ks-fg);
+  background: transparent !important;
+  background-clip: initial !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: var(--ks-fg) !important;
+  color: var(--ks-fg) !important;
   filter: none;
 }
 .brand .sub { color: var(--ks-fg-dim); font-size: var(--ks-text-sm); }
@@ -314,8 +316,9 @@ body.light-theme .ltable th { background: var(--ks-bg-surface); }
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 0%, var(--ks-accent-subtle), transparent 60%);
+  background: radial-gradient(circle at 50% 0%, var(--ks-accent-subtle), transparent 70%);
   pointer-events: none;
+  opacity: 0.6;
 }
 .hero-title {
   font-family: var(--ks-font-sans);
@@ -594,6 +597,19 @@ body.light-theme .canvas-wrap.loading::after { background: rgba(255, 255, 255, 0
   stroke-dasharray: 3 5;
   stroke-width: 1;
   opacity: 0.5;
+}
+#bsvg ellipse.ring-fill {
+  stroke: none;
+  opacity: 0.45;
+}
+#bsvg text.ring-label {
+  font-family: var(--ks-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  pointer-events: none;
 }
 #bsvg .edge {
   stroke: var(--ks-border-strong);
@@ -924,8 +940,15 @@ body.light-theme .canvas-wrap.loading::after { background: rgba(255, 255, 255, 0
   transition: border-color var(--ks-dur-fast) var(--ks-ease-out), transform var(--ks-dur-fast) var(--ks-ease-out);
 }
 .sim-mr:hover, .comp-card:hover { border-color: var(--ks-border-hover); transform: translateY(-1px); }
-.comp-card.highlight { border: 1px solid var(--ks-info); box-shadow: 0 0 20px rgba(56, 189, 248, 0.12); }
-.comp-card.keystone-highlight { border: 1px solid var(--ks-accent); }
+.comp-card.highlight {
+  background: var(--ks-bg-surface);
+  border: 1px solid var(--ks-info);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.12);
+}
+.comp-card.keystone-highlight {
+  background: var(--ks-bg-surface);
+  border: 1px solid var(--ks-accent);
+}
 
 /* --------------------------------------------------------------------------
    ONBOARDING / MODALS
