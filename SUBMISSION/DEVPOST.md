@@ -54,6 +54,10 @@ the deterministic engine for the blast radius, the precedent, and the suggested 
 recommends a next step, and you can see the exact tools it called. It never produces a number and
 it never records a decision. The model proposes, the deterministic gate decides.
 
+The command center got a final v3 pass: a single hero CTA, a clear ALLOW/HOLD/BLOCK status panel,
+concentric blast-radius rings with severity labels, and a public AI Catalog agent definition so
+the workflow can be invoked directly from GitLab Duo.
+
 ## How we built it
 
 One pure-Python engine owns every number: it reads the Orbit Local graph (the DuckDB file Orbit
@@ -65,8 +69,8 @@ and the CI gate are thin clients of that one core.
 The integration with Orbit is direct and load-bearing: the engine reads Orbit's own graph
 database, and the product also drives the real `orbit` CLI (`orbit schema` and `orbit sql`) at
 session start and as a live cross-check. The public demo is not a mock. It is served from a real
-`orbit index` of this very repository, 262 definitions, and for every symbol it shows the exact
-`orbit sql` command and the count it returned, with 120 of 120 symbols cross-verified. The build
+`orbit index` of this very repository: 262 definitions, 689 relationships, 120 verified symbols,
+and for every symbol it shows the exact `orbit sql` command and the count it returned. The build
 is deterministic, so continuous integration rebuilds the bundle byte-for-byte and fails on drift.
 
 The AI runs on a free provider ladder (OpenRouter and others) behind hard timeouts, with a
@@ -114,6 +118,9 @@ documented rather than mocked. Binding reviewer identity to a verified GitLab OI
 pipeline, instead of the self-asserted browser demo, is the other near step, and the code path for
 it already verifies the token signature offline in the test suite.
 
+Publishing the agent to the GitLab AI Catalog is the immediate next step after the repo is
+mirrored to GitLab.
+
 ## Who it is for, and who it is not for
 
 It is for a platform or CODEOWNERS team inside a large organization on GitLab Ultimate with Orbit
@@ -131,5 +138,5 @@ approving an agent, and records an impact nobody can quietly edit is exactly the
 
 ## Built with
 
-python, fastapi, duckdb, gitlab-orbit, vanilla-js, html, css, github-actions, openrouter,
-in-toto, slsa, hmac
+python, fastapi, duckdb, gitlab-orbit, vanilla-js, html, css, github-actions, gitlab-ai-catalog,
+openrouter, in-toto, slsa, hmac

@@ -1,9 +1,11 @@
 # Ship checklist - Keystone
 
-The build is complete and verified end to end on a real GitLab Orbit graph: 28 tests green,
-the engine runs on `~/.orbit/graph.duckdb`, the product drives Orbit's own CLI live, the
-precedent contradiction fires on real data, and the hash chain verifies. What remains needs
-your credentials or your hands. Each step below is exact and was checked against this machine.
+The build is complete and verified end to end on a real GitLab Orbit graph: 83 tests pass / 2
+skipped, the engine runs on `~/.orbit/graph.duckdb`, the product drives Orbit's own CLI live, the
+precedent contradiction fires on real data, and the hash chain verifies. The static bundle is
+deterministic at 495,275 bytes (SHA256 `8B0BAF101705435DEC670690E3C9C01973E3CD2737CF51D11AA68582EE9E43E2`).
+What remains needs your credentials or your hands. Each step below is exact and was checked
+against this machine.
 
 These are listed because they require sign-in, a payment-free account action, or a screen
 recording - things an assistant must not do for you. Do them in order.
@@ -21,13 +23,17 @@ present on this machine; GitLab had no token, so the GitLab push needs your one-
 
 This is the GitLab Transcend hackathon, so judges expect a GitLab-hosted repo, a GitLab
 pipeline, and ideally a published AI Catalog agent. Treat the GitLab push as required, not
-optional. glab is installed; open a NEW terminal (so glab is on PATH), then:
+optional. If `glab` is on your PATH, run:
 
 ```
 glab auth login                 # choose gitlab.com, authenticate in your browser
 cd D:\project\keystone
 glab repo create keystone --public --source . --remote gitlab --push
 ```
+
+If `glab` is not installed or not on PATH, the easiest path is to give this session a GitLab
+personal access token with `api`, `write_repository`, and `read_api` scopes. Then I can create the
+GitLab project, mirror the repo, and publish the AI Catalog agent for you.
 
 The committed `.gitlab-ci.yml` then runs the tests and publishes GitLab Pages automatically.
 
@@ -90,8 +96,9 @@ specific action rather than chat.
 ## 5. Devpost submission (after 1-3 are done)
 
 Devpost: gitlab-transcend.devpost.com. Submit at least a day before the deadline
-(2026-06-24 14:00 US Eastern). The organic draft is at
-`D:\project\keystone-plan\KEYSTONE_DEVPOST_SUBMISSION.md`. Fill: repo URL (step 1), live link
+(2026-06-24 14:00 US Eastern). The current submission text is at
+`D:\project\keystone\SUBMISSION\DEVPOST.md` and the 3-minute demo script is at
+`D:\project\keystone\SUBMISSION\DEMO_SCRIPT.md`. Fill: repo URL (step 1), live link
 (step 2), video URL (step 3). After saving, re-open the submission and confirm it reads
 SUBMITTED, not DRAFT, and screenshot it. (This is the one that bit the last hackathon.)
 
