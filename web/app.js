@@ -1962,9 +1962,13 @@ document.addEventListener("click", function (e) {
 });
 function _pickTopSymbol(data) {
   var det = (data.definitions && data.definitions.details) || {};
-  var best = null, bestN = -1;
-  Object.keys(det).forEach(function (n) { var t = det[n].total_affected || 0; if (t > bestN) { bestN = t; best = n; } });
-  return best;
+  var best = null, bestN = -1, capped = null, cappedN = -1;
+  Object.keys(det).forEach(function (n) {
+    var t = det[n].total_affected || 0;
+    if (t > bestN) { bestN = t; best = n; }
+    if (t <= 40 && t > cappedN) { cappedN = t; capped = n; } // interesting but not an overwhelming hairball
+  });
+  return (cappedN >= 4 ? capped : best) || best;
 }
 function runRepoAnalysis(url) {
   var statusEl = document.getElementById("repo-status");
