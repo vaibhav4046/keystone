@@ -1,259 +1,134 @@
 /* ==========================================================================
-   Keystone — glassmorphism premium layer (loaded last, after ui-v3.css).
-   Additive and CSS-only: it does not touch any DOM id or JS hook. It turns the
-   flat dark dashboard into a layered glass command center:
-     - an atmospheric color field for blur to refract
-     - frosted translucent surfaces with a lit top edge and layered depth
-     - disciplined blur (legibility first), restrained accent glows
-     - full light-theme, reduced-motion, and reduced-transparency fallbacks
-   Remove this one <link> to revert entirely.
+   Keystone — crisp premium layer (loaded last, after ui-v3.css).
+   Audit lesson: blanket backdrop-filter blur was the fog AND the slowness
+   (18 blur contexts, .panel blurred three times in the cascade, a fixed-
+   attachment full-page gradient, hover-compositing on 10+ panels). This layer
+   is the opposite of that: opaque high-contrast surfaces, frost restricted to
+   the two sticky chrome surfaces only (topbar + sidebar), cheap static depth,
+   and fast micro-interactions on interactive elements only. Premium here means
+   speed + clarity + restraint, not blur. Remove this one <link> to fall back.
    ========================================================================== */
 
 :root {
-  /* Glass surface system */
-  --glass-bg:          rgba(18, 20, 27, 0.55);
-  --glass-bg-strong:   rgba(16, 18, 25, 0.74);   /* topbar / sidebar / modal */
-  --glass-bg-soft:     rgba(22, 24, 32, 0.40);   /* nested cards over a glass panel */
-  --glass-border:      rgba(255, 255, 255, 0.10);
-  --glass-border-hi:   rgba(255, 255, 255, 0.18);
-  --glass-highlight:   rgba(255, 255, 255, 0.06);
-  --glass-blur:        saturate(165%) blur(20px);
-  --glass-blur-strong: saturate(170%) blur(26px);
-
-  /* Layered depth: outer drop + faint lit top edge + inner floor */
-  --glass-shadow:
-    0 1px 0 0 var(--glass-highlight) inset,
-    0 1px 2px rgba(0, 0, 0, 0.30),
-    0 18px 48px -12px rgba(0, 0, 0, 0.55);
-  --glass-shadow-lift:
-    0 1px 0 0 rgba(255, 255, 255, 0.10) inset,
-    0 2px 6px rgba(0, 0, 0, 0.30),
-    0 28px 64px -14px rgba(0, 0, 0, 0.62);
-
-  /* Accent auras (used sparingly) */
-  --aura-accent: 0 0 0 1px var(--ks-accent-border), 0 8px 30px -6px rgba(255, 122, 47, 0.45);
-  --aura-orbit:  0 0 0 1px var(--ks-info-border),   0 8px 30px -8px rgba(56, 189, 248, 0.40);
+  --ks-panel: #0f1219;          /* opaque elevated surface, distinct from the void */
+  --ks-panel-2: #131722;        /* nested surface */
+  --ks-edge: rgba(255, 255, 255, 0.11);
+  --ks-edge-hi: rgba(255, 255, 255, 0.20);
+  --ks-elev-1: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.30), 0 6px 16px -8px rgba(0, 0, 0, 0.50);
+  --ks-elev-2: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 12px 30px -12px rgba(0, 0, 0, 0.62);
 }
 
-/* --------------------------------------------------------------------------
-   ATMOSPHERE — a deep field with soft color blooms so the glass has something
-   to refract. The #bg canvas (particles) and .scanlines sit on top of this.
-   -------------------------------------------------------------------------- */
-body {
-  background-color: #06070a;
-  background-image:
-    radial-gradient(120% 85% at 12% -8%, rgba(255, 122, 47, 0.16), transparent 60%),
-    radial-gradient(95% 80% at 100% 4%, rgba(56, 189, 248, 0.14), transparent 58%),
-    radial-gradient(110% 90% at 50% 118%, rgba(124, 92, 255, 0.12), transparent 60%),
-    radial-gradient(70% 60% at 84% 70%, rgba(45, 184, 106, 0.07), transparent 60%);
-  background-attachment: fixed;
-}
-body::before {
-  /* fine vignette to seat the content and deepen the edges */
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(130% 110% at 50% 40%, transparent 58%, rgba(0, 0, 0, 0.55) 100%);
-}
-/* keep the ambient canvas subtle so the field reads as glass, not noise */
-#bg { opacity: 0.5; }
-
-/* --------------------------------------------------------------------------
-   FROSTED SURFACES
-   -------------------------------------------------------------------------- */
-.panel,
-.hero-manifesto,
-.hero-card,
-.sim-mr,
-.comp-card,
-.onboarding-card,
-.settings-modal-card,
-.harness-task,
-.harness-verdict-card,
-.harness-overall {
-  background: var(--glass-bg);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  transition: transform .28s var(--ks-ease, cubic-bezier(.16,1,.3,1)),
-              border-color .2s ease, box-shadow .28s ease, background .2s ease;
+/* 1) KILL THE FOG ----------------------------------------------------------
+   Neutralize the inherited backdrop-filter on every data surface (styles.css
+   and ui-v3.css both blur .panel). Opaque, crisp, legible. */
+.panel, .hero-card, .hero-manifesto, .sim-mr, .comp-card, .onboarding-card,
+.settings-modal-card, .harness-task, .harness-verdict-card, .harness-overall,
+.harness-stage, .chip, .deflist, .ltable-wrap {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
 
-/* Panels are the workhorse; give them a touch more body for dense data. */
-.panel { background: var(--glass-bg); border-radius: var(--ks-radius-md, 12px); }
-.panel:hover { border-color: var(--glass-border-hi); box-shadow: var(--glass-shadow-lift); }
-
-/* Interactive cards lift on hover/focus. */
-.hero-card,
-.sim-mr,
-.comp-card {
+/* Solid panel surface with cheap static elevation (no blur recompute, no
+   hover compositing on dense data panels). */
+.panel {
+  background: var(--ks-panel);
+  border: 1px solid var(--ks-edge);
+  box-shadow: var(--ks-elev-1);
   border-radius: var(--ks-radius-md, 12px);
+  transition: none;
 }
-.hero-card:hover,
-.comp-card:hover,
-.sim-mr:hover {
-  transform: translateY(-3px);
-  border-color: var(--glass-border-hi);
-  box-shadow: var(--glass-shadow-lift);
-}
+.panel:hover { box-shadow: var(--ks-elev-1); border-color: var(--ks-edge); }
 
-/* --------------------------------------------------------------------------
-   TOP BAR + SIDEBAR — stronger frost, they overlay scrolling content.
-   -------------------------------------------------------------------------- */
+/* 2) ATMOSPHERE ------------------------------------------------------------
+   One cheap static wash. NOT fixed-attachment (that forced a full-page repaint
+   on every scroll frame). No vignette pseudo, no scanline compositor layer. */
+body {
+  background-color: #07080b;
+  background-image:
+    radial-gradient(1100px 520px at 80% -12%, rgba(56, 189, 248, 0.10), transparent 60%),
+    radial-gradient(1000px 600px at 6% -8%, rgba(255, 122, 47, 0.08), transparent 58%);
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+}
+body::before { content: none; }
+.scanlines { display: none; }
+#bg { opacity: 0.32; }
+
+/* 3) FROST kept ONLY on the two sticky chrome surfaces (they overlay content,
+   so a light frost there is justified and cheap). */
 .topbar {
-  background: var(--glass-bg-strong) !important;
-  -webkit-backdrop-filter: var(--glass-blur-strong);
-  backdrop-filter: var(--glass-blur-strong);
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 1px 0 0 var(--glass-highlight) inset, 0 8px 28px -10px rgba(0, 0, 0, 0.55);
+  background: rgba(10, 12, 17, 0.80) !important;
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  backdrop-filter: saturate(140%) blur(14px);
+  border-bottom: 1px solid var(--ks-edge);
 }
 .sidebar {
-  background: var(--glass-bg-strong);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
-  backdrop-filter: var(--glass-blur-strong);
-  border-right: 1px solid var(--glass-border);
+  background: rgba(9, 11, 16, 0.84);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+  backdrop-filter: saturate(140%) blur(14px);
+  border-right: 1px solid var(--ks-edge);
 }
 
-/* --------------------------------------------------------------------------
-   HERO — the float that sells the product in the first 10 seconds.
-   -------------------------------------------------------------------------- */
-.hero-strip {
-  position: relative;
-  border-radius: var(--ks-radius-lg, 16px);
+/* 4) PREMIUM via crisp hierarchy + fast micro-interactions on INTERACTIVE
+   elements only (cards and buttons, never dense data panels). */
+.hero-card, .comp-card, .sim-mr {
+  background: var(--ks-panel);
+  border: 1px solid var(--ks-edge);
+  border-radius: var(--ks-radius-md, 12px);
+  box-shadow: var(--ks-elev-1);
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
 }
-.hero-manifesto {
-  border-radius: var(--ks-radius-lg, 16px);
-  box-shadow: var(--glass-shadow-lift);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 28%),
-    var(--glass-bg);
+.hero-card:hover, .comp-card:hover, .sim-mr:hover {
+  transform: translateY(-2px);
+  border-color: var(--ks-edge-hi);
+  box-shadow: var(--ks-elev-2);
 }
-.hero-card { background: var(--glass-bg-soft); }
-.hero-card.hero-git { box-shadow: 0 1px 0 0 var(--glass-highlight) inset, 0 12px 30px -16px rgba(45, 184, 106, 0.5); }
-.hero-card.hero-orbit { box-shadow: 0 1px 0 0 var(--glass-highlight) inset, 0 12px 30px -14px rgba(56, 189, 248, 0.55); }
-.hero-card.hero-keystone { box-shadow: 0 1px 0 0 var(--glass-highlight) inset, 0 12px 30px -14px rgba(255, 122, 47, 0.55); }
+.hero-card.hero-git { border-left: 2px solid var(--ks-allow); }
+.hero-card.hero-orbit { border-left: 2px solid var(--ks-info); }
+.hero-card.hero-keystone { border-left: 2px solid var(--ks-accent); }
 
-/* --------------------------------------------------------------------------
-   CHIPS — glass pills with semantic auras for live/orbit/chain state.
-   -------------------------------------------------------------------------- */
-.chip {
-  background: var(--glass-bg-soft) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
-  backdrop-filter: blur(12px) saturate(150%);
-  border: 1px solid var(--glass-border);
+/* Primary action: solid, fast, the one rationed accent. */
+.btn.primary, .cta-primary, .hero-actions .btn:first-child {
+  background: var(--ks-accent);
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  color: #190a02; font-weight: 600;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.22) inset, 0 6px 16px -8px rgba(255, 122, 47, 0.55);
+  transition: transform .12s ease, background .12s ease;
 }
-#orbit-chip { box-shadow: 0 0 18px -8px rgba(56, 189, 248, 0.5); }
-
-/* --------------------------------------------------------------------------
-   PRIMARY ACTION — the one rationed accent gets real presence.
-   -------------------------------------------------------------------------- */
-.btn.primary,
-.cta-primary,
-.hero-actions .btn:first-child {
-  background: linear-gradient(180deg, var(--ks-accent-hover), var(--ks-accent));
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #1a0c02;
-  font-weight: 600;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 10px 26px -10px rgba(255, 122, 47, 0.6);
-}
-.btn.primary:hover:not(:disabled),
-.cta-primary:hover,
-.hero-actions .btn:first-child:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3) inset, 0 14px 32px -10px rgba(255, 122, 47, 0.72);
-}
-.btn.ghost,
-.btn.secondary {
-  background: var(--glass-bg-soft);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-}
-.btn.ghost:hover:not(:disabled),
-.btn.secondary:hover:not(:disabled) { border-color: var(--glass-border-hi); transform: translateY(-1px); }
-
-/* --------------------------------------------------------------------------
-   PANEL HEADERS — a hairline gradient rule to add rhythm.
-   -------------------------------------------------------------------------- */
-.p-h, .rail-h, .stage-h {
-  border-bottom: 1px solid var(--glass-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+.btn.primary:hover:not(:disabled), .cta-primary:hover, .hero-actions .btn:first-child:hover {
+  background: var(--ks-accent-hover); transform: translateY(-1px);
 }
 
-/* --------------------------------------------------------------------------
-   GATE STATES — keep the BLOCK aura, set it on glass.
-   -------------------------------------------------------------------------- */
-.panel.gate.refused {
-  box-shadow: 0 0 0 1px var(--ks-block) inset, 0 0 36px -6px rgba(239, 68, 68, 0.45), var(--glass-shadow);
-}
+/* Chips: solid crisp pills, no blur. */
+.chip { background: rgba(255, 255, 255, 0.04) !important; border: 1px solid var(--ks-edge); }
+#orbit-chip { border-color: var(--ks-info-border); }
 
-/* harness stage nodes read as small glass tiles */
-.harness-stage {
-  background: var(--glass-bg-soft);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-}
-.harness-stage[data-status="done"] { border-color: var(--ks-allow-border); }
-
-/* --------------------------------------------------------------------------
-   LIGHT THEME — glass becomes bright frosted white, blooms soften.
-   -------------------------------------------------------------------------- */
+/* 5) LIGHT THEME ----------------------------------------------------------- */
 body.light-theme {
-  --glass-bg:        rgba(255, 255, 255, 0.62);
-  --glass-bg-strong: rgba(255, 255, 255, 0.82);
-  --glass-bg-soft:   rgba(255, 255, 255, 0.48);
-  --glass-border:    rgba(15, 18, 26, 0.10);
-  --glass-border-hi: rgba(15, 18, 26, 0.18);
-  --glass-highlight: rgba(255, 255, 255, 0.7);
-  --glass-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
-    0 2px 6px rgba(15, 18, 26, 0.06),
-    0 18px 44px -16px rgba(15, 18, 26, 0.18);
-  --glass-shadow-lift:
-    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
-    0 24px 56px -16px rgba(15, 18, 26, 0.24);
-  background-color: #eef0f5;
+  background-color: #eef1f6;
   background-image:
-    radial-gradient(120% 85% at 12% -8%, rgba(255, 122, 47, 0.12), transparent 60%),
-    radial-gradient(95% 80% at 100% 4%, rgba(56, 189, 248, 0.12), transparent 58%),
-    radial-gradient(110% 90% at 50% 118%, rgba(124, 92, 255, 0.08), transparent 60%);
+    radial-gradient(1100px 520px at 80% -12%, rgba(56, 189, 248, 0.10), transparent 60%),
+    radial-gradient(1000px 600px at 6% -8%, rgba(255, 122, 47, 0.07), transparent 58%);
 }
-body.light-theme::before {
-  background: radial-gradient(130% 110% at 50% 40%, transparent 64%, rgba(15, 18, 26, 0.10) 100%);
+body.light-theme .panel {
+  background: #ffffff; border-color: rgba(15, 18, 26, 0.10);
+  box-shadow: 0 1px 2px rgba(15, 18, 26, 0.06), 0 8px 24px -14px rgba(15, 18, 26, 0.18);
 }
-body.light-theme .btn.primary,
-body.light-theme .hero-actions .btn:first-child { color: #2a1303; }
+body.light-theme .hero-card, body.light-theme .comp-card, body.light-theme .sim-mr {
+  background: #ffffff; border-color: rgba(15, 18, 26, 0.10);
+}
+body.light-theme .topbar { background: rgba(255, 255, 255, 0.86) !important; }
+body.light-theme .sidebar { background: rgba(255, 255, 255, 0.88); }
+body.light-theme .btn.primary { color: #2a1303; }
 
-/* --------------------------------------------------------------------------
-   RESPONSIVE — kill horizontal overflow on phones.
-   Panel headers lay out a title plus action buttons (VERIFY CHAIN / SIMULATE
-   TAMPER) in a flex row; without wrap the danger button overruns a 390px
-   viewport. gap already supplies spacing, so wrapping is enough.
-   -------------------------------------------------------------------------- */
+/* 6) RESPONSIVE — keep the mobile panel-header wrap that killed a 55px overflow. */
 @media (max-width: 640px) {
   .p-h, .rail-h, .stage-h { flex-wrap: wrap; row-gap: var(--ks-sp-2, 8px); }
   .p-h > * { min-width: 0; }
 }
 
-/* --------------------------------------------------------------------------
-   ACCESSIBILITY + PERFORMANCE FALLBACKS
-   Solid surfaces when the user (or device) opts out of transparency/motion.
-   -------------------------------------------------------------------------- */
-@media (prefers-reduced-transparency: reduce) {
-  .panel, .hero-manifesto, .hero-card, .sim-mr, .comp-card, .onboarding-card,
-  .settings-modal-card, .harness-task, .harness-verdict-card, .harness-overall,
-  .topbar, .sidebar, .chip, .harness-stage, .btn.ghost, .btn.secondary {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-  .panel, .hero-manifesto { background: var(--ks-bg-base); }
-  .topbar, .sidebar { background: var(--ks-bg-surface) !important; }
-}
+/* 7) REDUCED MOTION */
 @media (prefers-reduced-motion: reduce) {
-  .panel, .hero-card, .sim-mr, .comp-card, .btn { transition: none !important; }
-  .panel:hover, .hero-card:hover, .sim-mr:hover, .comp-card:hover { transform: none; }
+  .hero-card, .comp-card, .sim-mr, .btn { transition: none !important; }
+  .hero-card:hover, .comp-card:hover, .sim-mr:hover { transform: none; }
 }
