@@ -229,7 +229,7 @@
         },
         definitions: { names: names, details: details },
         impact: impact, precedent: {}, brief: {}, assistant: {}, policy: {}, agents: {},
-        attestation: {}, audit: { rows: [], ok: true }, collisions: null, graph_audit: null, harness: null,
+        attestation: {}, audit: { rows: [], verify: { ok: true, broken_index: -1, count: 0 } }, collisions: null, graph_audit: null, harness: null,
         _repo: meta
       };
     });
