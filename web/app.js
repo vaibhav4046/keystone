@@ -2126,6 +2126,20 @@ function initAuth() {
   var inp = document.getElementById("gh-handle-input"); if (inp) inp.addEventListener("keydown", function (e) { if (e.key === "Enter") ghAllow(); });
   var ov = document.getElementById("gh-consent"); if (ov) { ov.addEventListener("click", function (e) { if (e.target === ov) ghConsent(false); }); }
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") ghConsent(false); });
+  // OAuth return: exchange ?code for a token via the backend, then load the signed-in user's repos
+  try {
+    var _qs = new URLSearchParams(location.search), _code = _qs.get("code");
+    if (_code && KS_GH_CLIENT_ID) {
+      try { history.replaceState({}, "", location.pathname); } catch (e) {}
+      fetch("/api/github-oauth?code=" + encodeURIComponent(_code)).then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !d.access_token) throw new Error((d && d.error) || "no token");
+        try { sessionStorage.setItem("ks-gh-token", d.access_token); } catch (e) {}
+        return fetch("https://api.github.com/user", { headers: { Authorization: "token " + d.access_token } }).then(function (r) { return r.json(); });
+      }).then(function (u) {
+        if (u && u.login) { _ghSet(u.login); ghRender(); if (typeof browseUserRepos === "function") browseUserRepos(u.login); }
+      }).catch(function () {});
+    }
+  } catch (e) {}
   ghRender();
   var h = _ghGet(); if (h && typeof browseUserRepos === "function") { try { browseUserRepos(h); } catch (e) {} }
 }
