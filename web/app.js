@@ -2145,6 +2145,7 @@ function ghAllow() {
   var i = document.getElementById("gh-handle-input"), h = ((i && i.value) || "").trim().replace(/^@/, "");
   if (!h) { if (i) i.focus(); return; }
   _ghSet(h); ghRender(); ghConsent(false);
+  if (typeof hideLanding === "function") hideLanding();
   if (typeof browseUserRepos === "function") { try { showView("home"); } catch (e) {} browseUserRepos(h); }
 }
 function ghSignOut() { _ghSet(""); ghRender(); }
@@ -2174,6 +2175,18 @@ function initAuth() {
   var h = _ghGet(); if (h && typeof browseUserRepos === "function") { try { browseUserRepos(h); } catch (e) {} }
 }
 window.initAuth = initAuth;
+function initLanding() {
+  var el = document.getElementById("landing"); if (!el) return;
+  var signedIn = false, entered = false;
+  try { signedIn = !!localStorage.getItem("ks-gh-user"); } catch (e) {}
+  try { entered = sessionStorage.getItem("ks-entered") === "1"; } catch (e) {}
+  if (signedIn || entered) { el.hidden = true; return; }
+  el.hidden = false;
+  var si = document.getElementById("landing-signin"); if (si) si.onclick = function () { if (typeof ghSignIn === "function") ghSignIn(); };
+  var dm = document.getElementById("landing-demo"); if (dm) dm.onclick = function () { hideLanding(); };
+}
+function hideLanding() { var el = document.getElementById("landing"); if (el) el.hidden = true; try { sessionStorage.setItem("ks-entered", "1"); } catch (e) {} }
+window.initLanding = initLanding; window.hideLanding = hideLanding;
 /* ===== Save a compact analysis summary so the Overview front page can show REAL data ===== */
 function _saveOverview(data, pair, slug) {
   var det = (data.definitions && data.definitions.details) || {}, imp = data.impact || {};
@@ -2245,7 +2258,7 @@ function initRepoAnalyze() {
     el.addEventListener("click", function () { var v = el.getAttribute("data-repo-example"); if (inp) inp.value = v; _repoSubmit(v); });
   });
 }
-boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} try { initRemember(); } catch (e) {} try { initAuth(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); initRemember(); initAuth(); } catch (e) {} });
+boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} try { initRemember(); } catch (e) {} try { initAuth(); } catch (e) {} try { initLanding(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); initRemember(); initAuth(); initLanding(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===
 function initHarness() {
