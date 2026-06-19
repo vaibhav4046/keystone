@@ -2028,6 +2028,7 @@ function runRepoAnalysis(url) {
     } else {
       setS("Analyzed " + slug + " — " + data.definitions.names.length + " definitions. No overlapping blast radii among the top symbols (clean). Pick any symbol for its real blast radius.");
     }
+    setTimeout(function () { try { maybeAskRemember(slug); } catch (e) {} }, 900);
     if (btn) btn.disabled = false;
   }).catch(function (err) { setS((err && err.message) || "Analysis failed.", true); if (btn) btn.disabled = false; });
 }
@@ -2064,6 +2065,32 @@ function browseUserRepos(username) {
   }).catch(function (err) { if (statusEl) { statusEl.textContent = (err && err.message) || "Failed to list repos."; statusEl.classList.add("err"); } });
 }
 window.browseUserRepos = browseUserRepos;
+function _remGet() { try { return localStorage.getItem("ks-remember") || ""; } catch (e) { return ""; } }
+function maybeAskRemember(value) {
+  if (!value) return;
+  try { if (localStorage.getItem("ks-remember") === value) return; } catch (e) {}
+  try { if (sessionStorage.getItem("ks-rem-asked") === value) return; } catch (e) {}
+  var ov = document.getElementById("remember-overlay"), nm = document.getElementById("remember-name");
+  if (!ov) return;
+  if (nm) nm.textContent = value;
+  ov._val = value; ov.hidden = false;
+}
+function initRemember() {
+  var ov = document.getElementById("remember-overlay");
+  if (!ov) return;
+  var yes = document.getElementById("remember-yes"), no = document.getElementById("remember-no");
+  if (yes) yes.onclick = function () { try { localStorage.setItem("ks-remember", ov._val || ""); } catch (e) {} ov.hidden = true; };
+  if (no) no.onclick = function () { try { sessionStorage.setItem("ks-rem-asked", ov._val || ""); } catch (e) {} ov.hidden = true; };
+  ov.addEventListener("click", function (e) { if (e.target === ov) ov.hidden = true; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !ov.hidden) ov.hidden = true; });
+  var rem = _remGet();
+  if (rem) {
+    var inp = document.getElementById("repo-input"); if (inp && !inp.value) inp.value = rem;
+    var st = document.getElementById("repo-status");
+    if (st) { var b = document.createElement("button"); b.type = "button"; b.className = "rf-go"; b.textContent = "Welcome back — resume " + rem + " →"; b.onclick = function () { _repoSubmit(rem); }; st.innerHTML = ""; st.appendChild(b); }
+  }
+}
+window.initRemember = initRemember;
 function initRepoAnalyze() {
   var btn = document.getElementById("repo-go"), inp = document.getElementById("repo-input");
   if (btn) btn.addEventListener("click", function () { _repoSubmit(); });
@@ -2072,7 +2099,7 @@ function initRepoAnalyze() {
     el.addEventListener("click", function () { var v = el.getAttribute("data-repo-example"); if (inp) inp.value = v; _repoSubmit(v); });
   });
 }
-boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); } catch (e) {} });
+boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} try { initRemember(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); initRemember(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===
 function initHarness() {
