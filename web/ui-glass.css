@@ -722,6 +722,17 @@ body:not(.light-theme)::after {
 body.light-theme .gh-term { background: #ffffff; }
 body.light-theme .gh-term-bar { background: #f2f4f7; }
 body.light-theme .gh-connect-row { background: #f6f8fb; }
+@media (max-width: 640px) {
+  .topbar { flex-direction: column; align-items: stretch; height: auto; }
+  .topbar-left { width: 100%; }
+  .topbar-right { width: 100%; flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+  .topbar .status { display: none; }          /* decorative provenance chips off on mobile — they live in the hero */
+  .gh-btn span { display: none; }              /* sign-in collapses to the GitHub mark on mobile */
+  .gh-btn { padding: 7px 9px; }
+  .gh-term { width: min(440px, 100%); }
+  canvas { max-width: 100%; }                  /* the bg graph canvas was 482px wide -> horizontal scroll */
+  html, body { overflow-x: clip; }
+}
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
