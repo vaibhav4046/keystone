@@ -733,6 +733,15 @@ body.light-theme .gh-connect-row { background: #f6f8fb; }
   canvas { max-width: 100%; }                  /* the bg graph canvas was 482px wide -> horizontal scroll */
   html, body { overflow-x: clip; }
 }
+
+/* ============ PREMIUM POLISH — CLI COMMAND BAR (Hermes-grade, ties to the consent terminal) ============ */
+.repo-analyze-row { position: relative; align-items: center; background: #07080b; border: 1px solid var(--ks-edge); border-radius: 12px; padding: 5px 5px 5px 0; transition: border-color .15s ease, box-shadow .15s ease; }
+.repo-analyze-row::before { content: "›"; color: var(--ks-accent); font-family: var(--ks-font-mono); font-weight: 700; font-size: 17px; line-height: 1; padding: 0 8px 0 15px; opacity: 0.9; }
+.repo-analyze-row:focus-within { border-color: var(--ks-accent); box-shadow: 0 0 0 3px rgba(255, 122, 47, 0.13); }
+.repo-input { background: transparent !important; border: none !important; box-shadow: none !important; font-family: var(--ks-font-mono) !important; font-size: 13.5px !important; color: var(--ks-fg) !important; caret-color: var(--ks-accent); }
+.repo-input:focus { outline: none !important; box-shadow: none !important; }
+.repo-input::placeholder { color: var(--ks-fg-dim); }
+body.light-theme .repo-analyze-row { background: #f6f8fb; }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
