@@ -661,26 +661,26 @@ body.light-theme .btn.secondary { background: #ffffff; }
 .remember-btns { display: flex; gap: 10px; justify-content: center; }
 body.light-theme .remember-card { background: linear-gradient(180deg, #ffffff, #f6f8fb); }
 
-/* ============ STEP 4 — CLI / PIXEL AESTHETIC ============ */
-body:not(.light-theme) { background-color: #05060a; }
-/* faint pixel dot-grid texture — the "pixelly black" feel, cheap + static */
-body:not(.light-theme)::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px);
-  background-size: 4px 4px;
+/* ============ STEP 4 (revised) — VIBRANT PREMIUM BACKGROUND (no flat black, orange-forward) ============ */
+body:not(.light-theme) {
+  background-color: #0e0b10;
+  background-image:
+    radial-gradient(1200px 720px at 86% -14%, rgba(255, 122, 47, 0.17), transparent 56%),
+    radial-gradient(1000px 700px at 4% 102%, rgba(255, 90, 20, 0.09), transparent 55%),
+    linear-gradient(180deg, #120e13 0%, #0a090c 100%);
+  background-attachment: scroll;
 }
-/* drifting orange aura — compositor-only (transform/opacity), no blanket blur */
+body:not(.light-theme)::before { content: none; }
 body:not(.light-theme)::after {
   content: ""; position: fixed; z-index: 0; pointer-events: none;
-  top: -25%; right: -12%; width: 65vw; height: 65vh;
-  background: radial-gradient(circle at 60% 40%, rgba(255, 122, 47, 0.13), transparent 60%);
+  top: -16%; right: -8%; width: 56vw; height: 56vh;
+  background: radial-gradient(circle at 60% 40%, rgba(255, 122, 47, 0.16), transparent 60%);
   will-change: transform, opacity;
 }
 @media (prefers-reduced-motion: no-preference) {
-  body:not(.light-theme)::after { animation: ks-drift 18s ease-in-out infinite alternate; }
+  body:not(.light-theme)::after { animation: ks-drift 20s ease-in-out infinite alternate; }
 }
-@keyframes ks-drift { from { transform: translate(0, 0); opacity: 0.6; } to { transform: translate(-7vw, 5vh) scale(1.12); opacity: 1; } }
-/* keep content above the bg layers */
+@keyframes ks-drift { from { transform: translate(0, 0); opacity: 0.55; } to { transform: translate(-5vw, 4vh) scale(1.1); opacity: 0.9; } }
 .app-shell, .sidebar { position: relative; z-index: 1; }
 
 /* ============ STEP 5 — REPORT EXPORT ============ */
