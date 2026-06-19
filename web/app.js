@@ -1975,20 +1975,22 @@ function _pickTopSymbol(data) {
 function _findCollisionPair(data) {
   var det = (data.definitions && data.definitions.details) || {};
   var imp = data.impact || {};
-  var names = Object.keys(det).filter(function (n) { return (det[n].total_affected || 0) >= 3 && imp[n]; })
-    .sort(function (a, b) { return (det[b].total_affected || 0) - (det[a].total_affected || 0); }).slice(0, 45);
+  var GENERIC = { close: 1, get: 1, set: 1, run: 1, main: 1, setup: 1, teardown: 1, name: 1, value: 1, data: 1, start: 1, stop: 1, update: 1, reset: 1, wrapper: 1, inner: 1, decorator: 1, handle: 1, process: 1, read: 1, write: 1, load: 1, save: 1, add: 1, remove: 1, clear: 1, copy: 1, keys: 1, items: 1, values: 1, append: 1, send: 1, recv: 1, call: 1, apply: 1, wrap: 1 };
+  var names = Object.keys(det).filter(function (n) { return (det[n].total_affected || 0) >= 3 && imp[n] && !GENERIC[n.toLowerCase()] && !/^__.*__$/.test(n) && !/^test_/i.test(n); })
+    .sort(function (a, b) { return (det[b].total_affected || 0) - (det[a].total_affected || 0); }).slice(0, 50);
   var sets = {}; names.forEach(function (n) { sets[n] = new Set(imp[n].affected_ids || []); });
-  var best = null, bestN = 1;
+  var best = null, bestN = 1, bestX = null, bestXN = 1;
   for (var i = 0; i < names.length; i++) {
-    var epiI = imp[names[i]].epicenter.id;
+    var epiI = imp[names[i]].epicenter.id, fileI = imp[names[i]].epicenter.file;
     for (var j = i + 1; j < names.length; j++) {
       if (sets[names[i]].has(imp[names[j]].epicenter.id) || sets[names[j]].has(epiI)) continue;
       var a = sets[names[i]], b = sets[names[j]], sh = 0;
       a.forEach(function (x) { if (b.has(x)) sh++; });
       if (sh > bestN) { bestN = sh; best = { a: names[i], b: names[j], shared: sh }; }
+      if (sh > bestXN && imp[names[j]].epicenter.file !== fileI) { bestXN = sh; bestX = { a: names[i], b: names[j], shared: sh }; }
     }
   }
-  return best;
+  return (bestX && bestXN >= 3) ? bestX : best;   // prefer cross-file: the true "silent" case, no Git conflict
 }
 function runRepoAnalysis(url) {
   var statusEl = document.getElementById("repo-status");
@@ -2016,8 +2018,10 @@ function runRepoAnalysis(url) {
     try { if (typeof loadHazards === "function") loadHazards(); } catch (e) {}
     if (pair && statusEl) {
       statusEl.classList.remove("err");
+      var _fa = ((data.impact[pair.a] || {}).epicenter || {}).file || "", _fb = ((data.impact[pair.b] || {}).epicenter || {}).file || "";
+      var _cross = _fa && _fb && _fa !== _fb;
       statusEl.innerHTML = '<div class="repo-finding"><span class="rf-tag">SILENT COLLISION FOUND</span>'
-        + '<p>In <b>' + esc(slug) + '</b>, editing both <code>' + esc(pair.a) + '</code> and <code>' + esc(pair.b) + '</code> would ripple into <strong>' + pair.shared + '</strong> shared runtime dependents — two merge requests that pass review and break together.</p>'
+        + '<p>In <b>' + esc(slug) + '</b>, changing <code>' + esc(pair.a) + '</code>' + (_fa ? ' in <code>' + esc(_fa) + '</code>' : '') + ' and <code>' + esc(pair.b) + '</code>' + (_fb ? ' in <code>' + esc(_fb) + '</code>' : '') + (_cross ? ' — different files, no Git conflict — ' : ' — ') + 'both ripple into <strong>' + pair.shared + '</strong> shared runtime dependents. Two merge requests that pass review and break together.</p>'
         + '<button type="button" class="rf-go" onclick="showView(\'cockpit\')">Explore the blast radius →</button>'
         + '<span class="rf-meta">' + data.definitions.names.length + ' definitions analyzed · client-side static approximation</span></div>';
     } else {
