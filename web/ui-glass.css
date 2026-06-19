@@ -531,6 +531,65 @@ button.cite-chip:hover, button.cite-chip:focus-visible {
 .repo-status { margin-top: 9px; font-size: var(--ks-text-xs, 11px); color: var(--ks-info); min-height: 14px; font-family: var(--ks-font-mono); line-height: 1.4; }
 .repo-status.err { color: var(--ks-block); }
 @media (max-width: 640px) { .repo-analyze { display: block; } }
+
+/* ============================================================
+   KILO-STYLE MARKETING SECTIONS — spacious SaaS landing rhythm
+   ============================================================ */
+.kilo-features, .kilo-how, .kilo-faq { max-width: 1080px; margin: 0 auto; padding: clamp(44px, 7vw, 92px) var(--ks-sp-5, 20px); }
+.kilo-head { text-align: center; max-width: 660px; margin: 0 auto var(--ks-sp-8, 32px); }
+.kilo-eyebrow {
+  display: inline-block; font-family: var(--ks-font-sans); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--ks-accent); margin-bottom: 14px;
+}
+.kilo-h2 { font-family: var(--ks-font-display); font-size: clamp(28px, 4vw, 42px); font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; color: var(--ks-fg); margin: 0; }
+.kilo-sub { margin: 14px 0 0; font-size: var(--ks-text-md, 16px); color: var(--ks-fg-muted); line-height: 1.55; }
+
+.kilo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--ks-sp-4, 16px); }
+.kilo-card { padding: var(--ks-sp-6, 24px); border-radius: var(--ks-radius-lg, 14px); background: var(--ks-card-grad, var(--surface-2)); border: 1px solid var(--ks-edge); transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.kilo-card:hover { transform: translateY(-3px); border-color: var(--ks-edge-hi); box-shadow: var(--ks-elev-2); }
+.kilo-card-ic { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--ks-accent-subtle); color: var(--ks-accent); border: 1px solid var(--ks-accent-border); margin-bottom: var(--ks-sp-4, 16px); }
+.kilo-card h3 { font-family: var(--ks-font-display); font-size: 18px; font-weight: 600; color: var(--ks-fg); margin: 0 0 8px; letter-spacing: -0.01em; }
+.kilo-card p { margin: 0; font-size: var(--ks-text-sm, 13px); color: var(--ks-fg-muted); line-height: 1.6; }
+.kilo-card code { font-family: var(--ks-font-mono); color: var(--ks-info); font-size: 0.9em; }
+
+.kilo-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ks-sp-6, 24px); }
+.kilo-step { display: flex; flex-direction: column; gap: 14px; }
+.kilo-step-n { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 999px; font-family: var(--ks-font-display); font-size: 18px; font-weight: 600; background: var(--ks-accent); color: #190a02; }
+.kilo-step-b h3 { font-family: var(--ks-font-display); font-size: 17px; font-weight: 600; color: var(--ks-fg); margin: 0 0 6px; }
+.kilo-step-b p { margin: 0; font-size: var(--ks-text-sm, 13px); color: var(--ks-fg-muted); line-height: 1.6; }
+
+.faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.faq-item { border: 1px solid var(--ks-edge); border-radius: var(--ks-radius-md, 10px); background: var(--surface-2); overflow: hidden; }
+.faq-item summary { list-style: none; cursor: pointer; padding: 16px 18px; font-family: var(--ks-font-sans); font-size: var(--ks-text-md, 15px); font-weight: 600; color: var(--ks-fg); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: "+"; font-family: var(--ks-font-mono); color: var(--ks-accent); font-size: 18px; flex: none; }
+.faq-item[open] summary::after { content: "\2212"; }
+.faq-item summary:hover { color: var(--ks-accent); }
+.faq-item p { margin: 0; padding: 0 18px 18px; font-size: var(--ks-text-sm, 13px); color: var(--ks-fg-muted); line-height: 1.65; }
+.faq-item code { font-family: var(--ks-font-mono); color: var(--ks-info); }
+
+.kilo-cta { text-align: center; max-width: 760px; margin: clamp(24px, 4vw, 48px) auto; padding: clamp(40px, 6vw, 72px) var(--ks-sp-6, 24px); border-radius: var(--ks-radius-xl, 18px); background: radial-gradient(120% 140% at 50% 0%, var(--ks-accent-subtle), transparent 60%), var(--surface-2); border: 1px solid var(--ks-accent-border); }
+.kilo-cta-h { font-family: var(--ks-font-display); font-size: clamp(28px, 4.5vw, 44px); font-weight: 600; letter-spacing: -0.03em; color: var(--ks-fg); margin: 0; }
+.kilo-cta-sub { margin: 14px auto 26px; max-width: 520px; font-size: var(--ks-text-md, 16px); color: var(--ks-fg-muted); }
+.kilo-cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+.kilo-footer { border-top: 1px solid var(--ks-edge); margin-top: clamp(32px, 5vw, 64px); padding: clamp(40px, 5vw, 64px) var(--ks-sp-5, 20px) var(--ks-sp-6, 24px); }
+.kilo-footer-grid { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: var(--ks-sp-6, 24px); }
+.kilo-footer-brand p { font-size: var(--ks-text-sm, 13px); color: var(--ks-fg-muted); line-height: 1.6; max-width: 320px; margin: 12px 0 0; }
+.kilo-footer-logo { font-family: var(--ks-font-display); font-weight: 600; letter-spacing: 0.02em; color: var(--ks-fg); display: flex; align-items: center; gap: 8px; }
+.kf-logo-mark { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--ks-accent); color: #190a02; font-size: 14px; }
+.kilo-footer-col { display: flex; flex-direction: column; gap: 9px; align-items: flex-start; }
+.kilo-footer-col h4 { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ks-fg-dim); margin: 0 0 4px; }
+.kilo-footer-col a, .kilo-footer-col button { font-family: var(--ks-font-sans); font-size: var(--ks-text-sm, 13px); color: var(--ks-fg-muted); text-decoration: none; background: none; border: none; padding: 0; cursor: pointer; text-align: left; transition: color .12s ease; }
+.kilo-footer-col a:hover, .kilo-footer-col button:hover { color: var(--ks-accent); }
+.kilo-footer-base { max-width: 1080px; margin: var(--ks-sp-8, 32px) auto 0; padding-top: var(--ks-sp-4, 16px); border-top: 1px solid var(--ks-edge); font-size: var(--ks-text-xs, 11px); color: var(--ks-fg-dim); }
+
+@media (max-width: 760px) {
+  .kilo-grid { grid-template-columns: 1fr; }
+  .kilo-steps { grid-template-columns: 1fr; }
+  .kilo-footer-grid { grid-template-columns: 1fr 1fr; }
+  .kilo-footer-brand { grid-column: 1 / -1; }
+}
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
