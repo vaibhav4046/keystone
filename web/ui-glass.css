@@ -622,6 +622,28 @@ button.cite-chip:hover, button.cite-chip:focus-visible {
 .sidebar-logo { background: transparent !important; box-shadow: none !important; display: grid !important; place-items: center; }
 .sidebar-logo img { display: block; }
 img.kf-logo-mark { background: transparent !important; width: 26px; height: 26px; padding: 0 !important; }
+
+/* ============ STEP 2 — PREMIUM BUTTONS ============ */
+.btn { border-radius: 10px; font-weight: 600; letter-spacing: -0.01em;
+  transition: transform .12s var(--ks-ease, ease-out), box-shadow .12s ease, background .12s ease, border-color .12s ease, filter .12s ease; }
+.btn.primary, .hero-actions .btn:first-child, .cta-primary, .kilo-cta .btn.primary {
+  background: linear-gradient(180deg, #ff9a4d 0%, #ff7a2f 48%, #f0611a 100%);
+  border: 1px solid rgba(0, 0, 0, 0.28); color: #1a0a02; font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 22px -10px rgba(255, 122, 47, 0.7);
+}
+.btn.primary:hover:not(:disabled), .hero-actions .btn:first-child:hover, .cta-primary:hover, .kilo-cta .btn.primary:hover {
+  background: linear-gradient(180deg, #ffb066 0%, #ff8a44 48%, #ff6a22 100%); transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3), 0 12px 28px -8px rgba(255, 122, 47, 0.85);
+}
+.btn.primary:active:not(:disabled) { transform: translateY(0); filter: brightness(0.97); }
+.btn.secondary { background: var(--surface-2); border: 1px solid var(--ks-edge); color: var(--ks-fg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04); }
+.btn.secondary:hover:not(:disabled) { border-color: var(--ks-edge-hi); background: var(--surface-3); transform: translateY(-1px); }
+.btn.ghost { border-radius: 8px; }
+.btn.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.05); }
+.btn.approve { background: linear-gradient(180deg, #34d07a, #1ea862); border: 1px solid rgba(0, 0, 0, 0.25); color: #042312; font-weight: 700; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 20px -10px rgba(45, 184, 106, 0.6); }
+.btn.approve:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+.btn.reject:hover:not(:disabled) { background: var(--ks-block-bg); border-color: var(--ks-block); }
+body.light-theme .btn.secondary { background: #ffffff; }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
