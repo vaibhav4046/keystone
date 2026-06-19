@@ -682,6 +682,13 @@ body:not(.light-theme)::after {
 @keyframes ks-drift { from { transform: translate(0, 0); opacity: 0.6; } to { transform: translate(-7vw, 5vh) scale(1.12); opacity: 1; } }
 /* keep content above the bg layers */
 .app-shell, .sidebar { position: relative; z-index: 1; }
+
+/* ============ STEP 5 — REPORT EXPORT ============ */
+.repo-export { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.repo-export[hidden] { display: none; }
+.rx-label { font-size: var(--ks-text-xs, 11px); color: var(--ks-fg-dim); font-family: var(--ks-font-sans); }
+.rx-btn { font-family: var(--ks-font-sans); font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 8px; cursor: pointer; background: var(--surface-2); border: 1px solid var(--ks-edge); color: var(--ks-fg-muted); transition: border-color .12s ease, color .12s ease; }
+.rx-btn:hover { border-color: var(--ks-accent-border); color: var(--ks-accent); }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }

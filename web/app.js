@@ -2028,6 +2028,7 @@ function runRepoAnalysis(url) {
     } else {
       setS("Analyzed " + slug + " — " + data.definitions.names.length + " definitions. No overlapping blast radii among the top symbols (clean). Pick any symbol for its real blast radius.");
     }
+    try { showExport(); } catch (e) {}
     setTimeout(function () { try { maybeAskRemember(slug); } catch (e) {} }, 900);
     if (btn) btn.disabled = false;
   }).catch(function (err) { setS((err && err.message) || "Analysis failed.", true); if (btn) btn.disabled = false; });
@@ -2091,6 +2092,48 @@ function initRemember() {
   }
 }
 window.initRemember = initRemember;
+function _dl(name, text, mime) { var b = new Blob([text], { type: mime }); var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 200); }
+function _buildReport() {
+  var d = STATIC || {}, det = (d.definitions && d.definitions.details) || {}, imp = d.impact || {};
+  var slug = (d._repo && d._repo.slug) || "this repository";
+  var names = Object.keys(det);
+  var top = names.map(function (n) { return { n: n, t: det[n].total_affected || 0, tier: det[n].tier || "", file: ((imp[n] || {}).epicenter || {}).file || "" }; }).sort(function (a, b) { return b.t - a.t; }).slice(0, 12);
+  var pair = (typeof _findCollisionPair === "function") ? _findCollisionPair(d) : null;
+  var fa = pair ? (((imp[pair.a] || {}).epicenter || {}).file || "") : "", fb = pair ? (((imp[pair.b] || {}).epicenter || {}).file || "") : "";
+  var when = new Date().toISOString().slice(0, 19).replace("T", " ");
+  var collisionLine = pair
+    ? ("Changing **" + pair.a + "** (`" + fa + "`) and **" + pair.b + "** (`" + fb + "`)" + (fa && fb && fa !== fb ? " — different files, no Git conflict —" : "") + " both ripple into **" + pair.shared + "** shared runtime dependents. Two merge requests that pass review and break together.")
+    : "No overlapping blast radii among the top symbols (clean).";
+  var md = "# Keystone review — " + slug + "\n\n_Consequence-aware change review on the GitLab Orbit call graph. Every number is computed from the graph, never invented._\n\n- Definitions analyzed: **" + names.length + "**\n" + ((d.status && d.status.data_provenance) ? "- Provenance: " + d.status.data_provenance + "\n" : "") + "\n## Silent collision\n" + collisionLine + "\n\n## Highest blast radius\n\n| symbol | file | dependents | tier |\n|---|---|---|---|\n" + top.map(function (r) { return "| `" + r.n + "` | " + r.file + " | " + r.t + " | " + r.tier + " |"; }).join("\n") + "\n\n## How to read this\nA blast radius is the set of definitions that transitively depend on a symbol — what could break if you change it. A silent collision is two changes in different files whose blast radii overlap, so they pass independent review yet break together.\n\n## Method & limits\nClient-side static call-graph approximation (regex-based; Python dynamic dispatch under-approximated). The full GitLab Orbit backend produces the exact graph. No fabricated figures.\n\n_Generated " + when + " UTC by Keystone._\n";
+  var e2 = function (s) { return String(s == null ? "" : s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); };
+  var html = "<!doctype html><html><head><meta charset='utf-8'><title>Keystone — " + e2(slug) + "</title><style>body{font:14px/1.65 -apple-system,Segoe UI,Roboto,sans-serif;max-width:760px;margin:48px auto;padding:0 28px;color:#15171c}h1{font-size:27px;letter-spacing:-.02em;margin:0 0 4px}h2{font-size:16px;margin:30px 0 10px;border-top:1px solid #e3e3e8;padding-top:18px}.lede{color:#6a6d77;margin:0 0 18px}code{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f3f3f6;padding:1px 6px;border-radius:5px;font-size:12px}table{border-collapse:collapse;width:100%;margin-top:8px}td,th{border:1px solid #e3e3e8;padding:6px 10px;text-align:left;font-size:12px}th{background:#fafafb}.tag{display:inline-block;background:#fff3ec;color:#c2410c;border:1px solid #f6c9a8;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;letter-spacing:.05em}.foot{color:#9aa0aa;font-size:11px;margin-top:28px}</style></head><body>"
+    + "<span class='tag'>SILENT COLLISION REVIEW</span><h1>Keystone — " + e2(slug) + "</h1><p class='lede'>Consequence-aware change review on the GitLab Orbit call graph. Every number computed from the graph, never invented.</p>"
+    + "<p><b>" + names.length + "</b> definitions analyzed.</p>"
+    + "<h2>Silent collision</h2><p>" + e2(collisionLine).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`(.+?)`/g, "<code>$1</code>") + "</p>"
+    + "<h2>Highest blast radius</h2><table><tr><th>symbol</th><th>file</th><th>dependents</th><th>tier</th></tr>" + top.map(function (r) { return "<tr><td><code>" + e2(r.n) + "</code></td><td>" + e2(r.file) + "</td><td>" + r.t + "</td><td>" + e2(r.tier) + "</td></tr>"; }).join("") + "</table>"
+    + "<h2>How to read this</h2><p>A blast radius is the set of definitions that transitively depend on a symbol — what could break if you change it. A silent collision is two changes in different files whose blast radii overlap, so they pass independent review yet break together.</p>"
+    + "<h2>Method &amp; limits</h2><p>Client-side static call-graph approximation (regex-based; Python dynamic dispatch under-approximated). The full GitLab Orbit backend produces the exact graph. No fabricated figures.</p>"
+    + "<p class='foot'>Generated " + when + " UTC by Keystone.</p></body></html>";
+  return { md: md, json: JSON.stringify({ repo: slug, definitions: names.length, silent_collision: pair, top_blast: top, generated: new Date().toISOString() }, null, 2), html: html, slug: String(slug).replace(/[^\w.-]/g, "_") };
+}
+function exportReport(fmt) {
+  var r = _buildReport();
+  if (fmt === "json") return _dl("keystone-" + r.slug + ".json", r.json, "application/json");
+  if (fmt === "md") return _dl("keystone-" + r.slug + ".md", r.md, "text/markdown");
+  var w = window.open("", "_blank");
+  if (!w) { _dl("keystone-" + r.slug + ".html", r.html, "text/html"); return; }
+  w.document.open(); w.document.write(r.html + "<scr" + "ipt>window.onload=function(){setTimeout(function(){window.print()},350)}</scr" + "ipt>"); w.document.close();
+}
+window.exportReport = exportReport;
+function showExport() {
+  var el = document.getElementById("repo-export"); if (!el) return;
+  el.hidden = false;
+  el.innerHTML = '<span class="rx-label">Export this review:</span>'
+    + '<button type="button" class="rx-btn" onclick="exportReport(\'pdf\')">PDF</button>'
+    + '<button type="button" class="rx-btn" onclick="exportReport(\'md\')">Markdown</button>'
+    + '<button type="button" class="rx-btn" onclick="exportReport(\'json\')">JSON</button>';
+}
+window.showExport = showExport;
 function initRepoAnalyze() {
   var btn = document.getElementById("repo-go"), inp = document.getElementById("repo-input");
   if (btn) btn.addEventListener("click", function () { _repoSubmit(); });
