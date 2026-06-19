@@ -148,9 +148,9 @@
         <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
       </div>
     </div>
-    <div class="cf-verdict" id="hero-collision-verdict" role="status" hidden>
+    <div class="cf-verdict" id="hero-collision-verdict" role="status" aria-live="assertive" hidden>
       <span class="cf-block-tag">SILENT COLLISION</span>
-      <span class="cf-verdict-text">both ripple into <strong id="hero-shared-count">5</strong> shared dependents · Keystone <strong>BLOCKS</strong> the merge</span>
+      <span class="cf-verdict-text"><strong id="hero-shared-count">5</strong> dependents sit in <em>both</em> blast radii — the overlap, not each MR's full ring-1 · Keystone <strong>BLOCKS</strong> the merge</span>
       <span class="cf-shared" id="hero-shared-list"></span>
     </div>
   </div>
@@ -608,7 +608,7 @@
   </div>
 </div>
 
-<script src="app.js?v=3.3"></script>
+<script src="app.js?v=3.4"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>
