@@ -484,3 +484,19 @@ body:not(.light-theme) .ov-cmd { background: rgba(0, 0, 0, 0.42); }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
+
+/* Visible Cmd-K affordance — promote the wired-but-hidden palette to primary nav */
+.topbar-search {
+  display: inline-flex; align-items: center; gap: 8px; margin-left: 8px;
+  padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--ks-edge); color: var(--ks-fg-dim);
+  font-family: var(--ks-font-sans); font-size: var(--ks-text-xs, 11px);
+  transition: border-color .12s ease, color .12s ease;
+}
+.topbar-search:hover { border-color: var(--ks-edge-hi); color: var(--ks-fg-muted); }
+.topbar-search kbd {
+  font-family: var(--ks-font-mono); font-size: 10px; padding: 1px 5px; border-radius: 4px;
+  background: var(--ks-bg); border: 1px solid var(--ks-edge); color: var(--ks-fg-dim);
+}
+@media (max-width: 900px) { .topbar-search span { display: none; } }
+@media (max-width: 640px) { .topbar-search { display: none; } }
