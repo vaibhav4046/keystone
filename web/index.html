@@ -132,6 +132,15 @@
   <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
   <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
+  <div class="repo-analyze" id="repo-analyze">
+    <div class="repo-analyze-label">Run it on <b>your</b> code — paste any public GitHub repo (Python), analyzed live in your browser, no signup:</div>
+    <div class="repo-analyze-row">
+      <input id="repo-input" class="repo-input" type="text" placeholder="owner/repo   ·   e.g. pallets/click" aria-label="public GitHub repo to analyze" autocomplete="off" spellcheck="false" />
+      <button id="repo-go" class="btn primary" type="button">Analyze my repo</button>
+    </div>
+    <div class="repo-examples">try <button type="button" class="repo-ex" data-repo-example="pallets/click">pallets/click</button><button type="button" class="repo-ex" data-repo-example="psf/requests">psf/requests</button><button type="button" class="repo-ex" data-repo-example="tiangolo/fastapi">tiangolo/fastapi</button></div>
+    <div id="repo-status" class="repo-status" role="status" aria-live="polite"></div>
+  </div>
   <div id="hero-collision-frame" class="collision-frame" aria-label="silent collision demonstration">
     <div class="cf-mrs">
       <div class="cf-mr">
@@ -168,15 +177,6 @@
     <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="goToEl('simulation-section')">Run the hidden-collision demo</button>
     <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
     <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
-  </div>
-  <div class="repo-analyze" id="repo-analyze">
-    <div class="repo-analyze-label">Run it on <b>your</b> code — paste any public GitHub repo (Python), in your browser, no signup:</div>
-    <div class="repo-analyze-row">
-      <input id="repo-input" class="repo-input" type="text" placeholder="owner/repo   ·   e.g. pallets/click" aria-label="public GitHub repo to analyze" autocomplete="off" spellcheck="false" />
-      <button id="repo-go" class="btn primary" type="button">Analyze my repo</button>
-    </div>
-    <div class="repo-examples">try <button type="button" class="repo-ex" data-repo-example="pallets/click">pallets/click</button><button type="button" class="repo-ex" data-repo-example="psf/requests">psf/requests</button><button type="button" class="repo-ex" data-repo-example="tiangolo/fastapi">tiangolo/fastapi</button></div>
-    <div id="repo-status" class="repo-status" role="status" aria-live="polite"></div>
   </div>
 </div>
 <div id="open-banner" class="open-banner" role="note" hidden></div>
