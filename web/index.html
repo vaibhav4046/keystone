@@ -25,7 +25,7 @@
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css?v=2.3" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=2.1" />
+<link rel="stylesheet" href="ui-glass.css?v=2.2" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -168,6 +168,15 @@
     <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="goToEl('simulation-section')">Run the hidden-collision demo</button>
     <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
     <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
+  </div>
+  <div class="repo-analyze" id="repo-analyze">
+    <div class="repo-analyze-label">Run it on <b>your</b> code — paste any public GitHub repo (Python), in your browser, no signup:</div>
+    <div class="repo-analyze-row">
+      <input id="repo-input" class="repo-input" type="text" placeholder="owner/repo   ·   e.g. pallets/click" aria-label="public GitHub repo to analyze" autocomplete="off" spellcheck="false" />
+      <button id="repo-go" class="btn primary" type="button">Analyze my repo</button>
+    </div>
+    <div class="repo-examples">try <button type="button" class="repo-ex" data-repo-example="pallets/click">pallets/click</button><button type="button" class="repo-ex" data-repo-example="psf/requests">psf/requests</button><button type="button" class="repo-ex" data-repo-example="tiangolo/fastapi">tiangolo/fastapi</button></div>
+    <div id="repo-status" class="repo-status" role="status" aria-live="polite"></div>
   </div>
 </div>
 <div id="open-banner" class="open-banner" role="note" hidden></div>
@@ -608,7 +617,8 @@
   </div>
 </div>
 
-<script src="app.js?v=3.5"></script>
+<script src="repo-analyzer.js?v=1"></script>
+<script src="app.js?v=3.6"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>

@@ -1960,7 +1960,49 @@ document.addEventListener("click", function (e) {
     select(sym);
   }
 });
-boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); } catch (e) {} });
+function _pickTopSymbol(data) {
+  var det = (data.definitions && data.definitions.details) || {};
+  var best = null, bestN = -1;
+  Object.keys(det).forEach(function (n) { var t = det[n].total_affected || 0; if (t > bestN) { bestN = t; best = n; } });
+  return best;
+}
+function runRepoAnalysis(url) {
+  var statusEl = document.getElementById("repo-status");
+  var btn = document.getElementById("repo-go");
+  if (!window.analyzeRepo) { if (statusEl) statusEl.textContent = "Analyzer not loaded."; return; }
+  if (btn) btn.disabled = true;
+  var setS = function (m, err) { if (statusEl) { statusEl.textContent = m; statusEl.classList.toggle("err", !!err); } };
+  setS("Starting…");
+  window.analyzeRepo(url, function (m) { setS(m); }).then(function (data) {
+    STATIC = data; STATIC_MODE = true; API_MODE = "static";
+    STATE.defs = data.definitions.names;
+    STATE.details = data.definitions.details || {};
+    STATE.selected = null; STATE.openMrs = [];
+    var slug = (data._repo && data._repo.slug) || url;
+    var sc = document.getElementById("src-chip"); if (sc) { sc.innerHTML = '<span class="dot g"></span>repo <b>' + esc(slug) + '</b>'; sc.className = "chip ok"; sc.title = data.status.data_provenance; }
+    var dm = document.getElementById("db-mode"); if (dm) dm.textContent = "client analysis";
+    var dc = document.getElementById("def-count"); if (dc) dc.textContent = data.definitions.names.length;
+    var prov = document.getElementById("data-provenance"); if (prov) { prov.textContent = data.status.data_provenance; prov.hidden = false; }
+    if (typeof renderDefList === "function") renderDefList(currentDefView());
+    if (typeof updateShowAllLabel === "function") updateShowAllLabel();
+    var top = _pickTopSymbol(data);
+    if (top && typeof select === "function") select(top);
+    try { if (typeof loadHazards === "function") loadHazards(); } catch (e) {}
+    if (typeof showView === "function") showView("cockpit");
+    setS("Analyzed " + slug + " — " + data.definitions.names.length + " definitions. Pick any symbol for its real blast radius; add two as MRs to find silent collisions.");
+    if (btn) btn.disabled = false;
+  }).catch(function (err) { setS((err && err.message) || "Analysis failed.", true); if (btn) btn.disabled = false; });
+}
+window.runRepoAnalysis = runRepoAnalysis;
+function initRepoAnalyze() {
+  var btn = document.getElementById("repo-go"), inp = document.getElementById("repo-input");
+  if (btn) btn.addEventListener("click", function () { if (inp && inp.value.trim()) runRepoAnalysis(inp.value.trim()); });
+  if (inp) inp.addEventListener("keydown", function (e) { if (e.key === "Enter" && inp.value.trim()) { e.preventDefault(); runRepoAnalysis(inp.value.trim()); } });
+  document.querySelectorAll("[data-repo-example]").forEach(function (el) {
+    el.addEventListener("click", function () { var v = el.getAttribute("data-repo-example"); if (inp) inp.value = v; runRepoAnalysis(v); });
+  });
+}
+boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===
 function initHarness() {
