@@ -2134,7 +2134,10 @@ function ghRender() {
 }
 function ghConsent(open) { var o = document.getElementById("gh-consent"); if (!o) return; o.hidden = !open; if (open) { var i = document.getElementById("gh-handle-input"); if (i) setTimeout(function () { i.focus(); }, 80); } }
 function ghSignIn() {
-  if (KS_GH_CLIENT_ID) {
+  // Real OAuth only where the registered callback + backend live (Vercel). On GitHub Pages (github.io)
+  // the callback would mismatch, so keep the public-connect consent path there.
+  var onPages = /github\.io$/i.test(location.hostname);
+  if (KS_GH_CLIENT_ID && !onPages) {
     var redir = location.origin + location.pathname;
     location.href = "https://github.com/login/oauth/authorize?client_id=" + encodeURIComponent(KS_GH_CLIENT_ID) + "&scope=" + encodeURIComponent("read:user public_repo") + "&redirect_uri=" + encodeURIComponent(redir);
     return;
