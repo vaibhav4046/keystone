@@ -2,6 +2,20 @@
 
 [![ci](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml)
 
+## Quick start (for judges)
+
+Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Run the hidden-collision demo**, step through the five-step simulator, then **Verify Chain** and **Simulate Tamper** on the audit ledger at the bottom.
+
+Run the same governed review in your own terminal (Python 3.13):
+
+```bash
+pip install -r requirements.txt
+python -m pytest -q                                   # 103 passed, 2 skipped
+python skills/keystone/run_review.py harness sample    # the full review for MR-204
+```
+
+Expect a `BLOCK` on `MR-204`: tier `CROSS_TEAM`, blast radius `12`, two cross-MR collisions, and the safe merge order `MR-204 -> MR-207 -> MR-211`. The command exits non-zero on purpose, because a `BLOCK` is meant to fail a pipeline. Every number is computed from a real GitLab Orbit graph and cross-checked by `orbit sql`.
+
 Two merge requests pass review, touch different files, have no merge conflict, and still break each other in production, because one changes a function the other depends on. Keystone calls that a Blast Collision, and it is exactly the risk the GitLab Orbit code knowledge graph can see and the normal review surface (Git, the MR diff, CODEOWNERS) structurally cannot. Keystone X-rays the graph for these hazards, then governs the change with a deterministic, tamper-evident gate. The lead is the hazard, not the gate. And as autonomous coding agents start authoring these merge requests, faster than any human can carefully review, a gate that binds every decision to a verifiable identity and refuses an agent approving outside its committed scope is exactly the missing control, which is why the addressable problem grows rather than stays niche.
 
 Two hazards the graph knows and Git does not. The first is a cross-MR blast collision: two open merge requests can touch entirely different files, pass review independently, and still break together, because one changes a function the other's change depends on. There is no textual conflict, so Git, the MR diff, and CODEOWNERS are all blind to it; the call graph is not. Keystone finds the collision, classifies how dangerous it is, and computes a safe merge order (or reports the cycle that makes one impossible). The second is review debt: a symbol with a large blast radius that no test file directly exercises is a change that is at once high-impact and unverified, and the graph can rank exactly those. Both are deterministic graph computations, not a model's guess.
@@ -17,7 +31,7 @@ Live demo: https://vaibhav4046.github.io/keystone/ - status SNAPSHOT: a committe
 Evaluate Keystone's core capabilities in 180 seconds flat:
 
 1. **0:00 - The Hook (Core Thesis)**: Look at the Hero Banner at the top of the page. Read the headline: *"Stop safe-looking merge requests from breaking production."* Note the three-card comparison: Git Diff sees files; Orbit sees relationships; Keystone sees structural, graph-wide consequences.
-2. **0:30 - The Simulator**: Run the step-by-step **Future Merge Simulator**. Click "Next Step" to trace how `MR-204` and `MR-211` edit separate files (no Git conflict), yet collide on the Orbit call graph because `compute_blast_radius` calls `append`. Click through to see Keystone intercept and BLOCK the unsafe merge.
+2. **0:30 - The Simulator**: Run the step-by-step **Future Merge Simulator**. Click "Next Step" to trace how `MR-204` and `MR-211` edit separate files (no Git conflict), yet collide on the Orbit call graph because their blast radii overlap on five shared dependents (kind `blast_overlap`, severity 6). Click through to see Keystone intercept and BLOCK the unsafe merge, then return the safe order `MR-204 -> MR-207 -> MR-211`.
 3. **1:00 - The Difference Matrix**: Scroll down to the **Orbit Difference Matrix**. Observe how Keystone compares to Git Diff, CODEOWNERS, and standard GitLab Orbit. Keystone is the only solution that deterministically flags cross-MR collisions and enforces cryptographic, ledger-backed governance gates.
 4. **1:20 - Blast Radius & Precedent**: Pick the symbol `compute_blast_radius` from the explorer. Watch the 3D blast radius graph spin, exposing its 12 dependent definitions. Scroll to the **Precedent** panel on the right. See the prior identical-signature rejection by a reviewer on record—Keystone has recalled this past decision and issued a hard BLOCK.
 5. **2:00 - Bounded AI Review Advisory**: Scroll to the **AI Assistant** panel on the right. The bounded assistant can use configured LLM providers when keys are available, and falls back to deterministic static plans. The model explains; the engine decides.
