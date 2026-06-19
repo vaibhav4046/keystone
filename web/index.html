@@ -191,21 +191,24 @@
         <p class="sim-desc">Git analyzes file paths. Since they edit entirely different files, Git's file-based diff finds zero conflicts. Traditional CI/CD and reviews will greenlight both, risking a broken build in production.</p>
       </div>
       <div class="sim-step-content" id="sim-content-3" style="display:none;">
-        <div class="sim-status-badge warning">ORBIT SCAN ACTIVE</div>
-        <p class="sim-desc">Orbit scans the codebase call-graph and symbols. It reveals that <code>compute_blast_radius</code> (changed in MR-204) depends directly on and calls <code>append</code> (changed in MR-211).</p>
+        <div class="sim-status-badge warning">ORBIT SCAN: BLAST RADIUS</div>
+        <p class="sim-desc">Orbit's call graph lets Keystone compute each MR's blast radius. <code>MR-204</code> (<code>compute_blast_radius</code>) reaches <strong>12</strong> dependents; <code>MR-211</code> (<code>append</code>) reaches <strong>17</strong>. Each count is cross-checked against a live <code>orbit sql</code> query that returns the same number.</p>
         <div class="sim-visual-connection">
-          <code>compute_blast_radius</code> <span class="conn-arrow">&rarr;</span> <code>append</code>
+          <code>orbit sql</code> ring-1 for <code>compute_blast_radius</code> = <strong>12</strong> <span class="conn-arrow">=</span> engine <strong>12</strong>
         </div>
       </div>
       <div class="sim-step-content" id="sim-content-4" style="display:none;">
-        <div class="sim-status-badge danger">COLLISION DETECTED</div>
-        <p class="sim-desc">Keystone crosses the open MRs with the Orbit graph and detects a blast collision. Merging them in the wrong order breaks the call-site at runtime.</p>
+        <div class="sim-status-badge danger">COLLISION: BLAST_OVERLAP (severity 6)</div>
+        <p class="sim-desc">Keystone joins the two blast radii and finds they overlap: both MRs ripple into the same <strong>5 dependents</strong>. The collision kind and fan-in severity are engine-computed in <code>core/collision.py</code> over the Orbit graph. Git and CODEOWNERS see two unrelated file edits and greenlight both.</p>
+        <div class="sim-visual-connection">
+          shared dependents: <code>approve</code> <code>get_json</code> <code>main</code> <code>post_json</code> <code>precedent</code>
+        </div>
       </div>
       <div class="sim-step-content" id="sim-content-5" style="display:none;">
-        <div class="sim-status-badge success">VERDICT: BLOCK / SAFE SEQUENCE</div>
-        <p class="sim-desc">Keystone blocks the merge and computes the safe merge sequence to prevent runtime failure: <code>MR-211</code> (dependency definition) must be merged first, followed by <code>MR-204</code> (caller).</p>
+        <div class="sim-status-badge danger">VERDICT: BLOCK (CROSS_TEAM)</div>
+        <p class="sim-desc">Keystone BLOCKs the merge at the CROSS_TEAM tier and returns the safe order from a Kahn topological sort over the collision graph. Merge in any other order and a shared dependent breaks at runtime.</p>
         <div class="sim-safe-sequence">
-          <span class="seq-badge">1</span> <code>MR-211</code> &rarr; <span class="seq-badge">2</span> <code>MR-204</code>
+          <span class="seq-badge">1</span> <code>MR-204</code> &rarr; <span class="seq-badge">2</span> <code>MR-207</code> &rarr; <span class="seq-badge">3</span> <code>MR-211</code>
         </div>
       </div>
     </div>
