@@ -11,52 +11,32 @@ Video: <PASTE YOUTUBE OR VIMEO URL>
 
 ## Elevator pitch (one line)
 
-Keystone X-rays the hazards in the GitLab Orbit code graph that the review surface structurally
-cannot see, then governs the change with a deterministic, tamper-evident gate.
+Keystone turns the GitLab Orbit code graph into a deterministic engineering harness and merge safety controller for agent-authored code changes.
 
 ## Inspiration
 
-The same incident kept happening on teams I read about and worked near. Two merge requests, two
-different people, two different files. Neither has a merge conflict. Both pass review. They merge,
-and something breaks, because one of them changed a function the other one depended on. When you
-go back to figure out what happened, the review record is thin: an approval with no rationale, a
-log you cannot fully trust because it was editable, and no record of the impact anyone actually
-weighed. Git is built around text. The thing that breaks you is the call graph, and nothing in the
-normal review surface shows it.
+As autonomous AI coding agents move from simple autocomplete to authoring complex, multi-file patches, they introduce a massive new safety risk. Agents propose code changes, but they have no accountability, cannot be paged at 2 AM, and do not understand the systemic consequences of their edits. skurrying human reviewers skimming a diff cannot foresee when changing a utility function in one file silently breaks a dependency in another. Git sees files; Orbit sees relationships; Keystone sees consequences.
 
-GitLab Orbit builds that call graph. So the question became simple: what can you see, and what can
-you refuse, once you have the graph at the moment of review.
+We built Keystone to act as the missing **governance and engineering harness** around coding agents. By wrapping agent proposals in a deterministic verification pipeline driven by the Orbit code graph, we ensure no agent-authored change reaches production without safety clearances and human-in-the-loop approvals.
 
 ## What it does
 
-Two hazards first, because they are the part nobody else shows you.
+Keystone turns code review from a passive dashboard into an active, deterministic merge controller:
 
-The first is a cross-MR blast collision. Point Keystone at a set of open merge requests and it
-finds the pairs whose blast radii collide on the call graph even though there is no Git conflict,
-classifies how dangerous each collision is, and computes a safe merge order with a topological
-sort (or reports the cycle that makes a safe order impossible). On the live demo you can add your
-own open merge request and watch the collisions and the merge order recompute in the browser.
+1. **The Engineering Harness**: A 5-stage verification pipeline for agent-authored patches:
+   - **Symbol Resolve**: Validates touched symbols exist in the Orbit graph.
+   - **Blast Compute**: Computes the blast radius (impact depth, definitions, owners) using reverse-BFS.
+   - **Policy Gate**: Maps blast impact to ALLOW, HOLD, or BLOCK policy tiers.
+   - **Collision Scan**: Scans for cross-MR blast overlaps (hidden merge collisions) across open MRs.
+   - **Verdict**: Decides if a change is safe to merge, suggesting a topologically sorted safe merge order.
 
-The second is review debt: the symbols with a large blast radius that no test file directly
-exercises, ranked. High impact and unverified is exactly the change you want flagged before it
-merges, and the graph can find those deterministically.
+2. **Cross-MR Blast Collisions**: Detects when two independent merge requests overlap in their call graphs (no Git conflict, but a dependency collision) and computes a safe merge sequence.
 
-Then it governs. Orbit gives the blast radius of a single change. Keystone maps that radius to a
-policy tier that sets the required number of approvers and an ALLOW, HOLD, or BLOCK action. It
-refuses an approval that contradicts a prior rejection of the same blast signature. It gates
-autonomous coding agents against a committed scope manifest. It enforces four-eyes so an author
-cannot approve their own change. And it records every decision in an HMAC-keyed, hash-chained
-ledger whose integrity is recomputed live, with a standards-shaped attestation bound to the exact
-graph context the reviewer saw.
+3. **Governance & Audit Trail**: Restricts autonomous agents from self-approving, enforces four-eyes rules, and commits all decisions to an HMAC-keyed, hash-chained ledger.
 
-There is a real AI layer, deliberately kept off the trust path. A bounded tool-using agent calls
-the deterministic engine for the blast radius, the precedent, and the suggested reviewers, then
-recommends a next step, and you can see the exact tools it called. It never produces a number and
-it never records a decision. The model proposes, the deterministic gate decides.
+4. **Real AI, Off the Trust Path**: A bounded tool-using agent explains the impact and recommends reviewers, but never decides the verdict. The model proposes; the deterministic engine decides.
 
-The command center got a final v3 pass: a single hero CTA, a clear ALLOW/HOLD/BLOCK status panel,
-concentric blast-radius rings with severity labels, and a public AI Catalog agent definition so
-the workflow can be invoked directly from GitLab Duo.
+The command center is fully polished: a premium dark/light dashboard, a 5-step interactive merge collision simulator, and the animated 5-stage **Engineering Harness visualizer** showing live pipeline state for agent-authored changes.
 
 ## How we built it
 

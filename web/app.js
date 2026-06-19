@@ -90,6 +90,7 @@ async function boot() {
   updateShowAllLabel();
   await refreshLedger();
   loadHazards();
+  initHarness();
   // auto-select the headline demo symbol: compute_blast_radius (Keystone's own engine,
   // BLOCKed by prior precedent) on the real self-index, tokenize on the fixture, else top.
   if (STATE.defs.length) {
@@ -1811,3 +1812,105 @@ function initSettings() {
 }
 
 boot();
+
+// === ENGINEERING HARNESS PIPELINE VISUALIZER ===
+function initHarness() {
+  const section = document.getElementById("harness-pipeline");
+  if (!section) return;
+
+  const harness = STATIC && STATIC.harness;
+  if (!harness) {
+    // No harness data baked in, hide the section
+    section.style.display = "none";
+    return;
+  }
+
+  const task = harness.task || {};
+  const stages = harness.pipeline_stages || [];
+  const gateResults = harness.gate_results || [];
+  const overall = harness.overall_verdict || "ALLOW";
+
+  // Populate task card
+  const agentEl = document.getElementById("harness-agent");
+  const mrEl = document.getElementById("harness-mr");
+  const kindEl = document.getElementById("harness-kind");
+  const symbolsEl = document.getElementById("harness-symbols");
+
+  if (agentEl) agentEl.textContent = task.agent_id || "unknown";
+  if (mrEl) mrEl.textContent = task.mr_id || "N/A";
+  if (kindEl) {
+    kindEl.textContent = task.agent_kind || "bot";
+    kindEl.setAttribute("data-kind", task.agent_kind || "bot");
+  }
+  if (symbolsEl) {
+    const syms = task.symbols_touched || [];
+    symbolsEl.textContent = syms.length
+      ? "Symbols: " + syms.join(", ")
+      : "No symbols";
+  }
+
+  // Animate pipeline stages with staggered reveal
+  const stageEls = document.querySelectorAll(".harness-stage");
+  const connectorEls = document.querySelectorAll(".harness-connector");
+
+  stages.forEach((stage, i) => {
+    const el = stageEls[i];
+    if (!el) return;
+
+    setTimeout(() => {
+      el.setAttribute("data-status", stage.status || "done");
+      const statusEl = el.querySelector(".harness-stage-status");
+      if (statusEl) {
+        const ms = stage.duration_ms;
+        statusEl.textContent = stage.status === "done"
+          ? (ms != null ? "done (" + ms + "ms)" : "done")
+          : stage.status;
+      }
+      // Light up the connector before this stage
+      if (i > 0 && connectorEls[i - 1]) {
+        connectorEls[i - 1].classList.add("done");
+      }
+    }, 300 * i);
+  });
+
+  // Populate per-symbol verdict cards
+  const verdictList = document.getElementById("harness-verdict-list");
+  if (verdictList) {
+    verdictList.innerHTML = "";
+    gateResults.forEach((gr) => {
+      const card = document.createElement("div");
+      card.className = "harness-verdict-card";
+      card.setAttribute("data-verdict", gr.verdict || "ALLOW");
+
+      const pol = gr.policy || {};
+      const imp = gr.impact || {};
+      const counts = imp.counts || {};
+
+      card.innerHTML =
+        '<div class="harness-verdict-symbol">' + _esc(gr.symbol || "?") + '</div>' +
+        '<div class="harness-verdict-meta">' +
+          (pol.tier || "?") + " / " + (counts.total_affected || 0) + " affected" +
+        '</div>' +
+        '<div class="harness-verdict-badge" data-verdict="' + _esc(gr.verdict || "ALLOW") + '">' +
+          _esc(gr.verdict || "ALLOW") +
+        '</div>';
+
+      verdictList.appendChild(card);
+    });
+  }
+
+  // Set overall verdict badge (delayed for dramatic reveal)
+  setTimeout(() => {
+    const badge = document.getElementById("harness-overall-badge");
+    if (badge) {
+      badge.textContent = overall;
+      badge.setAttribute("data-verdict", overall);
+    }
+  }, 300 * stages.length + 200);
+}
+
+function _esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}

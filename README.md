@@ -41,6 +41,37 @@ Then pick a symbol that is about to change. Keystone reads the GitLab Orbit Loca
 
 Branch protection enforces who clicked approve. Signed commits and GPG git-notes, Sigstore, and in-toto attest who authored or signed code. None of them bind the computed impact of a change and the human rationale and the decision together into one tamper-evident record at the moment of decision, and none surface a contradicting prior rejection while you are about to approve. That binding, plus precedent at the moment of choice, is Keystone. It is complementary to Sigstore and in-toto, not a replacement: they attest the artifact, Keystone attests the decision.
 
+## Engineering Harness
+
+The Engineering Harness is a deterministic governance pipeline that wraps coding agent output through the Orbit code graph before it reaches a merge request. Coding agents can write patches. Keystone decides if they are safe to merge.
+
+The harness takes a task (what an agent changed), walks every touched symbol through five pipeline stages, and produces a structured verdict:
+
+1. **Symbol Resolve**: Validate each touched symbol exists in the Orbit graph.
+2. **Blast Compute**: Compute the blast radius for each symbol (rings, affected definitions, owners).
+3. **Policy Gate**: Evaluate the policy tier and action (ALLOW / HOLD / BLOCK) per symbol.
+4. **Collision Scan**: Detect cross-MR blast collisions when multiple MRs are open.
+5. **Verdict**: Compute the overall verdict (worst of individual verdicts) and safe merge order.
+
+Every computation delegates to existing `core/` modules. The harness adds zero new math or heuristics. It is pure orchestration and structured output.
+
+Run the demo scenario against the committed real Orbit self-index:
+
+```
+python -m harness.cli sample                      # summary output
+python -m harness.cli sample --format markdown     # full report
+python -m harness.cli sample --format json         # machine-readable
+python skills/keystone/run_review.py harness sample  # via the skill entry point
+```
+
+Run against specific symbols (local mode):
+
+```
+python -m harness.cli local --symbols compute_blast_radius append --agent copilot --agent-kind bot
+```
+
+The demo scenario evaluates MR-204 (agent: copilot-workspace, changes `compute_blast_radius`) against MR-207 and MR-211, producing a BLOCK verdict (CROSS_TEAM tier, 12 blast radius, prior identical-signature rejection) with 2 collisions and a safe merge order of MR-204 -> MR-207 -> MR-211. The harness report is baked into `data.json` by `build_static.py` and rendered as an animated pipeline visualizer on the dashboard.
+
 ## Governance as code, attestations, and agent gating
 
 The blast radius is not just shown, it is the enforcement decision. A versioned policy committed at `.keystone/policy.json` maps the engine-computed blast radius (distinct affected files) to a severity tier (ISOLATED, LOCAL, CROSS-TEAM, ORG-WIDE), and each tier deterministically sets a required approver count, a review window, and an ALLOW / HOLD / BLOCK action. The three actions are precise and distinct: BLOCK refuses the approval outright (HTTP 409) unless an accountable, recorded override is supplied; HOLD is a quorum gate, meaning the change is recorded as PENDING_APPROVAL and is not closed until the tier's required number of distinct approvers have signed off (a rejection resets the count); ALLOW is the default action, not BLOCK- or HOLD-gated, but the change still closes only once the tier's required approver count is met, which is one approver for the ISOLATED and LOCAL tiers and two for CROSS-TEAM (so a CROSS-TEAM ALLOW change still needs a second approver, exactly as the `append` demo shows). A prior identical-blast-radius rejection forces BLOCK. The review window is displayed by default and becomes a hard time gate when the policy sets `window_enforced`. An unregistered autonomous agent cannot self-approve at all (HTTP 403), and the author of a change cannot approve their own change (four-eyes: HTTP 403 unless an accountable override). Quorum is tracked per change id, so two unrelated merge requests on the same symbol never share an approver pool, and a rejection resets the count. One deliberate strength: a recorded rejection of a blast signature becomes binding precedent, so a later approval of that same signature is BLOCKed until an override, even on a HOLD-tier symbol - you cannot quietly re-approve what was rejected.

@@ -1,0 +1,485 @@
+{
+  "task": {
+    "task_id": "harness-demo-001",
+    "agent_id": "copilot-workspace",
+    "agent_kind": "bot",
+    "symbols_touched": [
+      "compute_blast_radius"
+    ],
+    "files_changed": [
+      "core/impact.py"
+    ],
+    "mr_id": "MR-204",
+    "change_id": "demo-MR-204",
+    "timestamp": 1781833586.6528592
+  },
+  "mode": "sample",
+  "gate_results": [
+    {
+      "symbol": "compute_blast_radius",
+      "found": true,
+      "impact": {
+        "epicenter": {
+          "id": 1691604444861513983,
+          "name": "compute_blast_radius",
+          "fqn": "core.impact.compute_blast_radius",
+          "file": "core/impact.py",
+          "kind": "Function"
+        },
+        "rings": {
+          "0": [
+            1691604444861513983
+          ],
+          "1": [
+            1482734565408047830,
+            2455015571288494617,
+            3658915740377288552,
+            4426167067005806000,
+            4864128303764004800,
+            6091362926688991061,
+            6660160112518181993,
+            6818314553287061365,
+            7401933855113500698,
+            7446542423404855046,
+            7714791994246045857,
+            8439321600802786905
+          ]
+        },
+        "affected_ids": [
+          1482734565408047830,
+          2455015571288494617,
+          3658915740377288552,
+          4426167067005806000,
+          4864128303764004800,
+          6091362926688991061,
+          6660160112518181993,
+          6818314553287061365,
+          7401933855113500698,
+          7446542423404855046,
+          7714791994246045857,
+          8439321600802786905
+        ],
+        "counts": {
+          "ring_1": 12,
+          "total_affected": 12,
+          "unaffected": 249
+        },
+        "signature": "9a8b48b1f2ba90f6733007fdec01b0b14137a924de90ad47b5405357a3d2aa0e",
+        "owners": [
+          {
+            "id": 1691604444861513983,
+            "ring": 0,
+            "name": "compute_blast_radius",
+            "file": "core/impact.py",
+            "dir": "core",
+            "kind": "Function"
+          },
+          {
+            "id": 1482734565408047830,
+            "ring": 1,
+            "name": "test_blast_radius_exact_counts",
+            "file": "tests/test_engine.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 2455015571288494617,
+            "ring": 1,
+            "name": "test_contradiction_signature_matches_live_blast",
+            "file": "tests/test_engine.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 3658915740377288552,
+            "ring": 1,
+            "name": "impact",
+            "file": "backend/app.py",
+            "dir": "backend",
+            "kind": "DecoratedFunction"
+          },
+          {
+            "id": 4426167067005806000,
+            "ring": 1,
+            "name": "main",
+            "file": "scripts/build_fixture.py",
+            "dir": "scripts",
+            "kind": "Function"
+          },
+          {
+            "id": 4864128303764004800,
+            "ring": 1,
+            "name": "main",
+            "file": "scripts/build_static.py",
+            "dir": "scripts",
+            "kind": "Function"
+          },
+          {
+            "id": 6091362926688991061,
+            "ring": 1,
+            "name": "test_independent_recompute_matches",
+            "file": "tests/test_engine.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 6660160112518181993,
+            "ring": 1,
+            "name": "approve",
+            "file": "backend/app.py",
+            "dir": "backend",
+            "kind": "DecoratedFunction"
+          },
+          {
+            "id": 6818314553287061365,
+            "ring": 1,
+            "name": "test_signature_is_stable_and_set_based",
+            "file": "tests/test_engine.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 7401933855113500698,
+            "ring": 1,
+            "name": "post_json",
+            "file": "tests/test_skill.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 7446542423404855046,
+            "ring": 1,
+            "name": "get_json",
+            "file": "tests/test_skill.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 7714791994246045857,
+            "ring": 1,
+            "name": "test_unknown_symbol_returns_none",
+            "file": "tests/test_engine.py",
+            "dir": "tests",
+            "kind": "Function"
+          },
+          {
+            "id": 8439321600802786905,
+            "ring": 1,
+            "name": "precedent",
+            "file": "backend/app.py",
+            "dir": "backend",
+            "kind": "DecoratedFunction"
+          }
+        ],
+        "names": {
+          "1691604444861513983": "compute_blast_radius",
+          "1482734565408047830": "test_blast_radius_exact_counts",
+          "2455015571288494617": "test_contradiction_signature_matches_live_blast",
+          "3658915740377288552": "impact",
+          "4426167067005806000": "main",
+          "4864128303764004800": "main",
+          "6091362926688991061": "test_independent_recompute_matches",
+          "6660160112518181993": "approve",
+          "6818314553287061365": "test_signature_is_stable_and_set_based",
+          "7401933855113500698": "post_json",
+          "7446542423404855046": "get_json",
+          "7714791994246045857": "test_unknown_symbol_returns_none",
+          "8439321600802786905": "precedent"
+        },
+        "parents": {
+          "1482734565408047830": 1691604444861513983,
+          "2455015571288494617": 1691604444861513983,
+          "3658915740377288552": 1691604444861513983,
+          "4426167067005806000": 1691604444861513983,
+          "4864128303764004800": 1691604444861513983,
+          "6091362926688991061": 1691604444861513983,
+          "6660160112518181993": 1691604444861513983,
+          "6818314553287061365": 1691604444861513983,
+          "7401933855113500698": 1691604444861513983,
+          "7446542423404855046": 1691604444861513983,
+          "7714791994246045857": 1691604444861513983,
+          "8439321600802786905": 1691604444861513983
+        }
+      },
+      "policy": {
+        "tier": "CROSS_TEAM",
+        "action": "BLOCK",
+        "counts": {
+          "affected_definitions": 12,
+          "affected_files": 5,
+          "affected_directories": 3
+        },
+        "affected_files": [
+          "backend/app.py",
+          "scripts/build_fixture.py",
+          "scripts/build_static.py",
+          "tests/test_engine.py",
+          "tests/test_skill.py"
+        ],
+        "affected_directories": [
+          "backend",
+          "scripts",
+          "tests"
+        ],
+        "required_approvers": 2,
+        "review_window_hours": 24,
+        "required_owner": "core",
+        "reasons": [
+          "12 dependent definitions across 5 files / 3 directories -> tier CROSS_TEAM",
+          "BLOCK: identical blast radius was rejected before (MR-203 by s.castellano)",
+          "Agent-authored change (agent=copilot-workspace) on BLOCK tier requires human reviewer confirmation"
+        ],
+        "policy_version": "1",
+        "policy_hash": "fc5044090214438501c6d1ab9ed383474b8e9ec75d979d12d86eae36b0fb0268"
+      },
+      "precedent": {
+        "match_count": 1,
+        "approved": 0,
+        "rejected": 1,
+        "matched_by": {
+          "signature": 1,
+          "fqn": 0,
+          "name": 0
+        },
+        "contradiction_matched_by": "signature",
+        "most_recent": {
+          "actor": "s.castellano",
+          "blast_radius_set": [
+            1482734565408047830,
+            2455015571288494617,
+            3658915740377288552,
+            4426167067005806000,
+            4864128303764004800,
+            6091362926688991061,
+            6660160112518181993,
+            6818314553287061365,
+            7401933855113500698,
+            7446542423404855046,
+            7714791994246045857,
+            8439321600802786905
+          ],
+          "change_id": "MR-203",
+          "decision": "reject",
+          "prev_hash": "89caf6073942bb8944ce71d0db64605309a19b434405acc9cde9181cd5d4b26e",
+          "rationale": "compute_blast_radius sits under 12 dependents across the graph; changing it shifts the computed impact of every one. Needs an RFC and a migration test first.",
+          "row_hash": "9bdd7cc20ee1b6b7621dd07c475d5013506a18f5b36dea89208617c6c07ac1b2",
+          "seq": 1,
+          "signature": "9a8b48b1f2ba90f6733007fdec01b0b14137a924de90ad47b5405357a3d2aa0e",
+          "target_symbols": [
+            "compute_blast_radius"
+          ],
+          "ts": "2026-06-11T10:07:00Z",
+          "_matched_by": "signature"
+        },
+        "contradiction": {
+          "actor": "s.castellano",
+          "blast_radius_set": [
+            1482734565408047830,
+            2455015571288494617,
+            3658915740377288552,
+            4426167067005806000,
+            4864128303764004800,
+            6091362926688991061,
+            6660160112518181993,
+            6818314553287061365,
+            7401933855113500698,
+            7446542423404855046,
+            7714791994246045857,
+            8439321600802786905
+          ],
+          "change_id": "MR-203",
+          "decision": "reject",
+          "prev_hash": "89caf6073942bb8944ce71d0db64605309a19b434405acc9cde9181cd5d4b26e",
+          "rationale": "compute_blast_radius sits under 12 dependents across the graph; changing it shifts the computed impact of every one. Needs an RFC and a migration test first.",
+          "row_hash": "9bdd7cc20ee1b6b7621dd07c475d5013506a18f5b36dea89208617c6c07ac1b2",
+          "seq": 1,
+          "signature": "9a8b48b1f2ba90f6733007fdec01b0b14137a924de90ad47b5405357a3d2aa0e",
+          "target_symbols": [
+            "compute_blast_radius"
+          ],
+          "ts": "2026-06-11T10:07:00Z",
+          "_matched_by": "signature"
+        },
+        "contradiction_same_signature": true,
+        "contradiction_strength": "identical",
+        "matched_rows": [
+          {
+            "seq": 1,
+            "row_hash": "9bdd7cc20ee1b6b7621dd07c475d5013506a18f5b36dea89208617c6c07ac1b2",
+            "matched_by": "signature",
+            "decision": "reject",
+            "actor": "s.castellano",
+            "rationale": "compute_blast_radius sits under 12 dependents across the graph; changing it shifts the computed impact of every one. Needs an RFC and a migration test first."
+          }
+        ]
+      },
+      "verdict": "BLOCK",
+      "reasons": [
+        "12 dependent definitions across 5 files / 3 directories -> tier CROSS_TEAM",
+        "BLOCK: identical blast radius was rejected before (MR-203 by s.castellano)",
+        "Agent-authored change (agent=copilot-workspace) on BLOCK tier requires human reviewer confirmation"
+      ]
+    }
+  ],
+  "collision_report": {
+    "mrs": [
+      "MR-207",
+      "MR-211",
+      "MR-204"
+    ],
+    "collisions": [
+      {
+        "mr_a": "MR-211",
+        "mr_b": "MR-204",
+        "kind": "blast_overlap",
+        "severity": 6,
+        "same_change": [],
+        "change_in_blast": [],
+        "blast_overlap": [
+          "approve",
+          "get_json",
+          "main",
+          "post_json",
+          "precedent"
+        ],
+        "shared": [
+          "approve",
+          "get_json",
+          "main",
+          "post_json",
+          "precedent"
+        ]
+      },
+      {
+        "mr_a": "MR-207",
+        "mr_b": "MR-204",
+        "kind": "change_in_blast",
+        "severity": 3,
+        "same_change": [],
+        "change_in_blast": [
+          "impact"
+        ],
+        "blast_overlap": [],
+        "shared": [
+          "impact"
+        ]
+      }
+    ],
+    "per_mr": [
+      {
+        "id": "MR-204",
+        "symbols": [
+          "compute_blast_radius"
+        ],
+        "changes": [
+          "compute_blast_radius"
+        ],
+        "blast_size": 12,
+        "collides_with": [
+          "MR-207",
+          "MR-211"
+        ],
+        "risk": 9
+      },
+      {
+        "id": "MR-211",
+        "symbols": [
+          "append"
+        ],
+        "changes": [
+          "append"
+        ],
+        "blast_size": 17,
+        "collides_with": [
+          "MR-204"
+        ],
+        "risk": 6
+      },
+      {
+        "id": "MR-207",
+        "symbols": [
+          "impact"
+        ],
+        "changes": [
+          "impact"
+        ],
+        "blast_size": 0,
+        "collides_with": [
+          "MR-204"
+        ],
+        "risk": 3
+      }
+    ],
+    "merge_order": [
+      "MR-204",
+      "MR-207",
+      "MR-211"
+    ],
+    "uncoordinable_cycle": [],
+    "counts": {
+      "mrs": 3,
+      "collisions": 2,
+      "colliding_mrs": 3
+    },
+    "verdict": "2 collision(s) across 3 MRs. Suggested safe merge order avoids merging a dependent before the change it relies on."
+  },
+  "merge_order": [
+    "MR-204",
+    "MR-207",
+    "MR-211"
+  ],
+  "overall_verdict": "BLOCK",
+  "ledger_rows_appended": 0,
+  "orbit_snapshot_sha256": "c7ca1cb5a5207d1a01a1605c7afeb179d4dc8ec6ff5904b63a83452afdfd247f",
+  "pipeline_stages": [
+    {
+      "name": "SYMBOL_RESOLVE",
+      "status": "done",
+      "detail": {
+        "total": 1,
+        "found": 1,
+        "missing": []
+      },
+      "duration_ms": 456
+    },
+    {
+      "name": "BLAST_COMPUTE",
+      "status": "done",
+      "detail": {
+        "symbols_evaluated": 1
+      },
+      "duration_ms": 14
+    },
+    {
+      "name": "POLICY_GATE",
+      "status": "done",
+      "detail": {
+        "blocked": 1,
+        "held": 0,
+        "allowed": 0
+      },
+      "duration_ms": 0
+    },
+    {
+      "name": "COLLISION_SCAN",
+      "status": "done",
+      "detail": {
+        "collisions": 2,
+        "colliding_mrs": 3
+      },
+      "duration_ms": 36
+    },
+    {
+      "name": "VERDICT",
+      "status": "done",
+      "detail": {
+        "overall": "BLOCK",
+        "blocked": [
+          "compute_blast_radius"
+        ],
+        "held": []
+      },
+      "duration_ms": 0
+    }
+  ]
+}

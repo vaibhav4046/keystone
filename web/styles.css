@@ -1256,3 +1256,302 @@ body.light-theme .theme-toggle .moon-icon {
   }
 }
 
+/* --- Engineering Harness Pipeline --- */
+.harness-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  margin-bottom: var(--sp-6);
+}
+.harness-pitch {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin: 0 0 var(--sp-6);
+  font-style: italic;
+}
+
+/* Agent task card */
+.harness-task-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+.harness-task-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.harness-task-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+.harness-task-info {
+  flex: 1;
+}
+.harness-task-agent {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--cyan);
+  font-weight: 600;
+}
+.harness-task-mr {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.harness-task-kind {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(91, 191, 214, 0.15);
+  color: var(--cyan);
+  border: 1px solid rgba(91, 191, 214, 0.3);
+}
+.harness-task-kind[data-kind="bot"] {
+  background: rgba(255, 138, 43, 0.15);
+  color: var(--orange);
+  border-color: rgba(255, 138, 43, 0.3);
+}
+.harness-task-kind[data-kind="human"] {
+  background: rgba(59, 224, 129, 0.15);
+  color: var(--green);
+  border-color: rgba(59, 224, 129, 0.3);
+}
+.harness-task-symbols {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* Pipeline flow */
+.harness-pipeline-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: var(--sp-6);
+  overflow-x: auto;
+  padding: var(--sp-4) 0;
+}
+.harness-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 100px;
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  border: 2px solid var(--border-subtle);
+  transition: border-color 0.4s, background 0.4s, box-shadow 0.4s;
+  position: relative;
+}
+.harness-stage[data-status="done"] {
+  border-color: var(--green);
+  background: rgba(59, 224, 129, 0.08);
+  box-shadow: 0 0 12px rgba(59, 224, 129, 0.15);
+}
+.harness-stage[data-status="running"] {
+  border-color: var(--orange);
+  background: rgba(255, 138, 43, 0.08);
+  animation: harness-pulse 1.5s ease-in-out infinite;
+}
+.harness-stage[data-status="error"] {
+  border-color: var(--danger);
+  background: rgba(255, 92, 102, 0.08);
+}
+@keyframes harness-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 138, 43, 0.2); }
+  50% { box-shadow: 0 0 20px rgba(255, 138, 43, 0.4); }
+}
+.harness-stage-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+.harness-stage-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.harness-stage-status {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+}
+.harness-stage[data-status="done"] .harness-stage-status {
+  color: var(--green);
+}
+.harness-stage[data-status="running"] .harness-stage-status {
+  color: var(--orange);
+}
+
+/* Connector between stages */
+.harness-connector {
+  width: 24px;
+  min-width: 16px;
+  height: 2px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+  transition: background 0.4s;
+}
+.harness-connector.done {
+  background: var(--green);
+  box-shadow: 0 0 6px rgba(59, 224, 129, 0.3);
+}
+
+/* Per-symbol verdict cards */
+.harness-verdicts {
+  margin-bottom: var(--sp-6);
+}
+.harness-verdict-header {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  margin-bottom: var(--sp-3);
+}
+.harness-verdict-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-3);
+}
+.harness-verdict-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  transition: border-color 0.3s;
+}
+.harness-verdict-card[data-verdict="BLOCK"] {
+  border-color: var(--danger);
+}
+.harness-verdict-card[data-verdict="HOLD"] {
+  border-color: var(--amber);
+}
+.harness-verdict-card[data-verdict="ALLOW"] {
+  border-color: var(--green);
+}
+.harness-verdict-symbol {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  flex: 1;
+}
+.harness-verdict-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.harness-verdict-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+.harness-verdict-badge[data-verdict="ALLOW"] {
+  background: rgba(59, 224, 129, 0.15);
+  color: var(--green);
+}
+.harness-verdict-badge[data-verdict="HOLD"] {
+  background: rgba(255, 176, 46, 0.15);
+  color: var(--amber);
+}
+.harness-verdict-badge[data-verdict="BLOCK"] {
+  background: rgba(255, 92, 102, 0.15);
+  color: var(--danger);
+}
+
+/* Overall verdict */
+.harness-overall {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+.harness-overall-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+.harness-overall-badge {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 16px;
+  border-radius: var(--radius-sm);
+  transition: all 0.4s;
+}
+.harness-overall-badge[data-verdict="ALLOW"] {
+  background: rgba(59, 224, 129, 0.2);
+  color: var(--green);
+  border: 1px solid var(--green);
+  box-shadow: 0 0 16px rgba(59, 224, 129, 0.2);
+}
+.harness-overall-badge[data-verdict="HOLD"] {
+  background: rgba(255, 176, 46, 0.2);
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  box-shadow: 0 0 16px rgba(255, 176, 46, 0.2);
+}
+.harness-overall-badge[data-verdict="BLOCK"] {
+  background: rgba(255, 92, 102, 0.2);
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  box-shadow: 0 0 16px rgba(255, 92, 102, 0.2);
+}
+
+/* Light theme overrides */
+.light-theme .harness-section {
+  background: #fafafa;
+  border-color: #d1d5db;
+}
+.light-theme .harness-task-card,
+.light-theme .harness-stage,
+.light-theme .harness-verdict-card,
+.light-theme .harness-overall {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+.light-theme .harness-connector {
+  background: #d1d5db;
+}
+
+/* Responsive */
+@media(max-width:768px) {
+  .harness-pipeline-flow {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .harness-connector {
+    width: 2px;
+    height: 16px;
+  }
+  .harness-stage {
+    min-width: 80px;
+  }
+}

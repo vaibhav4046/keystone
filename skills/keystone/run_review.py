@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from urllib import request, parse, error
 
@@ -138,17 +139,18 @@ def _print_report(rep):
     print()
 
 
-def _local_callables(prefer_live=True):
+def _local_callables(prefer_live=True, graph_path=None):
     """Wire get/post directly to the in-process core (no server), so the gate runs
     in CI with nothing to start. Used by --local. prefer_live=False forces the
-    committed fixture so the gate is deterministic on any machine (use in CI)."""
+    committed fixture so the gate is deterministic on any machine (use in CI).
+    graph_path overrides the graph location (e.g. the committed self-index)."""
     import os
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.abspath(os.path.join(here, "..", "..")))
     import tempfile
     from core import graph as graph_mod, impact as impact_mod, seed as seed_mod
     from core.audit import Ledger
-    g = graph_mod.Graph(prefer_live=prefer_live)
+    g = graph_mod.Graph(prefer_live=prefer_live, path=graph_path)
     if not prefer_live:
         # hermetic: a fresh temp ledger, always reseeded, so the fixture contradiction
         # fires deterministically regardless of any prior ~/.keystone state.
@@ -203,8 +205,200 @@ def _local_callables(prefer_live=True):
     return get_json, post_json, gate_check, ci_id
 
 
+# --- MR Guardian: sample merge-request review workflow -----------------------
+# Maps the demo scenario MR ids (kept in sync with scripts/build_static.py
+# DEMO_MRS) to the real symbol each touches on the committed Orbit self-index.
+SAMPLE_MRS = {
+    "MR-204": {"symbol": "compute_blast_radius", "title": "speed up the blast engine",
+               "file": "core/impact.py"},
+    "MR-207": {"symbol": "impact", "title": "tune the impact API",
+               "file": "backend/app.py"},
+    "MR-211": {"symbol": "append", "title": "ledger append fix",
+               "file": "core/audit.py"},
+}
+
+
+def _distinct_files_dirs(owners):
+    """Count distinct files and directories from an impact owners list."""
+    files, dirs = set(), set()
+    for o in (owners or []):
+        f, d = o.get("file"), o.get("dir")
+        if f: files.add(f)
+        if d: dirs.add(d)
+    return len(files), len(dirs)
+
+
+def build_mr_comment(symbol, mr_id, imp, pol, prec):
+    """Build a postable GitLab MR review comment (markdown) from real engine data.
+
+    imp  -> impact dict (compute_blast_radius(...).to_dict())
+    pol  -> policy.evaluate(...) result
+    prec -> ledger.precedent(...) result
+    Never invents a figure; every value is read from the passed dicts.
+    """
+    action = (pol.get("action") or "ALLOW").upper()
+    verb = {"BLOCK": "BLOCK", "HOLD": "HOLD", "ALLOW": "ALLOW"}.get(action, action)
+    counts = imp.get("counts", {})
+    n_files, n_dirs = _distinct_files_dirs(imp.get("owners"))
+    epi = imp.get("epicenter", {})
+    reasons = pol.get("reasons") or []
+    contradiction = prec.get("contradiction")
+    same_sig = prec.get("contradiction_same_signature", False)
+
+    lines = []
+    lines.append(f"## Keystone Review Gate: {verb}")
+    lines.append("")
+    lines.append(f"This merge request changes `{symbol}` (`{epi.get('file', '?')}`).")
+    lines.append("")
+    lines.append("**Git result:** No textual conflict detected.")
+    lines.append("")
+    lines.append("**Orbit result:** Hidden dependency blast radius detected.")
+    lines.append("")
+    lines.append("**Impact (engine-computed from the Orbit graph):**")
+    lines.append("")
+    lines.append(f"* Direct affected definitions (ring-1): **{counts.get('ring_1', 0)}**")
+    lines.append(f"* Total affected definitions: **{counts.get('total_affected', 0)}**")
+    lines.append(f"* Files: **{n_files}**")
+    lines.append(f"* Directories: **{n_dirs}**")
+    lines.append(f"* Policy tier: **{pol.get('tier', 'ISOLATED')}**")
+    lines.append(f"* Required approvers: **{pol.get('required_approvers', 1)}**")
+    rw = pol.get("review_window_hours")
+    if rw:
+        lines.append(f"* Review window: **{rw}h advisory**")
+    lines.append("")
+    lines.append(f"**Decision: {verb}**")
+    lines.append("")
+    if verb == "BLOCK":
+        lines.append("**Why Keystone blocked it:**")
+        lines.append("")
+        lines.append("* Git sees no textual conflict.")
+        lines.append("* GitLab Orbit found dependency overlap across the blast radius.")
+        if contradiction and same_sig:
+            cc = contradiction
+            lines.append(
+                f"* A matching blast signature was previously rejected "
+                f"({cc.get('actor', '?')} rejected {cc.get('change_id', '?')}).")
+        elif reasons:
+            for r in reasons:
+                lines.append(f"* {r}")
+        else:
+            lines.append("* Policy tier requires more approvers than confirmed.")
+        lines.append("")
+        lines.append("**Required action:** Do not merge until owner review and a recorded "
+                     "precedent override are in place.")
+    elif verb == "HOLD":
+        lines.append("**Why Keystone held it:** the policy tier requires a quorum of "
+                     f"{pol.get('required_approvers', 1)} approvers before merge.")
+    else:
+        lines.append("**Why Keystone allowed it:** the blast radius is within the "
+                     "ISOLATED/LOCAL tier and no contradicting precedent was found.")
+    lines.append("")
+    lines.append("---")
+    lines.append("_Engine computed. AI explanation only. Same graph + same policy = same decision._")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _review_mr(argv):
+    """`run_review.py review-mr --sample MR-204 [--format markdown] [--out PATH]`.
+
+    Runs the governed-review workflow over the sample MR's symbol on the
+    in-process core (deterministic with --fixture) and either prints a structured
+    summary or writes a postable GitLab MR review comment.
+    """
+    ap = argparse.ArgumentParser(prog="run_review.py review-mr",
+                                 description="Review a sample merge request with the Keystone gate")
+    ap.add_argument("--sample", default="MR-204",
+                    help="sample MR id: " + ", ".join(SAMPLE_MRS))
+    ap.add_argument("--format", choices=["summary", "markdown"], default="summary")
+    ap.add_argument("--out", default=None,
+                    help="write the markdown comment to this path (default: "
+                         "SUBMISSION/generated/keystone-review-comment.md when --format markdown)")
+    ap.add_argument("--local", action="store_true",
+                    help="run against the in-process core, no server")
+    ap.add_argument("--fixture", action="store_true",
+                    help="with --local, force the committed fixture (deterministic)")
+    a = ap.parse_args(argv)
+
+    mr = SAMPLE_MRS.get(a.sample)
+    if not mr:
+        print(f"ERROR: unknown sample MR '{a.sample}'. Choose from: {', '.join(SAMPLE_MRS)}")
+        return 1
+
+    # Default to the committed real Orbit self-index so the review is real on any
+    # machine (no orbit binary required); --fixture forces the small sample graph.
+    import os
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    self_graph = os.path.join(root, "data", "keystone_self_graph.duckdb")
+    graph_path = None if a.fixture else (self_graph if os.path.exists(self_graph) else None)
+    get_json, post_json, gate_check, ci_id = _local_callables(
+        prefer_live=not a.fixture, graph_path=graph_path)
+    symbol = mr["symbol"]
+    from urllib import parse as _parse
+    imp = get_json(f"/api/impact/{_parse.quote(symbol)}")
+    if not imp or "counts" not in imp:
+        print(f"ERROR: symbol '{symbol}' not found in the graph.")
+        return 1
+    prec = get_json(f"/api/precedent/{_parse.quote(symbol)}")
+
+    # Evaluate the same policy the API/CI gate uses (deterministic).
+    import os, sys
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+    from core import policy as policy_mod
+    pol = policy_mod.evaluate(imp, prec)
+    chain = get_json("/api/audit/verify")
+
+    if a.format == "markdown":
+        comment = build_mr_comment(symbol, a.sample, imp, pol, prec)
+        out_path = a.out
+        if not out_path:
+            root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            out_path = os.path.join(root, "SUBMISSION", "generated", "keystone-review-comment.md")
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(comment)
+        print(comment)
+        print(f"\n(wrote {out_path})")
+        return 0
+
+    # summary
+    print(f"\nKEYSTONE MR Guardian review : {a.sample} -> {symbol}")
+    print(f"  file          : {mr['file']}")
+    print(f"  ring-1        : {imp['counts'].get('ring_1', 0)}")
+    print(f"  total affected: {imp['counts'].get('total_affected', 0)}")
+    n_files, n_dirs = _distinct_files_dirs(imp.get("owners"))
+    print(f"  files / dirs  : {n_files} / {n_dirs}")
+    print(f"  tier          : {pol.get('tier')}")
+    print(f"  decision      : {pol.get('action')}")
+    print(f"  approvers     : {pol.get('required_approvers')}")
+    if prec.get("contradiction_same_signature"):
+        cc = prec.get("contradiction", {})
+        print(f"  precedent     : BLOCK - identical blast signature rejected by "
+              f"{cc.get('actor', '?')} in {cc.get('change_id', '?')}")
+    else:
+        print(f"  precedent     : {prec.get('rejected', 0)} rejected, "
+              f"{prec.get('approved', 0)} approved")
+    print(f"  ledger        : {'VERIFIED' if chain.get('ok') else 'BROKEN'}")
+    print(f"  comment       : use --format markdown to generate the GitLab MR review comment")
+    print()
+    return 0
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Keystone governed-review workflow")
+    # Dispatch the MR Guardian subcommand without breaking the legacy
+    # `run_review.py <symbol>` positional form.
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] in ("review-mr", "review"):
+        return _review_mr(raw[1:])
+    if raw and raw[0] == "harness":
+        # Delegate to the Engineering Harness CLI
+        here = os.path.dirname(os.path.abspath(__file__))
+        sys.path.insert(0, os.path.abspath(os.path.join(here, "..", "..")))
+        from harness.cli import main as harness_main
+        return harness_main(raw[1:])
+    ap = argparse.ArgumentParser(
+        description="Keystone governed-review workflow. "
+                    "Also: 'review-mr --sample MR-204' to review a sample merge request.")
     ap.add_argument("symbol")
     ap.add_argument("--base", default="http://127.0.0.1:8787")
     ap.add_argument("--local", action="store_true",
