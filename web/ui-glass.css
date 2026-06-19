@@ -132,3 +132,41 @@ body.light-theme .btn.primary { color: #2a1303; }
   .hero-card, .comp-card, .sim-mr, .btn { transition: none !important; }
   .hero-card:hover, .comp-card:hover, .sim-mr:hover { transform: none; }
 }
+
+/* ==========================================================================
+   Kilo-class hero additions + product walkthrough slot (additive, tokens only)
+   ========================================================================== */
+.hero-eyebrow {
+  font-family: var(--ks-font-mono); font-size: var(--ks-text-xs, 11px);
+  letter-spacing: 0.04em; color: var(--ks-fg-dim); margin-bottom: var(--ks-sp-3, 12px);
+}
+.hero-stat-strip {
+  display: flex; flex-wrap: wrap; gap: var(--ks-sp-3, 12px) var(--ks-sp-5, 20px);
+  margin: var(--ks-sp-4, 16px) 0 var(--ks-sp-5, 20px);
+  font-family: var(--ks-font-mono); font-size: var(--ks-text-sm, 12px); color: var(--ks-fg-muted);
+}
+.hero-stat-strip span { display: inline-flex; align-items: baseline; gap: 6px; }
+.hero-stat-strip strong { color: var(--ks-fg); font-size: var(--ks-text-md, 16px); }
+.hero-stat-strip code { color: var(--ks-info); background: none; padding: 0; }
+
+.demo-embed .demo-frame {
+  position: relative; aspect-ratio: 16 / 9; width: 100%; margin-top: var(--ks-sp-2, 8px);
+  border-radius: var(--ks-radius-md, 12px); overflow: hidden;
+  border: 1px solid var(--ks-edge, rgba(255, 255, 255, 0.11)); background: #000;
+}
+.demo-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+.demo-play {
+  position: absolute; inset: 0; margin: auto; width: 64px; height: 64px;
+  display: grid; place-items: center; border-radius: 999px; cursor: pointer; color: #fff;
+  background: rgba(10, 12, 17, 0.55); border: 1px solid rgba(255, 255, 255, 0.4);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.demo-play:hover { transform: scale(1.06); border-color: var(--ks-accent); }
+.demo-note {
+  position: absolute; inset: auto 0 0 0; margin: 0; padding: 12px 16px;
+  background: rgba(10, 12, 17, 0.88); color: var(--ks-fg-muted); font-size: var(--ks-text-sm, 12px);
+}
+.demo-cap { margin-top: var(--ks-sp-3, 12px); font-size: var(--ks-text-sm, 12px); color: var(--ks-fg-dim); }
+body.light-theme .hero-stat-strip strong { color: var(--ks-fg-inverted, #0c0d12); }
+body.light-theme .demo-embed .demo-frame { background: #e7e7ec; }
