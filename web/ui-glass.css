@@ -683,6 +683,9 @@ body:not(.light-theme)::after {
 }
 @keyframes fireGlow { 0% { opacity: 0.6; transform: scaleY(0.95); } 100% { opacity: 1; transform: scaleY(1.07); } }
 .app-shell { position: relative; z-index: 1; }
+/* sidebar: logo only, centered */
+.sidebar-brand { justify-content: center; gap: 0; }
+.sidebar-brand-text { display: none; }
 
 /* rising embers */
 .embers { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
