@@ -143,17 +143,16 @@ function initSidebar() {
   });
 
   // Sidebar nav items: scroll to sections
-  const sectionMap = { overview: null, symbols: "symbols-h", impact: "blast-radius", audit: "audit", help: "__onboard" };
+  const viewMap = { overview: "home", symbols: "cockpit", impact: "cockpit", audit: "ledger", help: "__onboard" };
   document.querySelectorAll(".sidebar-item").forEach((btn) => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".sidebar-item").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      const target = sectionMap[btn.dataset.section];
-      if (target === "__onboard") {
+      const v = viewMap[btn.dataset.section];
+      if (v === "__onboard") {
         showOnboarding(0);
-      } else if (target) {
-        const el = document.getElementById(target);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (v && typeof showView === "function") {
+        showView(v);
       } else {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -1189,11 +1188,9 @@ function wire() {
   const ctaCockpit = $("#cta-cockpit");
   if (ctaCockpit) {
     ctaCockpit.onclick = () => {
+      if (typeof goToEl === "function") goToEl("reviewer-cockpit-intro");
       const cockSec = $("#reviewer-cockpit-intro");
-      if (cockSec && cockSec.scrollIntoView) {
-        cockSec.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-      highlightPanel(cockSec);
+      if (cockSec) setTimeout(() => highlightPanel(cockSec), 140);
     };
   }
 
@@ -1203,9 +1200,9 @@ function wire() {
       const name = b.dataset.pick;
       if (STATE.defs && !STATE.defs.includes(name)) return;   // never point at a symbol not in this graph
       select(name);
+      if (typeof goToEl === "function") goToEl("blast-radius");
       const stage = document.getElementById("blast-radius");
-      if (stage && stage.scrollIntoView) stage.scrollIntoView({ behavior: "smooth", block: "center" });
-      highlightPanel(stage);                                  // pulse the panel the CTA reveals so the payoff lands
+      if (stage) setTimeout(() => highlightPanel(stage), 140);  // pulse the panel the CTA reveals so the payoff lands
       const gate = document.querySelector(".panel.gate"); if (gate) setTimeout(() => highlightPanel(gate), 250);
     });
   });
@@ -1317,8 +1314,9 @@ function wire() {
     const el = idOrSelector.startsWith(".") || idOrSelector.startsWith("#")
       ? $(idOrSelector)
       : document.getElementById(idOrSelector);
-    if (el && el.scrollIntoView) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (el) {
+      if (typeof viewOf === "function") { var _v = viewOf(el); if (_v && typeof showView === "function") showView(_v); }
+      setTimeout(function () { if (el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 60);
     }
   }
 
@@ -1670,8 +1668,7 @@ function doOnboardAction(action) {
     if (action === "select" && typeof select === "function") {
       try { select("compute_blast_radius"); } catch (e) {}
     }
-    const el = document.getElementById(map[action]);
-    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (typeof goToEl === "function") goToEl(map[action]);
   }, 140);
 }
 
@@ -1827,7 +1824,57 @@ function initSettings() {
   }
 }
 
-boot();
+// ===== HUB: single-page view switcher (Home / Demo / Harness / Cockpit / Ledger) =====
+function viewOf(el) {
+  for (var n = el; n && n !== document.body; n = n.parentElement) {
+    if (n.dataset && n.dataset.view) return n.dataset.view;
+  }
+  return null;
+}
+function showView(name) {
+  if (!name) name = "home";
+  document.querySelectorAll("[data-view]").forEach(function (s) {
+    var on = (s.dataset.view === name);
+    s.style.display = on ? "" : "none";
+    if (on) s.classList.remove("ks-hidden"); // force-reveal so switched-in sections are never stuck invisible
+  });
+  document.querySelectorAll("[data-goview]").forEach(function (t) {
+    t.classList.toggle("active", t.dataset.goview === name);
+  });
+  try { localStorage.setItem("ks-view", name); } catch (e) {}
+  window.scrollTo({ top: 0 });
+  // re-render the blast graph when the cockpit becomes visible (it may have rendered while hidden)
+  if (name === "cockpit" && typeof select === "function" && window.STATE && STATE.selected) {
+    setTimeout(function () { try { select(STATE.selected); } catch (e) {} }, 20);
+  }
+}
+window.showView = showView;
+function goToEl(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var v = viewOf(el);
+  if (v) showView(v);
+  setTimeout(function () {
+    var e2 = document.getElementById(id);
+    if (e2 && e2.scrollIntoView) e2.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 70);
+}
+window.goToEl = goToEl;
+function initHub() {
+  var byId = {
+    "hero-strip": "home", "orbit-diff-section": "home", "product-demo": "home",
+    "simulation-section": "demo", "harness-pipeline": "harness",
+    "reviewer-cockpit-intro": "cockpit", "audit": "ledger", "attestation": "ledger", "trust-layer": "ledger",
+  };
+  Object.keys(byId).forEach(function (id) { var el = document.getElementById(id); if (el) el.dataset.view = byId[id]; });
+  var hz = document.querySelector(".hazard.panel"); if (hz) hz.dataset.view = "demo";
+  var ws = document.querySelector(".workspace"); if (ws) ws.dataset.view = "cockpit";
+  document.querySelectorAll("[data-goview]").forEach(function (t) {
+    t.addEventListener("click", function () { showView(t.dataset.goview); });
+  });
+  showView(localStorage.getItem("ks-view") || "home");
+}
+boot().then(initHub).catch(function () { try { initHub(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===
 function initHarness() {

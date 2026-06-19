@@ -23,7 +23,7 @@
 <meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
 <link rel="stylesheet" href="styles.css?v=2.2" />
 <link rel="stylesheet" href="ui-v3.css?v=1.0" />
-<link rel="stylesheet" href="ui-glass.css?v=1.1" />
+<link rel="stylesheet" href="ui-glass.css?v=1.2" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -113,6 +113,13 @@
   </div>
 </header>
 
+<nav class="hubnav" id="hubnav" aria-label="Hub navigation">
+  <button type="button" class="hubnav-tab active" data-goview="home">Home</button>
+  <button type="button" class="hubnav-tab" data-goview="demo">Live demo</button>
+  <button type="button" class="hubnav-tab" data-goview="harness">Harness</button>
+  <button type="button" class="hubnav-tab" data-goview="cockpit">Cockpit</button>
+  <button type="button" class="hubnav-tab" data-goview="ledger">Ledger</button>
+</nav>
 <div id="open-banner" class="open-banner" role="note" hidden></div>
 <div id="data-provenance" class="data-prov" role="note" hidden></div>
 
@@ -127,7 +134,7 @@
     <span><strong>0</strong> invented numbers</span>
   </div>
   <div class="hero-actions">
-    <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="document.getElementById('simulation-section').scrollIntoView({behavior:'smooth',block:'start'})">Run the hidden-collision demo</button>
+    <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="goToEl('simulation-section')">Run the hidden-collision demo</button>
     <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
     <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
   </div>
@@ -568,7 +575,7 @@
   </div>
 </div>
 
-<script src="app.js?v=2.4"></script>
+<script src="app.js?v=2.5"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>
