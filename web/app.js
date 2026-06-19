@@ -694,6 +694,15 @@ function drawBlast(imp) {
     return;
   }
   $("#counter").textContent = "0";
+  // signature reveal: a shockwave ring pulses out from the epicenter as the blast computes
+  const _epiPos = pos[imp.epicenter.id];
+  if (_epiPos) {
+    const sw = document.createElementNS(ns, "circle");
+    sw.setAttribute("cx", _epiPos.x); sw.setAttribute("cy", _epiPos.y); sw.setAttribute("r", "16");
+    sw.setAttribute("class", "ks-shockwave");
+    svg.appendChild(sw);
+    _timers.push(setTimeout(() => { if (sw.parentNode) sw.parentNode.removeChild(sw); }, 1100));
+  }
   let revealed = 0;
   nodeEls.forEach((n, idx) => {
     const delay = n.r === 0 ? 0 : 180 + n.r * 230 + (idx % 5) * 40;

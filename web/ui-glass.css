@@ -390,3 +390,28 @@ body.light-theme .hero-stat-strip span:last-child strong { color: #c2410c; }
 
 /* P1: blast-graph edges read on mobile so it looks like a graph, not loose dots */
 #bsvg .edge.show { opacity: 0.82 !important; stroke-width: 1.4; }
+
+/* Signature wow: epicenter shockwave on blast compute + counter glow on land */
+.ks-shockwave {
+  fill: none; stroke: var(--ks-accent); stroke-width: 2;
+  transform-box: fill-box; transform-origin: center;
+  animation: ks-shock 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes ks-shock {
+  0% { transform: scale(1); opacity: 0.75; }
+  100% { transform: scale(7); opacity: 0; }
+}
+.counter-animate #counter { animation: ks-countpop 0.5s var(--ks-ease, ease-out); }
+@keyframes ks-countpop {
+  0% { text-shadow: 0 0 0 transparent; }
+  45% { text-shadow: 0 0 26px rgba(255, 122, 47, 0.6); }
+  100% { text-shadow: 0 0 12px rgba(255, 122, 47, 0.22); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ks-shockwave { display: none; }
+  .counter-animate #counter { animation: none; }
+}
+
+/* Dark IMPACT rail: give rows separation so it has equal hierarchy to light */
+body:not(.light-theme) .ringrow { background: var(--surface-2); border-color: var(--ks-edge); }
+body:not(.light-theme) .ov-cmd { background: rgba(0, 0, 0, 0.42); }
