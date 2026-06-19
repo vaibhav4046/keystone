@@ -25,7 +25,7 @@
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css?v=2.3" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=3.1" />
+<link rel="stylesheet" href="ui-glass.css?v=3.2" />
 <link rel="icon" type="image/svg+xml" href="keystone-logo.svg?v=1" />
 <meta name="theme-color" content="#0b0d12" />
 </head>
@@ -114,6 +114,16 @@
         <span class="dot g" id="conn-dot"></span><span id="conn-text">mode: snapshot</span>
       </button>
     </div>
+    <div class="gh-auth" id="gh-auth">
+      <button id="gh-signin" class="gh-btn" type="button" aria-label="Sign in with GitHub">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span>Sign in</span>
+      </button>
+      <div id="gh-user" class="gh-user" hidden>
+        <span class="gh-udot"></span><span id="gh-handle">@you</span>
+        <button id="gh-signout" class="gh-signout" type="button" aria-label="Sign out">sign out</button>
+      </div>
+    </div>
     <button id="theme-toggle" class="btn ghost theme-toggle" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
       <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
       <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -134,9 +144,9 @@
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
   <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
   <div class="repo-analyze" id="repo-analyze">
-    <div class="repo-analyze-label">Run it on <b>your</b> code — type a GitHub <b>username</b> to browse your repos, or paste <code>owner/repo</code>. Analyzed live in your browser, no login:</div>
+    <div class="repo-analyze-label"><b>Sign in with GitHub</b> (top-right) and your repos load automatically — no username, no token. Or analyze any public repo right now — paste <code>owner/repo</code>:</div>
     <div class="repo-analyze-row">
-      <input id="repo-input" class="repo-input" type="text" placeholder="your-github-username   ·   or owner/repo" aria-label="GitHub username to browse, or owner/repo to analyze" autocomplete="off" spellcheck="false" />
+      <input id="repo-input" class="repo-input" type="text" placeholder="owner/repo   ·   e.g. pallets/click" aria-label="owner/repo to analyze, or a GitHub username to browse" autocomplete="off" spellcheck="false" />
       <button id="repo-go" class="btn primary" type="button">Browse / Analyze</button>
     </div>
     <div class="repo-examples">try <button type="button" class="repo-ex" data-repo-example="pallets">pallets (browse)</button><button type="button" class="repo-ex" data-repo-example="pallets/click">pallets/click</button><button type="button" class="repo-ex" data-repo-example="psf/requests">psf/requests</button></div>
@@ -722,8 +732,30 @@
     </div>
   </div>
 </div>
+<div class="gh-consent-overlay" id="gh-consent" role="dialog" aria-modal="true" aria-labelledby="ghc-title" hidden>
+  <div class="gh-term">
+    <div class="gh-term-bar"><span class="gh-tdot r"></span><span class="gh-tdot y"></span><span class="gh-tdot g"></span><span class="gh-term-title">keystone — github connect</span></div>
+    <div class="gh-term-body">
+      <p class="gh-line"><span class="gh-prompt">$</span> keystone auth --connect github</p>
+      <p class="gh-out" id="ghc-title">Keystone requests <b>read-only</b> access to map your repository call graph.</p>
+      <ul class="gh-perms">
+        <li><span class="gh-ok">✓</span> Reads repository structure to find silent collisions before you merge</li>
+        <li><span class="gh-ok">✓</span> Runs in your browser — no password seen, nothing stored on a server</li>
+        <li><span class="gh-muted">›</span> Private-repo sign-in activates when the Keystone backend is deployed</li>
+      </ul>
+      <div class="gh-connect-row">
+        <span class="gh-prompt">$</span>
+        <input id="gh-handle-input" class="gh-handle-input" type="text" placeholder="github username  (public repos)" autocomplete="off" spellcheck="false" aria-label="GitHub username" />
+      </div>
+      <div class="gh-consent-btns">
+        <button class="btn ghost btn-sm" id="ghc-demo" type="button">Explore demo mode</button>
+        <button class="btn primary btn-sm" id="ghc-allow" type="button">Allow &amp; connect →</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="repo-analyzer.js?v=5"></script>
-<script src="app.js?v=4.7"></script>
+<script src="app.js?v=4.8"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>
