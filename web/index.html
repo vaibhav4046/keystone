@@ -25,7 +25,7 @@
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css?v=2.3" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=2.2" />
+<link rel="stylesheet" href="ui-glass.css?v=2.3" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -561,11 +561,102 @@
   </div>
 </section>
 
+<!-- ============ KILO-STYLE MARKETING SECTIONS (home view) ============ -->
+<section class="kilo-features" data-view="home" aria-labelledby="kf-h">
+  <div class="kilo-head">
+    <span class="kilo-eyebrow">What review can't see</span>
+    <h2 id="kf-h" class="kilo-h2">Consequence-aware review, on the call graph.</h2>
+    <p class="kilo-sub">Git and CODEOWNERS see files. Keystone sees what breaks — and records the decision.</p>
+  </div>
+  <div class="kilo-grid">
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></div>
+      <h3>Silent collision detection</h3>
+      <p>Two merge requests that pass review, touch different files, and share a runtime dependent are flagged before they break production together.</p>
+    </article>
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+      <h3>Deterministic blast radius</h3>
+      <p>Every change's true reach — direct callers, transitive dependents, owning files — computed from the graph and cross-checked by a real <code>orbit sql</code> query.</p>
+    </article>
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8-7 9.5C8 19 5 15.4 5 11V6l7-3z"/><path d="M9 11.5l2 2 4-4.5"/></svg></div>
+      <h3>Tamper-evident decisions</h3>
+      <p>Every approve and reject is appended to a sha256 hash-chained ledger. Change one row and the whole chain visibly breaks.</p>
+    </article>
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h9"/><circle cx="6" cy="18" r="2.4"/><circle cx="6" cy="4" r="2"/><circle cx="18" cy="18" r="2.4"/></svg></div>
+      <h3>Point it at any repo</h3>
+      <p>Paste a public GitHub repo and Keystone builds its call graph in your browser — no backend, no signup, your code never leaves the page.</p>
+    </article>
+  </div>
+</section>
+
+<section class="kilo-how" data-view="home" aria-labelledby="kh-h">
+  <div class="kilo-head">
+    <span class="kilo-eyebrow">How it works</span>
+    <h2 id="kh-h" class="kilo-h2">Three steps, zero guesswork.</h2>
+  </div>
+  <ol class="kilo-steps">
+    <li class="kilo-step"><span class="kilo-step-n">1</span><div class="kilo-step-b"><h3>Point at a repo</h3><p>Paste any public GitHub repo. Keystone fetches it and builds the call graph in your browser.</p></div></li>
+    <li class="kilo-step"><span class="kilo-step-n">2</span><div class="kilo-step-b"><h3>See the blast radius</h3><p>Pick a symbol, or stage two merge requests. The hidden collisions and dependents light up on the graph.</p></div></li>
+    <li class="kilo-step"><span class="kilo-step-n">3</span><div class="kilo-step-b"><h3>Govern the merge</h3><p>The deterministic gate decides; you record an accountable, tamper-evident decision. Precedent surfaces if someone already said no.</p></div></li>
+  </ol>
+</section>
+
+<section class="kilo-faq" data-view="home" aria-labelledby="faq-h">
+  <div class="kilo-head">
+    <span class="kilo-eyebrow">FAQ</span>
+    <h2 id="faq-h" class="kilo-h2">Questions, answered honestly.</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item"><summary>Is this a real tool or a mockup?</summary><p>Real. Paste any public Python repo at the top and the call graph + blast radius is computed live in your browser. The demo scenario runs on a real Orbit index of this repo — 262 definitions, 120 cross-verified by <code>orbit sql</code>.</p></details>
+    <details class="faq-item"><summary>Does my code leave my machine?</summary><p>No. The analyzer fetches public files from GitHub and parses them entirely client-side. Nothing is uploaded — there is no backend in the static demo.</p></details>
+    <details class="faq-item"><summary>How accurate is the call graph?</summary><p>The in-browser analyzer is a static, regex-based approximation — Python dynamic dispatch is under-approximated, the same honest limit the engine concedes (it cross-verifies 120 of 262 symbols). The full Orbit backend produces the exact graph.</p></details>
+    <details class="faq-item"><summary>What exactly is a "silent collision"?</summary><p>Two merge requests that each pass review with no file conflict, but whose blast radii overlap on shared runtime dependents — so merged together they break, and no single reviewer can see it.</p></details>
+    <details class="faq-item"><summary>Is the audit ledger really tamper-evident?</summary><p>Each row is sha256 hash-chained to the previous. The public demo uses a published shared-secret HMAC key, so it proves no accidental corruption, not insider resistance (that needs an asymmetric signature — on the roadmap). Hit SIMULATE TAMPER to watch a chain break and heal.</p></details>
+    <details class="faq-item"><summary>What does it cost?</summary><p>Nothing. It's open source (MIT), runs entirely in your browser on the static deploy, and uses no paid services.</p></details>
+  </div>
+</section>
+
+<section class="kilo-cta" data-view="home">
+  <h2 class="kilo-cta-h">See what your merges hide.</h2>
+  <p class="kilo-cta-sub">Paste your repo. No backend, no signup — the analysis runs in your browser.</p>
+  <div class="kilo-cta-btns">
+    <button class="btn primary" type="button" onclick="(function(){var i=document.getElementById('repo-input');if(typeof showView==='function')showView('home');window.scrollTo({top:0,behavior:'smooth'});if(i)setTimeout(function(){i.focus();},420);})()">Analyze my repo</button>
+    <button class="btn secondary" type="button" onclick="goToEl('simulation-section')">Watch the demo</button>
+  </div>
+</section>
+
 <section id="attestation" class="visually-hidden" aria-label="attestation anchor"></section>
 
-<footer class="foot">
-  <span>Keystone reads the GitLab Orbit Local code graph. Every number is computed from the graph, never invented. The ledger proves its own integrity.</span>
-  <span id="foot-src" class="foot-src"></span>
+<footer class="kilo-footer">
+  <div class="kilo-footer-grid">
+    <div class="kilo-footer-brand">
+      <div class="kilo-footer-logo"><span class="kf-logo-mark">K</span> KEYSTONE</div>
+      <p>Consequence-aware code review on the GitLab Orbit graph. Every number is computed from the graph, never invented.</p>
+      <p id="foot-src" class="foot-src"></p>
+    </div>
+    <nav class="kilo-footer-col" aria-label="Product">
+      <h4>Product</h4>
+      <button type="button" onclick="showView('demo')">Live demo</button>
+      <button type="button" onclick="showView('cockpit')">Reviewer cockpit</button>
+      <button type="button" onclick="showView('harness')">Agent harness</button>
+      <button type="button" onclick="showView('ledger')">Audit ledger</button>
+    </nav>
+    <nav class="kilo-footer-col" aria-label="Open source">
+      <h4>Open source</h4>
+      <a href="https://github.com/vaibhav4046/keystone" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/vaibhav4046/keystone/blob/main/README.md" target="_blank" rel="noopener">README</a>
+      <a href="https://github.com/vaibhav4046/keystone/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </nav>
+    <nav class="kilo-footer-col" aria-label="Built on">
+      <h4>Built on</h4>
+      <a href="https://about.gitlab.com/" target="_blank" rel="noopener">GitLab Orbit</a>
+      <button type="button" onclick="showView('home')">How it works</button>
+    </nav>
+  </div>
+  <div class="kilo-footer-base">Keystone · open source (MIT) · the ledger proves its own integrity.</div>
 </footer>
 
 </div><!-- /app-shell -->
