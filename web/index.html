@@ -25,7 +25,7 @@
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css?v=2.3" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=1.8" />
+<link rel="stylesheet" href="ui-glass.css?v=1.9" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -97,6 +97,11 @@
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     </button>
     <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">hazard x-ray + governed review</span></div>
+    <button class="topbar-search" type="button" aria-label="Search symbols and run the demo (Ctrl K)" onclick="if(window.__ksCmdOpen)window.__ksCmdOpen()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>
+      <span>Search symbols, run the demo…</span>
+      <kbd>⌘K</kbd>
+    </button>
   </div>
   <div class="topbar-right">
     <div class="status" id="status" aria-live="polite">
@@ -240,7 +245,7 @@
         </div>
       </div>
       <div class="sim-step-content" id="sim-content-4" style="display:none;">
-        <div class="sim-status-badge danger">COLLISION: BLAST_OVERLAP (severity 6)</div>
+        <div class="sim-status-badge danger">SILENT COLLISION: BLAST_OVERLAP (severity 6)</div>
         <p class="sim-desc">Keystone joins the two blast radii and finds they overlap: both MRs ripple into the same <strong>5 dependents</strong>. The collision kind and fan-in severity are engine-computed in <code>core/collision.py</code> over the Orbit graph. Git and CODEOWNERS see two unrelated file edits and greenlight both.</p>
         <div class="sim-visual-connection">
           shared dependents: <code>approve</code> <code>get_json</code> <code>main</code> <code>post_json</code> <code>precedent</code>
