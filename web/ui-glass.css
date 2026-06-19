@@ -661,27 +661,40 @@ body.light-theme .btn.secondary { background: #ffffff; }
 .remember-btns { display: flex; gap: 10px; justify-content: center; }
 body.light-theme .remember-card { background: linear-gradient(180deg, #ffffff, #f6f8fb); }
 
-/* ============ STEP 4 (revised) — VIBRANT PREMIUM BACKGROUND (no flat black, orange-forward) ============ */
+/* ============ FIRE STYLE — ember background ============ */
 body:not(.light-theme) {
-  background-color: #0e0b10;
+  background-color: #0c0805;
   background-image:
-    radial-gradient(1200px 720px at 86% -14%, rgba(255, 122, 47, 0.17), transparent 56%),
-    radial-gradient(1000px 700px at 4% 102%, rgba(255, 90, 20, 0.09), transparent 55%),
-    linear-gradient(180deg, #120e13 0%, #0a090c 100%);
+    radial-gradient(1300px 760px at 82% -16%, rgba(255, 120, 30, 0.20), transparent 56%),
+    radial-gradient(1500px 640px at 50% 120%, rgba(255, 64, 8, 0.24), transparent 62%),
+    radial-gradient(680px 420px at 14% 104%, rgba(255, 30, 0, 0.14), transparent 60%),
+    linear-gradient(180deg, #150d08 0%, #0a0604 60%, #070403 100%);
   background-attachment: scroll;
 }
 body:not(.light-theme)::before { content: none; }
 body:not(.light-theme)::after {
   content: ""; position: fixed; z-index: 0; pointer-events: none;
-  top: -16%; right: -8%; width: 56vw; height: 56vh;
-  background: radial-gradient(circle at 60% 40%, rgba(255, 122, 47, 0.16), transparent 60%);
-  will-change: transform, opacity;
+  left: 0; right: 0; bottom: 0; height: 44vh;
+  background: radial-gradient(130% 100% at 50% 100%, rgba(255, 80, 12, 0.20), transparent 70%);
+  mix-blend-mode: screen; will-change: opacity, transform; transform-origin: 50% 100%;
 }
 @media (prefers-reduced-motion: no-preference) {
-  body:not(.light-theme)::after { animation: ks-drift 20s ease-in-out infinite alternate; }
+  body:not(.light-theme)::after { animation: fireGlow 5s ease-in-out infinite alternate; }
 }
-@keyframes ks-drift { from { transform: translate(0, 0); opacity: 0.55; } to { transform: translate(-5vw, 4vh) scale(1.1); opacity: 0.9; } }
+@keyframes fireGlow { 0% { opacity: 0.6; transform: scaleY(0.95); } 100% { opacity: 1; transform: scaleY(1.07); } }
 .app-shell { position: relative; z-index: 1; }
+
+/* rising embers */
+.embers { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+body.light-theme .embers { display: none; }
+.ember { position: absolute; bottom: -14px; width: 3px; height: 3px; border-radius: 50%; background: #ff8a1a; box-shadow: 0 0 7px 1px rgba(255, 100, 20, 0.9); opacity: 0; }
+@media (prefers-reduced-motion: no-preference) { .ember { animation: emberRise linear infinite; } }
+@keyframes emberRise {
+  0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  12% { opacity: 0.95; }
+  85% { opacity: 0.5; }
+  100% { transform: translateY(-102vh) translateX(var(--drift, 20px)) scale(0.35); opacity: 0; }
+}
 
 /* ============ STEP 5 — REPORT EXPORT ============ */
 .repo-export { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
