@@ -118,7 +118,7 @@
 
 <div id="hero-strip" class="hero-strip" role="note">
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
-  <p class="hero-thesis">Git is blind to cross-MR call-graph collisions. Orbit knows the graph. Keystone joins them to catch the hazard before the merge.</p>
+  <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
   <div class="hero-actions">
     <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="document.getElementById('simulation-section').scrollIntoView({behavior:'smooth',block:'start'})">Run the hidden-collision demo</button>
     <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
@@ -438,7 +438,7 @@
           <option value="human">human reviewer</option>
           <option value="agent">AI agent (enforce scope)</option>
         </select>
-        <input id="reviewer" class="ip" placeholder="reviewer / agent id" aria-label="reviewer or agent id" maxlength="120" />
+        <input id="reviewer" class="ip" value="demo-reviewer" placeholder="reviewer / agent id" aria-label="reviewer or agent id" maxlength="120" />
         <input id="changeauthor" class="ip" placeholder="change author (four-eyes, optional)" aria-label="change author" maxlength="120" />
         <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" aria-describedby="reason-err" />
         <div id="reason-err" class="gate-err" role="alert"></div>
