@@ -705,6 +705,10 @@ body:not(.light-theme)::after {
 .landing-cta { font-size: 15px !important; padding: 14px 26px !important; display: inline-flex; align-items: center; gap: 10px; }
 .landing-demo { margin-top: 18px; background: none; border: none; color: var(--ks-fg-dim); font-size: 13px; cursor: pointer; font-family: var(--ks-font-sans); transition: color .15s; }
 .landing-demo:hover { color: var(--ks-accent); }
+.landing-ctas { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.landing-cta2 { font-family: var(--ks-font-sans); font-size: 14px; font-weight: 600; padding: 13px 22px; border-radius: 12px; cursor: pointer; color: var(--ks-fg); background: rgba(255, 255, 255, 0.04); border: 1px solid var(--ks-edge-hi, rgba(255, 255, 255, 0.16)); transition: border-color .15s ease, color .15s ease, transform .15s ease; }
+.landing-cta2:hover { border-color: var(--ks-accent); color: var(--ks-accent); transform: translateY(-2px); }
+.landing-hint { margin-top: 16px; font-size: 12.5px; color: var(--ks-fg-dim); max-width: 42ch; }
 .landing-foot { margin-top: 36px; font-family: var(--ks-font-display); font-size: 13px; letter-spacing: 0.04em; color: var(--ks-fg-dim); }
 
 /* rising embers */
