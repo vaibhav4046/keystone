@@ -1613,7 +1613,7 @@ const onboardingSteps = [
   {
     title: "Welcome to Keystone",
     body: `
-      <p>Keystone is a live command center for code risk analysis and governed change review in the GitLab Orbit graph.</p>
+      <p>Keystone is a command center for code risk analysis and governed change review on the GitLab Orbit graph.</p>
       <p>It surfaces change risk that Git merge reviews cannot see, and enables you to define policies to manage and approve changes.</p>
       <p>Click <b>Next</b> to learn how to navigate the dashboard.</p>
     `
