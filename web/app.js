@@ -2037,6 +2037,7 @@ function runRepoAnalysis(url) {
     if (typeof updateShowAllLabel === "function") updateShowAllLabel();
     var pair = _findCollisionPair(data);
     if (pair) STATE.openMrs = [{ id: "MR · change " + pair.a, symbols: [pair.a] }, { id: "MR · change " + pair.b, symbols: [pair.b] }];
+    try { _saveOverview(data, pair, slug); } catch (e) {}
     var top = pair ? pair.a : _pickTopSymbol(data);
     if (top && typeof select === "function") select(top);
     try { if (typeof loadHazards === "function") loadHazards(); } catch (e) {}
@@ -2173,6 +2174,26 @@ function initAuth() {
   var h = _ghGet(); if (h && typeof browseUserRepos === "function") { try { browseUserRepos(h); } catch (e) {} }
 }
 window.initAuth = initAuth;
+/* ===== Save a compact analysis summary so the Overview front page can show REAL data ===== */
+function _saveOverview(data, pair, slug) {
+  var det = (data.definitions && data.definitions.details) || {}, imp = data.impact || {};
+  var names = Object.keys(det);
+  var ranked = names.map(function (n) { return { name: n, kind: det[n].kind || "def", blast: det[n].total_affected || 0, tier: det[n].tier || "" }; }).sort(function (a, b) { return b.blast - a.blast; });
+  var maxB = ranked.length ? ranked[0].blast : 0;
+  var entities = ranked.slice(0, 5).map(function (r) {
+    var hi = maxB > 0 && r.blast >= maxB * 0.5;
+    return { name: r.name, kind: r.kind, blast: r.blast, level: hi ? "High" : "Medium", status: hi ? "Impacted" : "Degraded" };
+  });
+  var chain = [];
+  if (ranked.length) {
+    var topImp = imp[ranked[0].name] || {};
+    var ids = (topImp.affected_ids || []).slice(0, 5), nm = topImp.names || {};
+    chain = ids.map(function (id) { return nm[id] || ("#" + id); });
+  }
+  var summary = { repo: slug, defs: names.length, maxBlast: maxB, maxName: ranked.length ? ranked[0].name : "", shared: pair ? pair.shared : 0, a: pair ? pair.a : "", b: pair ? pair.b : "", entities: entities, chain: chain, ts: Date.now() };
+  try { localStorage.setItem("ks-overview", JSON.stringify(summary)); } catch (e) {}
+}
+window._saveOverview = _saveOverview;
 function _dl(name, text, mime) { var b = new Blob([text], { type: mime }); var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 200); }
 function _buildReport() {
   var d = STATIC || {}, det = (d.definitions && d.definitions.details) || {}, imp = d.impact || {};

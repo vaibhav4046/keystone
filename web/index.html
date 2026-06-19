@@ -228,5 +228,35 @@
   </div>
 
   <div class="tagline"><img src="keystone-k.svg" width="18" height="18" alt="" /><b>See Everything. Impact Nothing.</b><span class="snap">demo snapshot · live tool → Start Analysis</span></div>
+<script>
+(function () {
+  var raw; try { raw = localStorage.getItem("ks-overview"); } catch (e) {}
+  if (!raw) return;
+  var d; try { d = JSON.parse(raw); } catch (e) { return; }
+  if (!d || !d.repo) return;
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
+  var p = document.querySelector(".hero-main p");
+  if (p) p.textContent = d.repo + " · " + d.defs + " definitions analyzed, live in your browser.";
+  var cards = [["Definitions indexed", d.defs], ["Max blast radius", d.maxBlast], ["Silent-collision dependents", d.shared]];
+  document.querySelectorAll(".stat").forEach(function (st, i) {
+    if (!cards[i]) return;
+    var lbl = st.querySelector(".lbl"), val = st.querySelector(".val");
+    if (lbl) lbl.textContent = cards[i][0];
+    if (val) val.textContent = cards[i][1];
+  });
+  var tb = document.querySelector("table tbody");
+  if (tb && d.entities && d.entities.length) {
+    tb.innerHTML = d.entities.map(function (e) {
+      var lc = e.level === "High" ? "high" : "med", sc = e.status === "Impacted" ? "st-impacted" : "st-degraded";
+      return "<tr><td class='ent'>" + esc(e.name) + "</td><td>" + esc(e.kind) + "</td><td><span class='pill " + lc + "'>" + e.level + "</span></td><td class='" + sc + "'>" + e.status + "</td></tr>";
+    }).join("");
+  }
+  var ch = document.querySelector(".chain");
+  if (ch && d.chain && d.chain.length) {
+    ch.innerHTML = d.chain.map(function (n) { return "<li><span class='dot'></span><span class='nm'>" + esc(n) + "</span><span class='ty'>dependent</span></li>"; }).join("");
+  }
+  var snap = document.querySelector(".snap"); if (snap) snap.textContent = "live · " + d.repo;
+})();
+</script>
 </body>
 </html>
