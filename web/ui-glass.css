@@ -644,6 +644,22 @@ img.kf-logo-mark { background: transparent !important; width: 26px; height: 26px
 .btn.approve:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
 .btn.reject:hover:not(:disabled) { background: var(--ks-block-bg); border-color: var(--ks-block); }
 body.light-theme .btn.secondary { background: #ffffff; }
+
+/* ============ STEP 3 — "REMEMBER ME" GLASS CARD ============ */
+.remember-overlay { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 20px;
+  background: rgba(5, 6, 10, 0.6); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: rem-fade .2s ease both; }
+.remember-overlay[hidden] { display: none; }
+@keyframes rem-fade { from { opacity: 0; } to { opacity: 1; } }
+.remember-card { width: min(420px, 100%); text-align: center; padding: 28px 26px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(26, 28, 36, 0.97), rgba(14, 16, 22, 0.98)); border: 1px solid var(--ks-edge-hi);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06); animation: rem-pop .25s var(--ks-ease, ease-out) both; }
+@keyframes rem-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+.remember-ic { display: block; margin: 0 auto 14px; filter: drop-shadow(0 6px 16px rgba(255, 122, 47, 0.35)); }
+.remember-title { font-family: var(--ks-font-display); font-size: 21px; font-weight: 600; color: var(--ks-fg); margin: 0 0 8px; letter-spacing: -0.02em; }
+.remember-text { font-size: var(--ks-text-sm, 13px); color: var(--ks-fg-muted); line-height: 1.55; margin: 0 0 20px; }
+.remember-text b { color: var(--ks-accent); font-family: var(--ks-font-mono); }
+.remember-btns { display: flex; gap: 10px; justify-content: center; }
+body.light-theme .remember-card { background: linear-gradient(180deg, #ffffff, #f6f8fb); }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }

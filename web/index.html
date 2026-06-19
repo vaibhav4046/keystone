@@ -25,7 +25,7 @@
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css?v=2.3" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=2.7" />
+<link rel="stylesheet" href="ui-glass.css?v=2.8" />
 <link rel="icon" type="image/svg+xml" href="keystone-logo.svg?v=1" />
 <meta name="theme-color" content="#0b0d12" />
 </head>
@@ -710,8 +710,19 @@
   </div>
 </div>
 
+<div class="remember-overlay" id="remember-overlay" role="dialog" aria-modal="true" aria-labelledby="remember-title" hidden>
+  <div class="remember-card">
+    <img class="remember-ic" src="keystone-logo.svg?v=1" width="44" height="44" alt="" />
+    <h3 class="remember-title" id="remember-title">Remember this repo?</h3>
+    <p class="remember-text">Keystone can remember <b id="remember-name"></b> and resume it next time you visit. Stored only in this browser — nothing leaves your machine.</p>
+    <div class="remember-btns">
+      <button class="btn ghost" id="remember-no" type="button">Not now</button>
+      <button class="btn primary" id="remember-yes" type="button">Remember it</button>
+    </div>
+  </div>
+</div>
 <script src="repo-analyzer.js?v=3"></script>
-<script src="app.js?v=4.5"></script>
+<script src="app.js?v=4.6"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>
