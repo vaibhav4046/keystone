@@ -153,7 +153,8 @@
         if (!ids || !ids.length) return;
         var target = null;
         for (var i = 0; i < ids.length; i++) { if (byId[ids[i]].file === def.file) { target = ids[i]; break; } }
-        if (target == null) target = ids[0];
+        // honest resolution: same-file def, else a UNIQUE global def; ambiguous names (defined in many files) are NOT guessed -> no inflated blast radius
+        if (target == null) { if (ids.length === 1) target = ids[0]; else return; }
         if (target === def.id) return;
         callers[target][def.id] = 1;
       });
@@ -188,7 +189,8 @@
     var nameById = {}; defs.forEach(function (d) { nameById[d.id] = d.name; });
 
     defs.forEach(function (def) {
-      var rings = ringsFor(model, def.id, 6);
+      // honest blast radius: direct dependents + one hop (ring 1-2), NOT a 6-deep transitive closure that explodes through hub symbols and inflates counts
+      var rings = ringsFor(model, def.id, 2);
       var affected = [];
       Object.keys(rings).forEach(function (r) { if (Number(r) > 0) affected = affected.concat(rings[r]); });
       var total = affected.length;
