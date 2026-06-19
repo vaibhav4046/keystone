@@ -2031,12 +2031,44 @@ function runRepoAnalysis(url) {
   }).catch(function (err) { setS((err && err.message) || "Analysis failed.", true); if (btn) btn.disabled = false; });
 }
 window.runRepoAnalysis = runRepoAnalysis;
+function _repoSubmit(v) {
+  v = (v || (document.getElementById("repo-input") || {}).value || "").trim();
+  if (!v) return;
+  if (v.indexOf("/") >= 0 || /github\.com/i.test(v)) runRepoAnalysis(v);
+  else browseUserRepos(v);
+}
+function browseUserRepos(username) {
+  var listEl = document.getElementById("repo-list"), statusEl = document.getElementById("repo-status");
+  if (!window.listUserRepos) { runRepoAnalysis(username); return; }
+  if (statusEl) { statusEl.textContent = "Loading " + username + "'s public repos…"; statusEl.classList.remove("err"); }
+  if (listEl) listEl.innerHTML = "";
+  window.listUserRepos(username).then(function (repos) {
+    if (!repos.length) { if (statusEl) statusEl.textContent = "No public repos for " + username + "."; return; }
+    if (statusEl) statusEl.textContent = repos.length + " public repos (Python first) — click one to analyze:";
+    if (!listEl) return;
+    listEl.innerHTML = repos.slice(0, 60).map(function (r) {
+      return '<button type="button" class="repo-li" data-repo-full="' + esc(r.full_name) + '">'
+        + '<span class="repo-li-name">' + esc(r.name) + '</span>'
+        + (r.language ? '<span class="repo-li-lang' + (r.python ? ' py' : '') + '">' + esc(r.language) + '</span>' : '')
+        + '<span class="repo-li-stars">★ ' + r.stars + '</span>'
+        + (r.desc ? '<span class="repo-li-desc">' + esc(r.desc.slice(0, 90)) + '</span>' : '')
+        + '</button>';
+    }).join("");
+    Array.prototype.forEach.call(listEl.querySelectorAll(".repo-li"), function (el) {
+      el.addEventListener("click", function () {
+        var full = el.getAttribute("data-repo-full"), inp = document.getElementById("repo-input");
+        if (inp) inp.value = full; listEl.innerHTML = ""; runRepoAnalysis(full);
+      });
+    });
+  }).catch(function (err) { if (statusEl) { statusEl.textContent = (err && err.message) || "Failed to list repos."; statusEl.classList.add("err"); } });
+}
+window.browseUserRepos = browseUserRepos;
 function initRepoAnalyze() {
   var btn = document.getElementById("repo-go"), inp = document.getElementById("repo-input");
-  if (btn) btn.addEventListener("click", function () { if (inp && inp.value.trim()) runRepoAnalysis(inp.value.trim()); });
-  if (inp) inp.addEventListener("keydown", function (e) { if (e.key === "Enter" && inp.value.trim()) { e.preventDefault(); runRepoAnalysis(inp.value.trim()); } });
+  if (btn) btn.addEventListener("click", function () { _repoSubmit(); });
+  if (inp) inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); _repoSubmit(); } });
   document.querySelectorAll("[data-repo-example]").forEach(function (el) {
-    el.addEventListener("click", function () { var v = el.getAttribute("data-repo-example"); if (inp) inp.value = v; runRepoAnalysis(v); });
+    el.addEventListener("click", function () { var v = el.getAttribute("data-repo-example"); if (inp) inp.value = v; _repoSubmit(v); });
   });
 }
 boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); } catch (e) {} });

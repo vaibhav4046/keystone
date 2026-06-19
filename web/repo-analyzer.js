@@ -260,4 +260,23 @@
       });
     });
   };
+
+  // List a GitHub user's/org's public repos (no auth, CORS-enabled) so a user can browse
+  // and pick one instead of typing owner/repo. Private repos need OAuth + a backend.
+  window.listUserRepos = function (username) {
+    username = String(username || "").trim().replace(/^@/, "");
+    if (!username) return Promise.reject(new Error("Enter a GitHub username."));
+    return fetch("https://api.github.com/users/" + encodeURIComponent(username) + "/repos?sort=pushed&per_page=100&type=owner", { headers: { "Accept": "application/vnd.github+json" } })
+      .then(function (r) {
+        if (r.status === 404) throw new Error("No public user or org '" + username + "'.");
+        if (r.status === 403) throw new Error("GitHub API rate limit (60/hr unauthenticated). Try again shortly.");
+        if (!r.ok) throw new Error("GitHub API error " + r.status);
+        return r.json();
+      })
+      .then(function (repos) {
+        return (repos || []).filter(function (x) { return !x.fork; }).map(function (x) {
+          return { full_name: x.full_name, name: x.name, language: x.language || "", stars: x.stargazers_count || 0, desc: x.description || "", python: x.language === "Python" };
+        }).sort(function (a, b) { return (b.python - a.python) || (b.stars - a.stars); });
+      });
+  };
 })();

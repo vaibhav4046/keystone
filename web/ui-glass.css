@@ -600,6 +600,23 @@ button.cite-chip:hover, button.cite-chip:focus-visible {
 .rf-go { align-self: flex-start; font-family: var(--ks-font-sans); font-size: var(--ks-text-sm, 12px); font-weight: 600; color: var(--ks-accent); background: var(--ks-accent-subtle); border: 1px solid var(--ks-accent-border); border-radius: 8px; padding: 6px 13px; cursor: pointer; transition: background .12s ease, color .12s ease; }
 .rf-go:hover { background: var(--ks-accent); color: #190a02; }
 .rf-meta { font-family: var(--ks-font-mono); font-size: 10px; color: var(--ks-fg-dim); }
+
+/* GitHub repo picker — browse a user's public repos and click one */
+.repo-list { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; margin-top: 10px; }
+.repo-list:empty { display: none; }
+.repo-li {
+  display: grid; grid-template-columns: auto auto auto 1fr; align-items: center; gap: 10px;
+  width: 100%; text-align: left; cursor: pointer; padding: 9px 12px; border-radius: var(--ks-radius-md, 10px);
+  background: var(--ks-bg); border: 1px solid var(--ks-edge); color: var(--ks-fg-muted);
+  font-family: var(--ks-font-sans); transition: border-color .12s ease, background .12s ease;
+}
+.repo-li:hover { border-color: var(--ks-accent-border); background: var(--ks-accent-subtle); }
+.repo-li-name { font-family: var(--ks-font-mono); font-size: var(--ks-text-sm, 12px); color: var(--ks-fg); font-weight: 600; }
+.repo-li-lang { font-size: 10px; padding: 1px 7px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--ks-edge); color: var(--ks-fg-dim); }
+.repo-li-lang.py { color: var(--ks-accent); border-color: var(--ks-accent-border); background: var(--ks-accent-subtle); }
+.repo-li-stars { font-size: 11px; color: var(--ks-fg-dim); font-family: var(--ks-font-mono); }
+.repo-li-desc { font-size: 11px; color: var(--ks-fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) { .repo-li { grid-template-columns: 1fr auto; } .repo-li-desc, .repo-li-stars { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
