@@ -1302,6 +1302,30 @@ function wire() {
         if (s) showStep(s);
       });
     });
+
+    // Auto-play: advance through the steps on a timer, each step's text acting as a subtitle
+    let playing = false, timer = null;
+    const playBtn = document.createElement("button");
+    playBtn.type = "button"; playBtn.className = "btn ghost sim-play"; playBtn.id = "sim-play";
+    playBtn.innerHTML = "&#9654;&nbsp; Auto-play";
+    if (nextBtn.parentNode) nextBtn.parentNode.insertBefore(playBtn, nextBtn);
+    function stopPlay() { playing = false; if (timer) { clearTimeout(timer); timer = null; } playBtn.innerHTML = "&#9654;&nbsp; Auto-play"; playBtn.classList.remove("playing"); }
+    function tick() {
+      if (!playing) return;
+      if (currentStep >= maxSteps) { stopPlay(); return; }
+      showStep(currentStep + 1);
+      timer = setTimeout(tick, 4500);
+    }
+    playBtn.onclick = function () {
+      if (playing) { stopPlay(); return; }
+      playing = true; playBtn.innerHTML = "&#10073;&#10073;&nbsp; Pause"; playBtn.classList.add("playing");
+      if (currentStep >= maxSteps) showStep(1);
+      timer = setTimeout(tick, 3200);
+    };
+    const _next = nextBtn.onclick, _prev = prevBtn.onclick;
+    nextBtn.onclick = function (e) { stopPlay(); if (_next) _next.call(this, e); };
+    prevBtn.onclick = function (e) { stopPlay(); if (_prev) _prev.call(this, e); };
+    document.querySelectorAll(".sim-step").forEach((el) => { el.addEventListener("click", stopPlay); });
   }
   initSimulator();
 
