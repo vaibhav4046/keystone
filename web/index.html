@@ -118,36 +118,11 @@
 
 <div id="hero-strip" class="hero-strip" role="note">
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
-  <p class="hero-thesis">Git sees files. Orbit sees relationships. Keystone sees consequences.</p>
-
-  <div class="hero-manifesto">
-    <div class="manifesto-lead">
-      <span class="m-git">Git sees no conflict.</span>
-      <span class="m-orbit">Orbit sees the dependency.</span>
-      <span class="m-keystone">Keystone prevents the risky merge.</span>
-    </div>
-    <div class="manifesto-sub font-mono">
-      The model explains. The engine decides. Same graph + same policy = same decision.
-    </div>
-  </div>
-
-  <div class="hero-cards">
-    <div class="hero-card hero-git">
-      <div class="card-tag">GIT</div>
-      <div class="card-desc">No textual conflict.</div>
-    </div>
-    <div class="hero-card hero-orbit">
-      <div class="card-tag">ORBIT</div>
-      <div class="card-desc">Shared dependency found.</div>
-    </div>
-    <div class="hero-card hero-keystone">
-      <div class="card-tag">KEYSTONE</div>
-      <div class="card-desc">Block, hold, or merge in safe order.</div>
-    </div>
-  </div>
+  <p class="hero-thesis">Git is blind to cross-MR call-graph collisions. Orbit knows the graph. Keystone joins them to catch the hazard before the merge.</p>
   <div class="hero-actions">
-    <button class="btn primary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
-    <button class="btn secondary hero-cta" type="button" id="lede-tour">Take the 60-second tour</button>
+    <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="document.getElementById('simulation-section').scrollIntoView({behavior:'smooth',block:'start'})">Run the hidden-collision demo</button>
+    <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
+    <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
   </div>
 </div>
 <div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
