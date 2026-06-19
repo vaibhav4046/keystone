@@ -663,7 +663,7 @@ function drawBlast(imp) {
     g.appendChild(ttl);                                  // hover shows the full name
     const circ = document.createElementNS(ns, "circle");
     circ.setAttribute("cx", pos[id].x); circ.setAttribute("cy", pos[id].y);
-    circ.setAttribute("r", isEpi ? 16 : 9);
+    circ.setAttribute("r", isEpi ? 18 : 11);
     circ.setAttribute("fill", ringColor(r));
     if (isEpi) circ.setAttribute("filter", "url(#glow)");
     g.appendChild(circ);
