@@ -279,6 +279,7 @@ function paintStatus(st) {
   const src = $("#src-chip"), orbit = $("#orbit-chip"), chain = $("#chain-chip"), integ = $("#integ-chip");
   const live = st.source_mode === "LIVE";
   const snapshot = st.source_mode === "SNAPSHOT";   // committed REAL orbit index, served without a backend
+  STATE.sourceMode = st.source_mode; updateConnectionStatus();   // keep the mode pill honest to the real data source
   src.innerHTML = `<span class="dot ${live ? "g" : (snapshot ? "g" : "a")}"></span>source <b>${esc(st.source_mode)}</b>`;
   src.className = "chip " + (live || snapshot ? "ok" : "warn");
   if (snapshot) src.title = "a committed REAL `orbit index` of this repository (" + (st.definitions || "") +
@@ -1144,8 +1145,8 @@ async function refreshLedger() {
   if (!v.ok) {
     vd.textContent = "BROKEN AT ROW " + v.broken_index; vd.className = "verdict bad";
   } else if (isStatic) {
-    vd.textContent = "SAMPLE · PUBLIC KEY"; vd.className = "verdict warn";
-    vd.title = "public demo only: the sample HMAC key is published in source, so this chain is reproducible by anyone - illustrative, not tamper-evident. The local app keys the chain with a secret per-machine key.";
+    vd.textContent = "SAMPLE · SHARED-KEY HMAC"; vd.className = "verdict warn";
+    vd.title = "public demo only: HMAC is a symmetric shared-secret MAC and this sample key is published in source, so anyone (including a malicious writer) could recompute the chain. As shipped it proves no ACCIDENTAL corruption, not insider tamper-resistance. The local app uses a secret per-machine key; true insider-resistance needs an asymmetric signature or external anchor (roadmap).";
   } else {
     vd.textContent = "CHAIN VERIFIED"; vd.className = "verdict ok";
   }
@@ -1776,16 +1777,21 @@ function updateConnectionStatus() {
   const text = $("#conn-text");
   if (!btn || !dot || !text) return;
 
-  if (API_MODE === "live") {
+  if (API_MODE === "live" && STATE.sourceMode === "LIVE") {
     text.textContent = "mode: live backend";
     dot.className = "dot g";
     btn.className = "chip ok";
-    btn.title = "Connected to live backend at " + (API_URL || "same origin") + ". Click to change settings.";
+    btn.title = "Connected to a live backend at " + (API_URL || "same origin") + " serving a live graph. Click to change settings.";
+  } else if (API_MODE === "live") {
+    text.textContent = "mode: snapshot";
+    dot.className = "dot a";
+    btn.className = "chip warn";
+    btn.title = "Live mode is selected, but the data shown is the committed snapshot (no live graph responded). Click to change settings.";
   } else {
     text.textContent = "mode: snapshot";
     dot.className = "dot a";
     btn.className = "chip warn";
-    btn.title = "Using pre-baked static snapshot (data.json). Click to change settings.";
+    btn.title = "Using the committed static snapshot (data.json). Click to change settings.";
   }
 }
 
