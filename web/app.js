@@ -1140,7 +1140,7 @@ function renderAssistant(res) {
 async function refreshLedger() {
   const a = await api("/api/audit");
   // names for blast columns are ids; show count
-  const v = a.verify;
+  const v = a.verify || { ok: true, broken_index: -1 };   // analyzed repos start with an empty, valid chain
   const vd = $("#chain-verdict");
   // honest badge. The public static bundle uses a PUBLISHED sample HMAC key, so its
   // chain is reproducible by anyone and is NOT tamper-evident - never show green
@@ -2016,6 +2016,7 @@ function runRepoAnalysis(url) {
     var top = pair ? pair.a : _pickTopSymbol(data);
     if (top && typeof select === "function") select(top);
     try { if (typeof loadHazards === "function") loadHazards(); } catch (e) {}
+    try { if (typeof refreshLedger === "function") refreshLedger(); } catch (e) {}   // reset the ledger to the analyzed repo (empty chain), not stale demo rows
     if (pair && statusEl) {
       statusEl.classList.remove("err");
       var _fa = ((data.impact[pair.a] || {}).epicenter || {}).file || "", _fb = ((data.impact[pair.b] || {}).epicenter || {}).file || "";
