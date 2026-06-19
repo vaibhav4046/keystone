@@ -2023,6 +2023,11 @@ function runRepoAnalysis(url) {
       var _cross = _fa && _fb && _fa !== _fb;
       statusEl.innerHTML = '<div class="repo-finding"><span class="rf-tag">SILENT COLLISION FOUND</span>'
         + '<p>In <b>' + esc(slug) + '</b>, changing <code>' + esc(pair.a) + '</code>' + (_fa ? ' in <code>' + esc(_fa) + '</code>' : '') + ' and <code>' + esc(pair.b) + '</code>' + (_fb ? ' in <code>' + esc(_fb) + '</code>' : '') + (_cross ? ' — different files, no Git conflict — ' : ' — ') + 'both ripple into <strong>' + pair.shared + '</strong> shared runtime dependents. Two merge requests that pass review and break together.</p>'
+        + '<div class="rf-fix"><span class="rf-fix-h">How to resolve</span><ol>'
+        + '<li>Add one integration test that exercises <code>' + esc(pair.a) + '</code> and <code>' + esc(pair.b) + '</code> together — it fails the instant either change breaks their ' + pair.shared + ' shared dependents.</li>'
+        + '<li>Land both changes in a single stacked review so they are tested as a unit, not approved independently.</li>'
+        + '<li>If they must ship separately, gate the second behind a flag until the shared path is re-verified.</li>'
+        + '</ol></div>'
         + '<button type="button" class="rf-go" onclick="showView(\'cockpit\')">Explore the blast radius →</button>'
         + '<span class="rf-meta">' + data.definitions.names.length + ' definitions analyzed · client-side static approximation</span></div>';
     } else {
