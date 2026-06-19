@@ -203,6 +203,7 @@
         <div class="sim-visual-connection">
           shared dependents: <code>approve</code> <code>get_json</code> <code>main</code> <code>post_json</code> <code>precedent</code>
         </div>
+        <p class="sim-desc">Keystone classifies every cross-MR collision by how the two changes interact on the graph: <code>same_change</code> (both edit one symbol), <code>change_in_blast</code> (one edits inside the other's blast radius), or <code>blast_overlap</code> (their blast radii share dependents, like this one). The full scenario flags <strong>two</strong> collisions across the three open MRs.</p>
       </div>
       <div class="sim-step-content" id="sim-content-5" style="display:none;">
         <div class="sim-status-badge danger">VERDICT: BLOCK (CROSS_TEAM)</div>
