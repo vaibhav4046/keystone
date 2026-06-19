@@ -502,6 +502,35 @@ button.cite-chip:hover, button.cite-chip:focus-visible {
 }
 .cite-static { color: var(--ks-fg-dim); }
 .ringrow .rn { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.9; }
+
+/* Repo analyzer: the make-it-real input — point Keystone at YOUR code */
+.repo-analyze {
+  margin: var(--ks-sp-5, 20px) 0 var(--ks-sp-2, 8px);
+  padding: var(--ks-sp-4, 16px);
+  border-radius: var(--ks-radius-lg, 14px);
+  background: var(--surface-2); border: 1px solid var(--ks-accent-border);
+  box-shadow: 0 0 32px -16px rgba(255, 122, 47, 0.45);
+}
+.repo-analyze-label { font-size: var(--ks-text-sm, 12px); color: var(--ks-fg-muted); margin-bottom: 10px; }
+.repo-analyze-label b { color: var(--ks-accent); }
+.repo-analyze-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.repo-input {
+  flex: 1; min-width: 220px; height: 42px; padding: 0 14px;
+  background: var(--ks-bg); border: 1px solid var(--ks-edge); border-radius: var(--ks-radius-md, 10px);
+  color: var(--ks-fg); font-family: var(--ks-font-mono); font-size: var(--ks-text-sm, 12px);
+}
+.repo-input:focus { outline: none; border-color: var(--ks-accent); box-shadow: 0 0 0 3px var(--ks-accent-subtle); }
+.repo-analyze .btn.primary { height: 42px; }
+.repo-examples { margin-top: 9px; font-size: var(--ks-text-xs, 11px); color: var(--ks-fg-dim); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.repo-ex {
+  font-family: var(--ks-font-mono); font-size: 11px; padding: 2px 8px; border-radius: 6px; cursor: pointer;
+  background: var(--ks-bg); border: 1px solid var(--ks-edge); color: var(--ks-fg-muted);
+  transition: border-color .12s ease, color .12s ease;
+}
+.repo-ex:hover { border-color: var(--ks-accent-border); color: var(--ks-accent); }
+.repo-status { margin-top: 9px; font-size: var(--ks-text-xs, 11px); color: var(--ks-info); min-height: 14px; font-family: var(--ks-font-mono); line-height: 1.4; }
+.repo-status.err { color: var(--ks-block); }
+@media (max-width: 640px) { .repo-analyze { display: block; } }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
