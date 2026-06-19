@@ -23,7 +23,7 @@
 <meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
 <link rel="stylesheet" href="styles.css?v=2.2" />
 <link rel="stylesheet" href="ui-v3.css?v=1.0" />
-<link rel="stylesheet" href="ui-glass.css?v=1.0" />
+<link rel="stylesheet" href="ui-glass.css?v=1.1" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -117,8 +117,15 @@
 <div id="data-provenance" class="data-prov" role="note" hidden></div>
 
 <div id="hero-strip" class="hero-strip" role="note">
+  <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
   <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
+  <div class="hero-stat-strip" aria-label="what is real">
+    <span><strong>262</strong> definitions</span>
+    <span><strong>120</strong> Orbit-verified by <code>orbit sql</code></span>
+    <span><strong>2</strong> hidden collisions in the live scenario</span>
+    <span><strong>0</strong> invented numbers</span>
+  </div>
   <div class="hero-actions">
     <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="document.getElementById('simulation-section').scrollIntoView({behavior:'smooth',block:'start'})">Run the hidden-collision demo</button>
     <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
@@ -255,6 +262,22 @@
     </div>
   </div>
 </section>
+
+<!-- PRODUCT WALKTHROUGH (optional, owner-filled video; facade pattern, no autoplay) -->
+<section id="product-demo" class="panel demo-embed" data-reveal>
+  <div class="p-h">PRODUCT WALKTHROUGH <span class="hint">2-minute narrated tour, optional</span></div>
+  <div class="demo-frame" id="demo-frame" data-embed-src="">
+    <img class="demo-poster" src="live.png?v=1" alt="Keystone reviewer cockpit preview" loading="lazy" />
+    <button class="demo-play" type="button" id="demo-play" aria-label="Play product walkthrough">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <p class="demo-note" id="demo-note" hidden>Walkthrough video not yet published. The live demo above and the 60-second tour are the working proof.</p>
+  </div>
+  <div class="demo-cap">To be recorded against the live backend; every number on screen is computed from a real <code>orbit index</code> of this repo.</div>
+</section>
+<script>
+(function(){var b=document.getElementById('demo-play');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('demo-frame');var src=f.getAttribute('data-embed-src');if(src){var i=document.createElement('iframe');i.loading='lazy';i.allowFullscreen=true;i.setAttribute('allow','fullscreen; picture-in-picture');i.style.cssText='width:100%;height:100%;border:0';i.src=src;f.innerHTML='';f.appendChild(i);}else{var n=document.getElementById('demo-note');if(n)n.hidden=false;b.style.display='none';}});})();
+</script>
 
 <!-- ENGINEERING HARNESS PIPELINE -->
 <section id="harness-pipeline" class="harness-section panel" data-reveal aria-labelledby="harness-h">
