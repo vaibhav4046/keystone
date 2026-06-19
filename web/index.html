@@ -276,6 +276,71 @@
   </div>
 </section>
 
+<!-- ENGINEERING HARNESS PIPELINE -->
+<section id="harness-pipeline" class="harness-section panel" data-reveal aria-labelledby="harness-h">
+  <div class="p-h" id="harness-h">ENGINEERING HARNESS
+    <span class="hint">deterministic governance pipeline for agent-authored code</span></div>
+  <p class="harness-pitch">Coding agents can write patches. Keystone decides if they are safe to merge.</p>
+
+  <!-- Agent Task Card -->
+  <div id="harness-task" class="harness-task-card">
+    <div class="harness-task-header">
+      <span class="harness-task-icon">&#x1F916;</span>
+      <div class="harness-task-info">
+        <div class="harness-task-agent" id="harness-agent">copilot-workspace</div>
+        <div class="harness-task-mr" id="harness-mr">MR-204</div>
+      </div>
+      <span class="harness-task-kind" id="harness-kind">bot</span>
+    </div>
+    <div class="harness-task-symbols" id="harness-symbols">compute_blast_radius</div>
+  </div>
+
+  <!-- Pipeline Stages -->
+  <div class="harness-pipeline-flow" id="harness-stages">
+    <div class="harness-stage" data-stage="SYMBOL_RESOLVE">
+      <div class="harness-stage-icon">&#x1F50D;</div>
+      <div class="harness-stage-name">Symbol Resolve</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="BLAST_COMPUTE">
+      <div class="harness-stage-icon">&#x1F4A5;</div>
+      <div class="harness-stage-name">Blast Radius</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="POLICY_GATE">
+      <div class="harness-stage-icon">&#x1F6E1;</div>
+      <div class="harness-stage-name">Policy Gate</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="COLLISION_SCAN">
+      <div class="harness-stage-icon">&#x26A0;</div>
+      <div class="harness-stage-name">Collision Scan</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="VERDICT">
+      <div class="harness-stage-icon">&#x2696;</div>
+      <div class="harness-stage-name">Verdict</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+  </div>
+
+  <!-- Per-Symbol Verdicts -->
+  <div class="harness-verdicts" id="harness-verdicts">
+    <div class="harness-verdict-header">Per-Symbol Gate Results</div>
+    <div class="harness-verdict-list" id="harness-verdict-list"></div>
+  </div>
+
+  <!-- Overall Verdict -->
+  <div class="harness-overall" id="harness-overall">
+    <div class="harness-overall-label">Overall Pipeline Verdict</div>
+    <div class="harness-overall-badge" id="harness-overall-badge">PENDING</div>
+  </div>
+</section>
+
 <!-- HAZARD X-RAY -->
 <section class="hazard panel" data-reveal aria-labelledby="hazard-h">
   <div class="p-h" id="hazard-h">HAZARD X-RAY

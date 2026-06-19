@@ -26,6 +26,7 @@ from core import (graph as graph_mod, impact as impact_mod, policy as policy_mod
                   attest as attest_mod, llm as llm_mod, seed as seed_mod, agent as agent_mod,
                   collision as collision_mod, graph_audit as graph_audit_mod, agents as agents_mod)
 from core.audit import Ledger
+from harness.pipeline import run_sample_harness
 
 # The headline cross-MR collision scenario, baked into the public bundle so a static-only
 # judge sees Keystone's most differentiated capability. Real symbols on the committed
@@ -241,6 +242,16 @@ def main():
     #  2. review-debt audit (high-blast, directly-untested symbols).
     bundle["collisions"] = collision_mod.detect_collisions(g, DEMO_MRS) or {}
     bundle["graph_audit"] = graph_audit_mod.review_debt_report(g, limit=12)
+
+    # ENGINEERING HARNESS: bake the sample pipeline run so the static deploy shows
+    # the full harness visualizer (symbol resolve -> blast -> policy -> collision -> verdict).
+    try:
+        harness_result = run_sample_harness(g, led)
+        bundle["harness"] = harness_result.to_dict()
+    except Exception as e:
+        print(f"  warning: harness bake failed ({e}), skipping", file=sys.stderr)
+        bundle["harness"] = None
+
     g.close()
 
     out = os.path.join(WEB, "data.json")
