@@ -742,6 +742,13 @@ body.light-theme .gh-connect-row { background: #f6f8fb; }
 .repo-input:focus { outline: none !important; box-shadow: none !important; }
 .repo-input::placeholder { color: var(--ks-fg-dim); }
 body.light-theme .repo-analyze-row { background: #f6f8fb; }
+
+/* ============ REMEDIATION — "HOW TO RESOLVE" ON THE FINDING ============ */
+.rf-fix { margin: 12px 0 14px; padding: 12px 14px; border-radius: 10px; background: rgba(255, 122, 47, 0.05); border: 1px solid var(--ks-accent-border); }
+.rf-fix-h { display: block; font-family: var(--ks-font-sans); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ks-accent); margin-bottom: 8px; }
+.rf-fix ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.rf-fix li { font-family: var(--ks-font-sans); font-size: 12.5px; line-height: 1.5; color: var(--ks-fg-muted); }
+.rf-fix code { font-family: var(--ks-font-mono); font-size: 11.5px; color: var(--ks-accent); }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
