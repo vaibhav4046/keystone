@@ -2092,6 +2092,44 @@ function initRemember() {
   }
 }
 window.initRemember = initRemember;
+/* ===== GitHub sign-in: OAuth-ready, with a CLI consent + public-read fallback for the static deploy ===== */
+var KS_GH_CLIENT_ID = (typeof window !== "undefined" && window.KS_GH_CLIENT_ID) || "";
+function _ghGet() { try { return localStorage.getItem("ks-gh-user") || ""; } catch (e) { return ""; } }
+function _ghSet(h) { try { if (h) localStorage.setItem("ks-gh-user", h); else localStorage.removeItem("ks-gh-user"); } catch (e) {} }
+function ghRender() {
+  var h = _ghGet(), btn = document.getElementById("gh-signin"), box = document.getElementById("gh-user"), lbl = document.getElementById("gh-handle");
+  if (!btn || !box) return;
+  if (h) { btn.hidden = true; box.hidden = false; if (lbl) lbl.textContent = "@" + h; }
+  else { btn.hidden = false; box.hidden = true; }
+}
+function ghConsent(open) { var o = document.getElementById("gh-consent"); if (!o) return; o.hidden = !open; if (open) { var i = document.getElementById("gh-handle-input"); if (i) setTimeout(function () { i.focus(); }, 80); } }
+function ghSignIn() {
+  if (KS_GH_CLIENT_ID) {
+    var redir = location.origin + location.pathname;
+    location.href = "https://github.com/login/oauth/authorize?client_id=" + encodeURIComponent(KS_GH_CLIENT_ID) + "&scope=" + encodeURIComponent("read:user public_repo") + "&redirect_uri=" + encodeURIComponent(redir);
+    return;
+  }
+  ghConsent(true);
+}
+function ghAllow() {
+  var i = document.getElementById("gh-handle-input"), h = ((i && i.value) || "").trim().replace(/^@/, "");
+  if (!h) { if (i) i.focus(); return; }
+  _ghSet(h); ghRender(); ghConsent(false);
+  if (typeof browseUserRepos === "function") { try { showView("home"); } catch (e) {} browseUserRepos(h); }
+}
+function ghSignOut() { _ghSet(""); ghRender(); }
+function initAuth() {
+  var btn = document.getElementById("gh-signin"); if (btn) btn.onclick = ghSignIn;
+  var out = document.getElementById("gh-signout"); if (out) out.onclick = ghSignOut;
+  var allow = document.getElementById("ghc-allow"); if (allow) allow.onclick = ghAllow;
+  var demo = document.getElementById("ghc-demo"); if (demo) demo.onclick = function () { ghConsent(false); };
+  var inp = document.getElementById("gh-handle-input"); if (inp) inp.addEventListener("keydown", function (e) { if (e.key === "Enter") ghAllow(); });
+  var ov = document.getElementById("gh-consent"); if (ov) { ov.addEventListener("click", function (e) { if (e.target === ov) ghConsent(false); }); }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") ghConsent(false); });
+  ghRender();
+  var h = _ghGet(); if (h && typeof browseUserRepos === "function") { try { browseUserRepos(h); } catch (e) {} }
+}
+window.initAuth = initAuth;
 function _dl(name, text, mime) { var b = new Blob([text], { type: mime }); var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 200); }
 function _buildReport() {
   var d = STATIC || {}, det = (d.definitions && d.definitions.details) || {}, imp = d.impact || {};
@@ -2142,7 +2180,7 @@ function initRepoAnalyze() {
     el.addEventListener("click", function () { var v = el.getAttribute("data-repo-example"); if (inp) inp.value = v; _repoSubmit(v); });
   });
 }
-boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} try { initRemember(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); initRemember(); } catch (e) {} });
+boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} try { initRepoAnalyze(); } catch (e) {} try { initRemember(); } catch (e) {} try { initAuth(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); initRepoAnalyze(); initRemember(); initAuth(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===
 function initHarness() {

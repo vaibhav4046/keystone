@@ -689,6 +689,38 @@ body:not(.light-theme)::after {
 .rx-label { font-size: var(--ks-text-xs, 11px); color: var(--ks-fg-dim); font-family: var(--ks-font-sans); }
 .rx-btn { font-family: var(--ks-font-sans); font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 8px; cursor: pointer; background: var(--surface-2); border: 1px solid var(--ks-edge); color: var(--ks-fg-muted); transition: border-color .12s ease, color .12s ease; }
 .rx-btn:hover { border-color: var(--ks-accent-border); color: var(--ks-accent); }
+
+/* ============ GITHUB SIGN-IN — AUTH BAR + CLI CONSENT ============ */
+.gh-auth { display: inline-flex; align-items: center; }
+.gh-btn { display: inline-flex; align-items: center; gap: 7px; font-family: var(--ks-font-sans); font-size: 12.5px; font-weight: 600; color: #fff; padding: 7px 13px; border-radius: 9px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.12); background: linear-gradient(180deg, #2a2f37, #1a1d23); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 4px 14px -8px rgba(0, 0, 0, 0.7); transition: border-color .14s ease, transform .14s ease; }
+.gh-btn:hover { border-color: var(--ks-accent); transform: translateY(-1px); }
+.gh-user { display: inline-flex; align-items: center; gap: 8px; font-family: var(--ks-font-mono); font-size: 12px; color: var(--ks-fg); padding: 5px 6px 5px 11px; border-radius: 9px; border: 1px solid var(--ks-edge); background: var(--surface-2); }
+.gh-udot { width: 7px; height: 7px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px rgba(46, 204, 113, 0.6); }
+.gh-signout { font-family: var(--ks-font-sans); font-size: 11px; color: var(--ks-fg-dim); background: transparent; border: 1px solid var(--ks-edge); border-radius: 6px; padding: 3px 8px; cursor: pointer; transition: color .12s ease, border-color .12s ease; }
+.gh-signout:hover { color: var(--ks-accent); border-color: var(--ks-accent-border); }
+.gh-consent-overlay { position: fixed; inset: 0; z-index: 130; display: grid; place-items: center; padding: 20px; background: rgba(5, 6, 10, 0.62); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: rem-fade .2s ease both; }
+.gh-consent-overlay[hidden] { display: none; }
+.gh-term { width: min(520px, 100%); border-radius: 13px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); background: #0c0e13; box-shadow: 0 40px 90px -25px rgba(0, 0, 0, 0.85); animation: rem-pop .25s var(--ks-ease, ease-out) both; }
+.gh-term-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: #15181f; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.gh-tdot { width: 11px; height: 11px; border-radius: 50%; }
+.gh-tdot.r { background: #ff5f57; } .gh-tdot.y { background: #febc2e; } .gh-tdot.g { background: #28c840; }
+.gh-term-title { margin-left: 8px; font-family: var(--ks-font-mono); font-size: 11.5px; color: var(--ks-fg-dim); letter-spacing: 0.02em; }
+.gh-term-body { padding: 18px 20px 20px; }
+.gh-line { margin: 0 0 12px; font-family: var(--ks-font-mono); font-size: 13px; color: var(--ks-fg); }
+.gh-prompt { color: var(--ks-accent); font-weight: 700; margin-right: 6px; }
+.gh-out { margin: 0 0 14px; font-family: var(--ks-font-sans); font-size: 13.5px; line-height: 1.5; color: var(--ks-fg-muted); }
+.gh-out b { color: var(--ks-fg); }
+.gh-perms { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+.gh-perms li { font-family: var(--ks-font-sans); font-size: 12.5px; color: var(--ks-fg-muted); line-height: 1.45; display: flex; gap: 9px; }
+.gh-ok { color: #2ecc71; font-weight: 700; }
+.gh-muted { color: var(--ks-fg-dim); font-weight: 700; }
+.gh-connect-row { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 9px; background: #07080b; border: 1px solid var(--ks-edge); margin-bottom: 16px; }
+.gh-handle-input { flex: 1; background: transparent; border: none; outline: none; color: var(--ks-fg); font-family: var(--ks-font-mono); font-size: 13px; }
+.gh-handle-input::placeholder { color: var(--ks-fg-dim); }
+.gh-consent-btns { display: flex; justify-content: flex-end; gap: 10px; }
+body.light-theme .gh-term { background: #ffffff; }
+body.light-theme .gh-term-bar { background: #f2f4f7; }
+body.light-theme .gh-connect-row { background: #f6f8fb; }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
