@@ -1917,7 +1917,30 @@ function initHub() {
   });
   showView(localStorage.getItem("ks-view") || "home");
 }
-boot().then(initHub).catch(function () { try { initHub(); } catch (e) {} });
+function initHeroCollision() {
+  var frame = document.getElementById("hero-collision-frame");
+  if (!frame || typeof computeCollisionsLocal !== "function") return;
+  var col = computeCollisionsLocal(DEMO_MRS);
+  if (!col || !col.collisions || !col.collisions.length) return;
+  // headline collision: compute_blast_radius x append (the blast_overlap), else the top-severity one
+  var c = col.collisions.find(function (x) {
+    var k = String(x.mr_a) + String(x.mr_b);
+    return /compute_blast_radius/.test(k) && /append/.test(k);
+  }) || col.collisions[0];
+  var shared = c.shared || [];
+  var n = String(shared.length);
+  var setTxt = function (id, t) { var el = document.getElementById(id); if (el) el.textContent = t; };
+  setTxt("hero-shared-count", n);
+  setTxt("hero-stakes-num", n);
+  setTxt("hero-shared-list", shared.join("  ·  "));
+  var verdict = document.getElementById("hero-collision-verdict");
+  if (!verdict) return;
+  var reveal = function () { frame.classList.add("resolved"); verdict.hidden = false; };
+  if (typeof reduceMotion !== "undefined" && reduceMotion) reveal();
+  else setTimeout(reveal, 1100);
+}
+window.initHeroCollision = initHeroCollision;
+boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===
 function initHarness() {

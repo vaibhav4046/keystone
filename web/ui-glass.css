@@ -415,3 +415,72 @@ body.light-theme .hero-stat-strip span:last-child strong { color: #c2410c; }
 /* Dark IMPACT rail: give rows separation so it has equal hierarchy to light */
 body:not(.light-theme) .ringrow { background: var(--surface-2); border-color: var(--ks-edge); }
 body:not(.light-theme) .ov-cmd { background: rgba(0, 0, 0, 0.42); }
+
+/* ==========================================================================
+   SILENT COLLISION HERO — the winning 10-second hook. Two GREEN-stamped MRs
+   resolve to a RED BLOCK on boot, driven by the real client-side engine.
+   ========================================================================== */
+.collision-frame {
+  margin: var(--ks-sp-5, 20px) 0 var(--ks-sp-4, 16px);
+  padding: var(--ks-sp-4, 16px);
+  border-radius: var(--ks-radius-lg, 14px);
+  background: var(--surface-2); border: 1px solid var(--ks-edge);
+}
+.cf-mrs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: var(--ks-sp-3, 12px); }
+.cf-mr {
+  background: var(--surface-3); border: 1px solid var(--ks-edge); border-radius: var(--ks-radius-md, 10px);
+  padding: var(--ks-sp-3, 12px) var(--ks-sp-4, 16px); display: flex; flex-direction: column; gap: 7px;
+}
+.cf-mr-id { font-family: var(--ks-font-sans); font-weight: 600; font-size: var(--ks-text-sm, 12px); color: var(--ks-fg); }
+.cf-mr-sym { font-family: var(--ks-font-mono); font-size: var(--ks-text-xs, 11px); color: var(--ks-fg-muted); }
+.cf-stamp {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  background: var(--ks-allow-bg); color: var(--ks-allow); border: 1px solid var(--ks-allow-border);
+  transition: opacity .35s var(--ks-ease, ease-out), filter .35s var(--ks-ease, ease-out);
+}
+.cf-tick { font-weight: 800; }
+.cf-arrow { display: grid; place-items: center; color: var(--ks-fg-dim); transition: color .4s var(--ks-ease, ease-out); }
+.collision-frame.resolved .cf-arrow { color: var(--ks-block); }
+.collision-frame.resolved .cf-stamp.green { opacity: 0.45; filter: grayscale(0.4); }
+.cf-verdict {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px;
+  margin-top: var(--ks-sp-3, 12px); padding: var(--ks-sp-3, 12px) var(--ks-sp-4, 16px);
+  border-radius: var(--ks-radius-md, 10px);
+  background: var(--ks-block-bg); border: 1px solid var(--ks-block-border);
+  animation: cf-reveal 0.5s var(--ks-ease, ease-out) both;
+}
+@keyframes cf-reveal { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+.cf-block-tag { font-family: var(--ks-font-display); font-weight: 700; letter-spacing: 0.03em; color: var(--ks-block); font-size: var(--ks-text-md, 16px); }
+.cf-verdict-text { color: var(--ks-block-text); font-size: var(--ks-text-sm, 12px); }
+.cf-verdict-text strong { color: var(--ks-block); font-weight: 700; }
+.cf-shared { flex-basis: 100%; font-family: var(--ks-font-mono); font-size: 11px; color: var(--ks-fg-dim); }
+
+/* one giant honest figure */
+.hero-stakes { margin: var(--ks-sp-5, 20px) 0 var(--ks-sp-4, 16px); }
+.stakes-line { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.stakes-big {
+  font-family: var(--ks-font-display); font-size: clamp(48px, 8vw, 84px); font-weight: 600;
+  color: var(--ks-accent); line-height: 0.95; letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+}
+.stakes-unit { font-family: var(--ks-font-display); font-size: clamp(18px, 2.6vw, 26px); font-weight: 500; color: var(--ks-fg); letter-spacing: -0.01em; }
+.stakes-sub { margin: 10px 0 0; font-size: var(--ks-text-md, 16px); color: var(--ks-fg-muted); max-width: 660px; line-height: 1.5; }
+.stakes-sub strong { color: var(--ks-fg); font-weight: 600; }
+
+/* demote the 4 equal stat tiles to a small inline caption row so the giant figure leads */
+.hero-stat-strip { display: flex !important; flex-wrap: wrap; gap: 6px 18px !important; }
+.hero-stat-strip span {
+  flex-direction: row !important; align-items: baseline !important; gap: 5px !important;
+  background: transparent !important; border: 0 !important; padding: 0 !important; box-shadow: none !important;
+  color: var(--ks-fg-dim);
+}
+.hero-stat-strip strong { font-size: 14px !important; }
+.hero-stat-strip span:last-child { background: transparent !important; }
+
+@media (max-width: 640px) {
+  .cf-mrs { grid-template-columns: 1fr; }
+  .cf-arrow { transform: rotate(90deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-verdict { animation: none; }
+}

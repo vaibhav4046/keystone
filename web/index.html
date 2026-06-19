@@ -25,7 +25,7 @@
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="styles.css?v=2.3" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=1.7" />
+<link rel="stylesheet" href="ui-glass.css?v=1.8" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -127,6 +127,32 @@
   <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
   <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
+  <div id="hero-collision-frame" class="collision-frame" aria-label="silent collision demonstration">
+    <div class="cf-mrs">
+      <div class="cf-mr">
+        <div class="cf-mr-id">MR-204 · speed up the blast engine</div>
+        <code class="cf-mr-sym">core/graph.py → compute_blast_radius</code>
+        <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
+      </div>
+      <div class="cf-arrow" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="cf-mr">
+        <div class="cf-mr-id">MR-211 · ledger append fix</div>
+        <code class="cf-mr-sym">core/audit.py → append</code>
+        <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
+      </div>
+    </div>
+    <div class="cf-verdict" id="hero-collision-verdict" role="status" hidden>
+      <span class="cf-block-tag">SILENT COLLISION</span>
+      <span class="cf-verdict-text">both ripple into <strong id="hero-shared-count">5</strong> shared dependents · Keystone <strong>BLOCKS</strong> the merge</span>
+      <span class="cf-shared" id="hero-shared-list"></span>
+    </div>
+  </div>
+  <div id="hero-stakes" class="hero-stakes">
+    <div class="stakes-line"><span class="stakes-big" id="hero-stakes-num">5</span> <span class="stakes-unit">shared dependents would break together</span></div>
+    <p class="stakes-sub">Git and CODEOWNERS both stamped these merge requests green. On the Orbit call graph they collide on runtime dependents neither reviewer can see — <strong>1 broken build</strong> that <strong>4 reviewers</strong> would have approved, caught before merge.</p>
+  </div>
   <div class="hero-stat-strip" aria-label="what is real">
     <span><strong>262</strong> definitions</span>
     <span><strong>120</strong> Orbit-verified by <code>orbit sql</code></span>
@@ -577,7 +603,7 @@
   </div>
 </div>
 
-<script src="app.js?v=3.2"></script>
+<script src="app.js?v=3.3"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>
