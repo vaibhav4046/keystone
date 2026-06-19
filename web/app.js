@@ -1611,35 +1611,35 @@ function initTheme() {
 // === ONBOARDING WIZARD DATA & LOGIC ===
 const onboardingSteps = [
   {
-    title: "Welcome to Keystone",
+    title: "The 2am break",
     body: `
-      <p>Keystone is a command center for code risk analysis and governed change review on the GitLab Orbit graph.</p>
-      <p>It surfaces change risk that Git merge reviews cannot see, and enables you to define policies to manage and approve changes.</p>
-      <p>Click <b>Next</b> to learn how to navigate the dashboard.</p>
+      <p>Two merge requests. Different files. No Git conflict. They still break production together, because one changes a function the other quietly depends on.</p>
+      <p>Keystone catches that on the GitLab Orbit call graph, before you merge.</p>
+      <button class="btn primary onboard-action" type="button" data-onboard-action="sim">Show me a collision Git can't see</button>
     `
   },
   {
-    title: "1. Hazard X-Ray",
+    title: "Computed, not guessed",
     body: `
-      <p>The <b>HAZARD X-RAY</b> panel at the top surfaces two critical risk areas:</p>
-      <ul>
-        <li><b>Cross-MR Blast Collision:</b> Detects when separate merge requests touch different files but silently break each other due to call graph dependencies.</li>
-        <li><b>Review Debt:</b> Highlights high-impact symbols that lack direct test coverage.</li>
-      </ul>
+      <p>Every number here is computed from a real GitLab Orbit index of this repo and cross-checked by <code>orbit sql</code>. Zero invented figures.</p>
+      <p><code>compute_blast_radius</code> reaches <b>12</b> dependents, and the orbit-verified badge proves the count.</p>
+      <button class="btn primary onboard-action" type="button" data-onboard-action="select">Compute the blast radius live</button>
     `
   },
   {
-    title: "2. Blast Radius Stage",
+    title: "The gate refuses",
     body: `
-      <p>Select any symbol in the <b>Symbols</b> rail to compute its blast radius.</p>
-      <p>The <b>BLAST RADIUS</b> visualizes the epicenter, direct caller, and transitive caller rings. The <b>IMPACT</b> panel shows precise details on affected systems.</p>
+      <p><code>compute_blast_radius</code> was already rejected once, by reviewer s.castellano, on an identical blast signature. The deterministic gate <b>BLOCKs</b> re-approval.</p>
+      <p>The AI reviewer explains the risk. It never decides; the engine decides.</p>
+      <button class="btn primary onboard-action" type="button" data-onboard-action="gate">Watch a self-approval get refused</button>
     `
   },
   {
-    title: "3. Governance & Audit Ledger",
+    title: "Proof nobody can quietly edit",
     body: `
-      <p>Verify prior decisions in the <b>Precedent</b> tab. Approve or reject changes in the <b>Approval Gate</b>.</p>
-      <p>Every decision is recorded to the append-only, tamper-evident <b>Audit Ledger</b>, securing the integrity of your code repository.</p>
+      <p>Every decision is an HMAC hash-linked row. Simulate a tamper and the chain turns red.</p>
+      <p class="muted">The public demo uses a published sample key (labeled SAMPLE); only the CI backend with a secret key is truly tamper-evident.</p>
+      <button class="btn primary onboard-action" type="button" data-onboard-action="audit">Verify the ledger, then tamper it</button>
     `
   }
 ];
@@ -1661,12 +1661,28 @@ function closeOnboarding() {
   localStorage.setItem("keystone-onboarded", "true");
 }
 
+// Value-first onboarding: each step's button closes the wizard and drives the real
+// UI underneath (reuses select() + scrollIntoView; no new behavior, ID-safe).
+function doOnboardAction(action) {
+  closeOnboarding();
+  const map = { sim: "simulation-section", select: "blast-radius", gate: "gate", audit: "audit" };
+  setTimeout(() => {
+    if (action === "select" && typeof select === "function") {
+      try { select("compute_blast_radius"); } catch (e) {}
+    }
+    const el = document.getElementById(map[action]);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 140);
+}
+
 function renderOnboardingStep() {
   const step = onboardingSteps[onboardingStep];
   if (!step) return;
 
   $("#onboard-title").textContent = step.title;
   $("#onboard-body").innerHTML = step.body;
+  const _act = $("#onboard-body [data-onboard-action]");
+  if (_act) _act.onclick = () => doOnboardAction(_act.dataset.onboardAction);
 
   const dots = $("#onboard-dots");
   if (dots) {
