@@ -617,6 +617,11 @@ button.cite-chip:hover, button.cite-chip:focus-visible {
 .repo-li-stars { font-size: 11px; color: var(--ks-fg-dim); font-family: var(--ks-font-mono); }
 .repo-li-desc { font-size: 11px; color: var(--ks-fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 640px) { .repo-li { grid-template-columns: 1fr auto; } .repo-li-desc, .repo-li-stars { display: none; } }
+
+/* Brand logo marks use the provided keystone SVG (transparent bg, its own colors) */
+.sidebar-logo { background: transparent !important; box-shadow: none !important; display: grid !important; place-items: center; }
+.sidebar-logo img { display: block; }
+img.kf-logo-mark { background: transparent !important; width: 26px; height: 26px; padding: 0 !important; }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
