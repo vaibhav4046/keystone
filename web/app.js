@@ -773,8 +773,12 @@ function ringNameList(imp, ids) {
   ids.forEach((id) => { const n = nameOf(imp, id); freq[n] = (freq[n] || 0) + 1; });
   return ids.map((id) => {
     const n = nameOf(imp, id), q = qualById[id];
-    return (freq[n] > 1 && q) ? esc(n) + " (" + esc(q) + ")" : esc(n);
-  }).join(", ");
+    const lbl = (freq[n] > 1 && q) ? esc(n) + " (" + esc(q) + ")" : esc(n);
+    const nav = STATE.defs && STATE.defs.indexOf(n) >= 0;
+    return nav
+      ? `<button type="button" class="cite-chip" data-cite-sym="${esc(n)}" title="show ${esc(n)} in the graph">${lbl}</button>`
+      : `<span class="cite-chip cite-static">${lbl}</span>`;
+  }).join("");
 }
 
 function renderRings(imp) {
@@ -1946,6 +1950,16 @@ function initHeroCollision() {
   else setTimeout(reveal, 1100);
 }
 window.initHeroCollision = initHeroCollision;
+// NotebookLM-style citation chips: click a dependent name in IMPACT -> jump the blast graph to its source
+document.addEventListener("click", function (e) {
+  var chip = e.target && e.target.closest ? e.target.closest(".cite-chip[data-cite-sym]") : null;
+  if (!chip) return;
+  var sym = chip.dataset.citeSym;
+  if (sym && STATE.defs && STATE.defs.indexOf(sym) >= 0 && typeof select === "function") {
+    if (typeof showView === "function") showView("cockpit");
+    select(sym);
+  }
+});
 boot().then(function () { initHub(); try { initHeroCollision(); } catch (e) {} }).catch(function () { try { initHub(); initHeroCollision(); } catch (e) {} });
 
 // === ENGINEERING HARNESS PIPELINE VISUALIZER ===

@@ -488,6 +488,20 @@ body:not(.light-theme) .ov-cmd { background: rgba(0, 0, 0, 0.42); }
   .hero-stakes { margin: var(--ks-sp-3, 12px) 0; }
   .stakes-big { font-size: clamp(44px, 14vw, 60px); }
 }
+
+/* NotebookLM citation chips: dependent names in IMPACT become clickable sources */
+.cite-chip {
+  display: inline-flex; align-items: center; margin: 2px 5px 2px 0;
+  padding: 1px 7px; border-radius: 6px; line-height: 1.5;
+  font-family: var(--ks-font-mono); font-size: 11px;
+  background: var(--ks-bg); color: var(--ks-fg-muted); border: 1px solid var(--ks-edge);
+}
+button.cite-chip { cursor: pointer; transition: border-color .12s ease, color .12s ease, background .12s ease; }
+button.cite-chip:hover, button.cite-chip:focus-visible {
+  border-color: var(--ks-accent-border); color: var(--ks-accent); background: var(--ks-accent-subtle);
+}
+.cite-static { color: var(--ks-fg-dim); }
+.ringrow .rn { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.9; }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
