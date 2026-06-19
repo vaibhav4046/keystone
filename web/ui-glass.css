@@ -684,8 +684,8 @@ body:not(.light-theme)::after {
 @keyframes fireGlow { 0% { opacity: 0.6; transform: scaleY(0.95); } 100% { opacity: 1; transform: scaleY(1.07); } }
 .app-shell { position: relative; z-index: 1; }
 /* sidebar: logo only, centered */
-.sidebar-brand { justify-content: center; gap: 0; }
-.sidebar-brand-text { display: none; }
+.sidebar-brand { justify-content: center; gap: 0; min-height: 118px; align-items: center; }
+.sidebar-brand-text { display: block; writing-mode: vertical-rl; text-orientation: mixed; font-family: var(--ks-font-display, sans-serif); font-weight: 800; font-size: 13px; letter-spacing: 0.30em; color: var(--ks-accent); text-shadow: 0 0 14px rgba(255, 122, 26, 0.5); }
 
 /* ============ LANDING (sign-in gate, like Claude) ============ */
 .landing { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 24px; text-align: center;
