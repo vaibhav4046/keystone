@@ -237,7 +237,7 @@ function initCommandPalette() {
     const lq = q.toLowerCase();
     const actions = [
       { name: 'Take the 60-second tour', action: () => { const t = $('#lede-tour'); if (t) t.click(); } },
-      { name: 'Verify audit chain', action: () => { const v = $('#verify'); if (v) v.click(); } },
+      { name: 'Verify audit chain', action: () => { if (typeof showView === 'function') showView('ledger'); const v = $('#verify'); if (v) setTimeout(() => v.click(), 80); } },
       { name: 'Show all symbols', action: () => { STATE.showAll = true; renderDefList(currentDefView()); updateShowAllLabel(); } },
     ];
     const syms = (STATE.defs || []).filter(n => !lq || n.toLowerCase().includes(lq)).slice(0, 12);
@@ -257,7 +257,7 @@ function initCommandPalette() {
     cmdIdx = -1;
     results.querySelectorAll('.cmd-item').forEach(el => {
       el.addEventListener('click', () => {
-        if (el.dataset.sym) { select(el.dataset.sym); closePalette(); }
+        if (el.dataset.sym) { select(el.dataset.sym); closePalette(); if (typeof showView === "function") showView("cockpit"); }
         else if (el.dataset.action !== undefined) { acts[Number(el.dataset.action)].action(); closePalette(); }
       });
     });
@@ -455,7 +455,8 @@ function highlightPanel(el) {
 // Animated number counter roll-up
 function animateCounter(target) {
   const el = $("#counter");
-  if (!el || reduceMotion) { el.textContent = String(target).padStart(4, '0'); return; }
+  if (!el) return;
+  if (reduceMotion) { el.textContent = String(target).padStart(4, '0'); return; }
   const start = parseInt(el.textContent) || 0;
   const diff = target - start;
   const duration = Math.min(600, Math.max(200, Math.abs(diff) * 8));
@@ -718,7 +719,7 @@ function initGraphTooltips() {
   });
 }
 let _ctv = 0, _timers = [];
-function animateCounterTo(v) { _ctv = v; $("#counter").textContent = pad(v); }
+function animateCounterTo(v) { _ctv = v; const el = $("#counter"); if (el) el.textContent = pad(v); }
 function pad(n) { return String(n).padStart(4, "0"); }
 function idNames(imp) { const m = {}; Object.keys(imp.names || {}).forEach((k) => m[Number(k)] = imp.names[k]); return m; }
 function nameOf(imp, id) { return (imp._names && imp._names[id]) || (imp.names && imp.names[String(id)]) || ("#" + id); }
@@ -1474,7 +1475,7 @@ async function decide(decision) {
   const authorKind = ($("#authorkind") && $("#authorkind").value) || "human";
   const override = !!($("#override") && $("#override").checked);
   const pol = STATE.impact && STATE.impact.policy;
-  if (!STATIC_MODE) {
+  if (!STATIC_MODE && API_MODE !== "static") {
     try {
       const r = await fetch("/api/approve", {
         method: "POST", headers: { "content-type": "application/json" },

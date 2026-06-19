@@ -23,11 +23,11 @@
 <meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
 <link rel="stylesheet" href="styles.css?v=2.2" />
 <link rel="stylesheet" href="ui-v3.css?v=1.0" />
-<link rel="stylesheet" href="ui-glass.css?v=1.2" />
+<link rel="stylesheet" href="ui-glass.css?v=1.3" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
-<a class="skip-link" href="#blast-radius">Skip to blast radius</a>
+<a class="skip-link" href="#blast-radius" onclick="event.preventDefault(); if(typeof goToEl==='function') goToEl('blast-radius');">Skip to blast radius</a>
 <noscript><div class="noscript-msg">Keystone is a command center that needs JavaScript to render. Enable JavaScript, or run it locally - see the README.</div></noscript>
 <canvas id="bg" aria-hidden="true"></canvas>
 <div class="scanlines" aria-hidden="true"></div>
@@ -123,7 +123,7 @@
 <div id="open-banner" class="open-banner" role="note" hidden></div>
 <div id="data-provenance" class="data-prov" role="note" hidden></div>
 
-<div id="hero-strip" class="hero-strip" role="note">
+<div id="hero-strip" class="hero-strip">
   <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
   <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
   <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
@@ -575,7 +575,7 @@
   </div>
 </div>
 
-<script src="app.js?v=2.5"></script>
+<script src="app.js?v=2.6"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>

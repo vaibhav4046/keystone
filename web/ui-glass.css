@@ -100,7 +100,8 @@ body::before { content: none; }
 }
 
 /* Chips: solid crisp pills, no blur. */
-.chip { background: rgba(255, 255, 255, 0.04) !important; border: 1px solid var(--ks-edge); }
+body:not(.light-theme) .chip { background: rgba(255, 255, 255, 0.04) !important; border: 1px solid var(--ks-edge); }
+body.light-theme .chip { border-color: var(--ks-border-strong); }
 #orbit-chip { border-color: var(--ks-info-border); }
 
 /* 5) LIGHT THEME ----------------------------------------------------------- */
@@ -168,14 +169,14 @@ body.light-theme .btn.primary { color: #2a1303; }
   background: rgba(10, 12, 17, 0.88); color: var(--ks-fg-muted); font-size: var(--ks-text-sm, 12px);
 }
 .demo-cap { margin-top: var(--ks-sp-3, 12px); font-size: var(--ks-text-sm, 12px); color: var(--ks-fg-dim); }
-body.light-theme .hero-stat-strip strong { color: var(--ks-fg-inverted, #0c0d12); }
+body.light-theme .hero-stat-strip strong { color: #0c0d12; }
 body.light-theme .demo-embed .demo-frame { background: #e7e7ec; }
 
 /* ==========================================================================
    Hub navigation (single-page view switcher)
    ========================================================================== */
 .hubnav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 52px; z-index: 29;
   display: flex; gap: 4px; flex-wrap: wrap; align-items: center;
   padding: 8px 16px; margin-bottom: var(--ks-sp-2, 8px);
   background: rgba(8, 10, 14, 0.9);
@@ -194,3 +195,5 @@ body.light-theme .demo-embed .demo-frame { background: #e7e7ec; }
   border-color: var(--ks-accent-border, rgba(255, 122, 47, 0.4));
 }
 body.light-theme .hubnav { background: rgba(255, 255, 255, 0.9); }
+body.light-theme .hubnav-tab:hover { background: rgba(0, 0, 0, 0.05); color: var(--ks-fg); }
+body.light-theme .hero-eyebrow { color: var(--ks-fg-muted); }
