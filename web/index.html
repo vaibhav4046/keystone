@@ -113,15 +113,13 @@
   </div>
 </header>
 
-<nav class="hubnav" id="hubnav" aria-label="Hub navigation">
-  <button type="button" class="hubnav-tab active" data-goview="home">Home</button>
-  <button type="button" class="hubnav-tab" data-goview="demo">Live demo</button>
-  <button type="button" class="hubnav-tab" data-goview="harness">Harness</button>
-  <button type="button" class="hubnav-tab" data-goview="cockpit">Cockpit</button>
-  <button type="button" class="hubnav-tab" data-goview="ledger">Ledger</button>
+<nav class="hubnav" id="hubnav" aria-label="Hub navigation" role="tablist">
+  <button type="button" class="hubnav-tab active" data-goview="home" role="tab" aria-selected="true">Home</button>
+  <button type="button" class="hubnav-tab" data-goview="demo" role="tab" aria-selected="false">Live demo</button>
+  <button type="button" class="hubnav-tab" data-goview="harness" role="tab" aria-selected="false">Harness</button>
+  <button type="button" class="hubnav-tab" data-goview="cockpit" role="tab" aria-selected="false">Cockpit</button>
+  <button type="button" class="hubnav-tab" data-goview="ledger" role="tab" aria-selected="false">Ledger</button>
 </nav>
-<div id="open-banner" class="open-banner" role="note" hidden></div>
-<div id="data-provenance" class="data-prov" role="note" hidden></div>
 
 <div id="hero-strip" class="hero-strip">
   <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
@@ -139,6 +137,8 @@
     <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
   </div>
 </div>
+<div id="open-banner" class="open-banner" role="note" hidden></div>
+<div id="data-provenance" class="data-prov" role="note" hidden></div>
 <div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
   <span class="tour-step" id="tour-step">ready</span>
   <span class="tour-meta" id="tour-meta"></span>
@@ -575,7 +575,7 @@
   </div>
 </div>
 
-<script src="app.js?v=2.6"></script>
+<script src="app.js?v=2.7"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>

@@ -1840,7 +1840,9 @@ function showView(name) {
     if (on) s.classList.remove("ks-hidden"); // force-reveal so switched-in sections are never stuck invisible
   });
   document.querySelectorAll("[data-goview]").forEach(function (t) {
-    t.classList.toggle("active", t.dataset.goview === name);
+    var sel = (t.dataset.goview === name);
+    t.classList.toggle("active", sel);
+    t.setAttribute("aria-selected", sel ? "true" : "false");
   });
   try { localStorage.setItem("ks-view", name); } catch (e) {}
   window.scrollTo({ top: 0 });
