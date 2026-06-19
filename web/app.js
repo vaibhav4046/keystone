@@ -319,10 +319,24 @@ function paintStatus(st) {
   if (banner) {
     if (integ2.open_mode) {
       banner.hidden = false;
-      banner.innerHTML = "OPEN MODE - no approve token is set, so identity is self-asserted: any caller can record a decision under any name. The gate still enforces the contradiction BLOCK, four-eyes, and the approver quorum here; it is the identity binding that is advisory. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment."
-        + (st.source_mode === "SNAPSHOT" || st.source_mode === "FALLBACK"
-           ? " <b>Want the live backend?</b> One-click deploy on <a href=\"https://render.com\" target=\"_blank\" rel=\"noopener\">Render</a> (free, no card): connect this repo and Apply - <code>render.yaml</code> is committed. ~2 min. See <a href=\"https://github.com/vaibhav4046/keystone/blob/main/SUBMISSION/RENDER_DEPLOY.md\" target=\"_blank\" rel=\"noopener\">RENDER_DEPLOY.md</a>."
-           : "");
+      var moreLive = (st.source_mode === "SNAPSHOT" || st.source_mode === "FALLBACK")
+        ? " <b>Want the live backend?</b> One-click deploy on <a href=\"https://render.com\" target=\"_blank\" rel=\"noopener\">Render</a> (free, no card): connect this repo and Apply - <code>render.yaml</code> is committed. ~2 min. See <a href=\"https://github.com/vaibhav4046/keystone/blob/main/SUBMISSION/RENDER_DEPLOY.md\" target=\"_blank\" rel=\"noopener\">RENDER_DEPLOY.md</a>."
+        : "";
+      banner.innerHTML =
+        '<button class="banner-summary" type="button" aria-expanded="false" aria-controls="open-banner-more">'
+        + '<span class="banner-tag">OPEN MODE</span>'
+        + '<span class="banner-lead">Identity is self-asserted - the gate still enforces the contradiction BLOCK, four-eyes, and quorum; only the identity binding is advisory.</span>'
+        + '<span class="banner-toggle" aria-hidden="true">details</span>'
+        + '</button>'
+        + '<div class="banner-more" id="open-banner-more" hidden>No approve token is set, so any caller can record a decision under any name. Set KEYSTONE_APPROVE_TOKEN or bind GitLab OIDC for a fully enforced deployment.' + moreLive + '</div>';
+      var _sb = banner.querySelector('.banner-summary');
+      if (_sb) _sb.onclick = function () {
+        var more = document.getElementById('open-banner-more');
+        var willOpen = more.hasAttribute('hidden');
+        if (willOpen) more.removeAttribute('hidden'); else more.setAttribute('hidden', '');
+        _sb.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        banner.classList.toggle('expanded', willOpen);
+      };
     } else { banner.hidden = true; }
   }
   const modeLabel = st.source_mode === "LIVE" ? "Orbit Local (live)"
@@ -343,15 +357,22 @@ function paintStatus(st) {
 function renderDefList(names) {
   const ul = $("#deflist");
   ul.innerHTML = "";
-  names.forEach((n) => {
+  names.forEach((n, i) => {
     const li = document.createElement("li");
     li.dataset.name = n;
     li.textContent = n;                 // textContent, not innerHTML: no injection from symbol names
     li.setAttribute("role", "option");
-    li.setAttribute("tabindex", "0");
+    li.setAttribute("tabindex", (STATE.selected ? n === STATE.selected : i === 0) ? "0" : "-1");
     li.setAttribute("aria-selected", n === STATE.selected ? "true" : "false");
     li.onclick = () => select(n);
-    li.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n); } };
+    li.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n); }
+      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const sib = e.key === "ArrowDown" ? li.nextElementSibling : li.previousElementSibling;
+        if (sib) { li.setAttribute("tabindex", "-1"); sib.setAttribute("tabindex", "0"); sib.focus(); }
+      }
+    };
     if (n === STATE.selected) li.classList.add("sel");
     ul.appendChild(li);
   });
@@ -456,7 +477,7 @@ function highlightPanel(el) {
 function animateCounter(target) {
   const el = $("#counter");
   if (!el) return;
-  if (reduceMotion) { el.textContent = String(target).padStart(4, '0'); return; }
+  if (reduceMotion) { el.textContent = String(target); return; }
   const start = parseInt(el.textContent) || 0;
   const diff = target - start;
   const duration = Math.min(600, Math.max(200, Math.abs(diff) * 8));
@@ -465,9 +486,9 @@ function animateCounter(target) {
     const p = Math.min(1, (now - t0) / duration);
     const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
     const v = Math.round(start + diff * ease);
-    el.textContent = String(v).padStart(4, '0');
+    el.textContent = String(v);
     if (p < 1) requestAnimationFrame(tick);
-    else { el.textContent = String(target).padStart(4, '0'); el.parentElement.classList.add('counter-animate'); setTimeout(() => el.parentElement.classList.remove('counter-animate'), 500); }
+    else { el.textContent = String(target); el.parentElement.classList.add('counter-animate'); setTimeout(() => el.parentElement.classList.remove('counter-animate'), 500); }
   }
   requestAnimationFrame(tick);
 }
@@ -664,7 +685,7 @@ function drawBlast(imp) {
     animateCounter(total);
     return;
   }
-  $("#counter").textContent = "0000";
+  $("#counter").textContent = "0";
   let revealed = 0;
   nodeEls.forEach((n, idx) => {
     const delay = n.r === 0 ? 0 : 180 + n.r * 230 + (idx % 5) * 40;
@@ -720,7 +741,7 @@ function initGraphTooltips() {
 }
 let _ctv = 0, _timers = [];
 function animateCounterTo(v) { _ctv = v; const el = $("#counter"); if (el) el.textContent = pad(v); }
-function pad(n) { return String(n).padStart(4, "0"); }
+function pad(n) { return String(n); }
 function idNames(imp) { const m = {}; Object.keys(imp.names || {}).forEach((k) => m[Number(k)] = imp.names[k]); return m; }
 function nameOf(imp, id) { return (imp._names && imp._names[id]) || (imp.names && imp.names[String(id)]) || ("#" + id); }
 
@@ -1002,8 +1023,8 @@ function renderCollision(col) {
       // files" hazard. same_change edits the same symbol (Git WOULD conflict). blast_overlap
       // shares dependents (the shared line conveys it; no banner).
       let warn = "";
-      if (c.kind === "change_in_blast") warn = "⚠ Git sees NO conflict (different files) - invisible to a normal review";
-      else if (c.kind === "same_change") warn = "⚠ both MRs change the same symbol - Git will conflict, but neither reviewer sees the other's intent";
+      if (c.kind === "change_in_blast") warn = "Git sees NO conflict (different files) - invisible to a normal review";
+      else if (c.kind === "same_change") warn = "both MRs change the same symbol - Git will conflict, but neither reviewer sees the other's intent";
       const risk = RISK[c.kind] || { tag: c.kind, cls: "r-low" };
       return `<div class="hz-collide sev-${c.kind}" role="alert">` +
         `<div class="hz-cl-top"><span class="risk-badge ${risk.cls}">${esc(risk.tag)}</span> <b>${esc(c.mr_a.split("·")[0].trim())}</b> ✕ <b>${esc(c.mr_b.split("·")[0].trim())}</b>` +
@@ -1842,7 +1863,8 @@ function showView(name) {
   document.querySelectorAll("[data-goview]").forEach(function (t) {
     var sel = (t.dataset.goview === name);
     t.classList.toggle("active", sel);
-    t.setAttribute("aria-selected", sel ? "true" : "false");
+    if (sel) t.setAttribute("aria-current", "page");
+    else t.removeAttribute("aria-current");
   });
   try { localStorage.setItem("ks-view", name); } catch (e) {}
   window.scrollTo({ top: 0 });

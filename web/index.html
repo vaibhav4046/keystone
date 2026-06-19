@@ -21,9 +21,11 @@
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences." />
 <meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
-<link rel="stylesheet" href="styles.css?v=2.2" />
-<link rel="stylesheet" href="ui-v3.css?v=1.0" />
-<link rel="stylesheet" href="ui-glass.css?v=1.3" />
+<link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="styles.css?v=2.3" />
+<link rel="stylesheet" href="ui-v3.css?v=2.0" />
+<link rel="stylesheet" href="ui-glass.css?v=1.5" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23080A0D'/><path d='M7 18V6l5 7 5-7v12h-2V10.5L10.5 17 9 17V18H7z' fill='%23ff7a2f'/></svg>" />
 </head>
 <body>
@@ -113,12 +115,12 @@
   </div>
 </header>
 
-<nav class="hubnav" id="hubnav" aria-label="Hub navigation" role="tablist">
-  <button type="button" class="hubnav-tab active" data-goview="home" role="tab" aria-selected="true">Home</button>
-  <button type="button" class="hubnav-tab" data-goview="demo" role="tab" aria-selected="false">Live demo</button>
-  <button type="button" class="hubnav-tab" data-goview="harness" role="tab" aria-selected="false">Harness</button>
-  <button type="button" class="hubnav-tab" data-goview="cockpit" role="tab" aria-selected="false">Cockpit</button>
-  <button type="button" class="hubnav-tab" data-goview="ledger" role="tab" aria-selected="false">Ledger</button>
+<nav class="hubnav" id="hubnav" aria-label="Section navigation">
+  <button type="button" class="hubnav-tab active" data-goview="home" aria-current="page">Home</button>
+  <button type="button" class="hubnav-tab" data-goview="demo">Live demo</button>
+  <button type="button" class="hubnav-tab" data-goview="harness">Harness</button>
+  <button type="button" class="hubnav-tab" data-goview="cockpit">Cockpit</button>
+  <button type="button" class="hubnav-tab" data-goview="ledger">Ledger</button>
 </nav>
 
 <div id="hero-strip" class="hero-strip">
@@ -295,7 +297,7 @@
   <!-- Agent Task Card -->
   <div id="harness-task" class="harness-task-card">
     <div class="harness-task-header">
-      <span class="harness-task-icon">&#x1F916;</span>
+      <span class="harness-task-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="7" width="12" height="9" rx="2.5"/><path d="M10 4.6V7"/><circle cx="10" cy="3.6" r="1"/><circle cx="8" cy="11.2" r="0.7" fill="currentColor" stroke="none"/><circle cx="12" cy="11.2" r="0.7" fill="currentColor" stroke="none"/><path d="M8.6 14h2.8"/></svg></span>
       <div class="harness-task-info">
         <div class="harness-task-agent" id="harness-agent">copilot-workspace</div>
         <div class="harness-task-mr" id="harness-mr">MR-204</div>
@@ -308,31 +310,31 @@
   <!-- Pipeline Stages -->
   <div class="harness-pipeline-flow" id="harness-stages">
     <div class="harness-stage" data-stage="SYMBOL_RESOLVE">
-      <div class="harness-stage-icon">&#x1F50D;</div>
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg></div>
       <div class="harness-stage-name">Symbol Resolve</div>
       <div class="harness-stage-status">pending</div>
     </div>
     <div class="harness-connector"></div>
     <div class="harness-stage" data-stage="BLAST_COMPUTE">
-      <div class="harness-stage-icon">&#x1F4A5;</div>
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="4"/><circle cx="10" cy="10" r="1.4" fill="currentColor" stroke="none"/></svg></div>
       <div class="harness-stage-name">Blast Radius</div>
       <div class="harness-stage-status">pending</div>
     </div>
     <div class="harness-connector"></div>
     <div class="harness-stage" data-stage="POLICY_GATE">
-      <div class="harness-stage-icon">&#x1F6E1;</div>
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 2.5L4 5v4.2c0 3.6 2.5 6.6 6 7.8 3.5-1.2 6-4.2 6-7.8V5L10 2.5z"/><path d="M7.5 9.8l1.8 1.8 3.4-3.6"/></svg></div>
       <div class="harness-stage-name">Policy Gate</div>
       <div class="harness-stage-status">pending</div>
     </div>
     <div class="harness-connector"></div>
     <div class="harness-stage" data-stage="COLLISION_SCAN">
-      <div class="harness-stage-icon">&#x26A0;</div>
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.6" cy="10" r="4.6"/><circle cx="12.4" cy="10" r="4.6"/></svg></div>
       <div class="harness-stage-name">Collision Scan</div>
       <div class="harness-stage-status">pending</div>
     </div>
     <div class="harness-connector"></div>
     <div class="harness-stage" data-stage="VERDICT">
-      <div class="harness-stage-icon">&#x2696;</div>
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.5"/><path d="M6.8 10.2l2.2 2.2 4.2-4.4"/></svg></div>
       <div class="harness-stage-name">Verdict</div>
       <div class="harness-stage-status">pending</div>
     </div>
@@ -575,7 +577,7 @@
   </div>
 </div>
 
-<script src="app.js?v=2.7"></script>
+<script src="app.js?v=2.9"></script>
 <script src="motion.js?v=1.1"></script>
 </body>
 </html>

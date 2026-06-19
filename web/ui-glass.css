@@ -196,4 +196,169 @@ body.light-theme .demo-embed .demo-frame { background: #e7e7ec; }
 }
 body.light-theme .hubnav { background: rgba(255, 255, 255, 0.9); }
 body.light-theme .hubnav-tab:hover { background: rgba(0, 0, 0, 0.05); color: var(--ks-fg); }
-body.light-theme .hero-eyebrow { color: var(--ks-fg-muted); }
+
+/* ==========================================================================
+   PREMIUM OVERHAUL — Governed-Graph direction. Loads last; wins the cascade.
+   3-tier elevation, comparison weighting, hero stat tiles, eyebrow pill.
+   ========================================================================== */
+:root {
+  --surface-1: #0e1016;   /* base panels */
+  --surface-2: #14171f;   /* raised: cards, nested chips */
+  --surface-3: #1b1f29;   /* active / highlighted */
+  --ks-card-grad: linear-gradient(180deg, #16191f, #0f1218);
+}
+
+/* Hero eyebrow -> accent-dot pill (sans, not mono) */
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--ks-font-sans); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--ks-fg-muted);
+  padding: 5px 13px 5px 10px; border-radius: 999px; margin-bottom: var(--ks-sp-4, 16px);
+  background: var(--ks-accent-subtle); border: 1px solid var(--ks-accent-border);
+}
+.hero-eyebrow::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--ks-accent); box-shadow: 0 0 10px rgba(255, 122, 47, 0.7);
+}
+
+/* Hero proof numbers -> stat tiles (display numerals, sans labels) */
+.hero-stat-strip {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ks-sp-3, 12px); margin: var(--ks-sp-5, 20px) 0; align-items: stretch;
+  font-family: var(--ks-font-sans);
+}
+.hero-stat-strip span {
+  display: flex; flex-direction: column; gap: 5px; align-items: flex-start;
+  padding: var(--ks-sp-3, 12px) var(--ks-sp-4, 16px);
+  background: var(--surface-2); border: 1px solid var(--ks-edge);
+  border-radius: var(--ks-radius-md, 12px);
+  font-size: var(--ks-text-xs, 11px); color: var(--ks-fg-dim); line-height: 1.35;
+}
+.hero-stat-strip strong {
+  font-family: var(--ks-font-display); font-size: 30px; font-weight: 600;
+  color: var(--ks-fg); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+}
+.hero-stat-strip span:last-child { border-color: var(--ks-accent-border); background: var(--ks-accent-subtle); }
+.hero-stat-strip span:last-child strong { color: var(--ks-accent); }
+.hero-stat-strip code { color: var(--ks-info); background: none; padding: 0; }
+
+/* 3-tier elevation on cards + subtle gradient depth */
+.comp-card, .sim-mr, .hero-card { background: var(--ks-card-grad); }
+
+/* Comparison section: the two "blind" tools recede, Keystone wins on weight + ring */
+.comparison-cards { display: grid; grid-template-columns: 0.85fr 0.85fr 1fr 1.15fr; align-items: stretch; }
+.comparison-cards .comp-card:nth-child(1),
+.comparison-cards .comp-card:nth-child(2) { opacity: 0.72; }
+.comparison-cards .comp-card:hover { opacity: 1; }
+.comp-card.highlight {
+  background: var(--ks-card-grad); border-color: var(--ks-info);
+  box-shadow: 0 0 0 1px var(--ks-info-border), 0 0 30px -10px rgba(56, 189, 248, 0.35);
+}
+.comp-card.keystone-highlight {
+  background: var(--surface-3); border-color: var(--ks-accent);
+  box-shadow: 0 0 0 1px var(--ks-accent), 0 0 36px -8px rgba(255, 122, 47, 0.42);
+}
+
+/* Light-theme surface ramp + tile contrast */
+body.light-theme {
+  --surface-1: #ffffff;
+  --surface-2: #f6f8fb;
+  --surface-3: #eef1f6;
+  --ks-card-grad: linear-gradient(180deg, #ffffff, #f5f7fb);
+}
+body.light-theme .hero-stat-strip span { border-color: rgba(15, 18, 26, 0.12); }
+body.light-theme .hero-stat-strip strong { color: #0c0d12; }
+body.light-theme .hero-stat-strip span:last-child strong { color: var(--ks-accent); }
+body.light-theme .comp-card.keystone-highlight {
+  background: #ffffff;
+  box-shadow: 0 0 0 1px var(--ks-accent), 0 8px 28px -14px rgba(255, 122, 47, 0.35);
+}
+
+/* Responsive: stat tiles 2x2, comparison single column */
+@media (max-width: 720px) {
+  .hero-stat-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .comparison-cards { grid-template-columns: 1fr; }
+  .comparison-cards .comp-card:nth-child(1),
+  .comparison-cards .comp-card:nth-child(2) { opacity: 1; }
+}
+
+/* Tour bar: make [hidden] authoritative (author display:flex was defeating the
+   UA hidden rule, so the bar showed permanently on every view). Slim when active. */
+.tour-bar[hidden] { display: none !important; }
+.tour-bar { background: var(--surface-2); border-color: var(--ks-edge); }
+
+/* Mobile: single-row 52px header; collapse the wrapping status chips to the mode pill;
+   hub nav becomes a horizontal-scroll lane instead of wrapping. (chip ids stay in DOM) */
+@media (max-width: 640px) {
+  .topbar { flex-direction: row !important; height: 52px; align-items: center; }
+  .status { flex-wrap: nowrap; gap: 6px; }
+  #src-chip, #orbit-chip, #chain-chip, #integ-chip { display: none !important; }
+  .hubnav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .hubnav::-webkit-scrollbar { display: none; }
+}
+
+/* ==========================================================================
+   RE-JUDGE FIXES — demote disclaimer walls, kill mono leaks, table hierarchy,
+   blast-graph viewport. Honesty content preserved (collapsed, not removed).
+   ========================================================================== */
+
+/* OPEN MODE: heavy amber band -> slim one-line pill, click to expand full text */
+.open-banner {
+  margin: var(--ks-sp-2, 8px) var(--ks-sp-5, 20px) !important;
+  padding: 0 !important; background: transparent !important; border: 0 !important;
+  font-size: var(--ks-text-sm, 12px); color: var(--ks-fg-muted);
+}
+.banner-summary {
+  display: flex; align-items: center; gap: 10px; width: 100%; font: inherit; cursor: pointer;
+  padding: 7px 12px; text-align: left; color: var(--ks-fg-muted);
+  background: var(--ks-hold-bg); border: 1px solid var(--ks-hold-border);
+  border-radius: var(--ks-radius-md, 12px);
+  transition: border-color .12s ease, background .12s ease;
+}
+.banner-summary:hover { border-color: var(--ks-hold); }
+.banner-tag {
+  flex: none; font-family: var(--ks-font-sans); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--ks-hold);
+}
+.banner-lead { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ks-fg-muted); }
+.banner-toggle { flex: none; color: var(--ks-accent); font-size: var(--ks-text-xs, 11px); font-weight: 600; }
+.open-banner.expanded .banner-lead { white-space: normal; overflow: visible; }
+.banner-more {
+  margin: 6px 0 0; padding: 10px 13px; font-size: var(--ks-text-sm, 12px); line-height: 1.55;
+  color: var(--ks-fg-muted); background: var(--surface-2); border: 1px solid var(--ks-edge);
+  border-radius: var(--ks-radius-md, 12px);
+}
+.banner-more a { color: var(--ks-accent); text-decoration: underline; }
+.banner-more code { font-family: var(--ks-font-mono); }
+
+/* data-provenance: cyan band -> slim muted caption */
+.data-prov {
+  margin: 0 var(--ks-sp-5, 20px) var(--ks-sp-3, 12px) !important;
+  padding: 0 !important; background: transparent !important; border: 0 !important;
+  color: var(--ks-fg-dim); font-size: var(--ks-text-xs, 11px); line-height: 1.4;
+}
+
+/* Mono leaks the de-scope missed (styles.css harness labels) -> sans */
+.harness-stage-name, .harness-stage-status, .harness-task-mr,
+.manifesto-sub, .actions-label, .card-tag { font-family: var(--ks-font-sans); }
+
+/* Ledger: row hierarchy so it stops reading as raw CLI output */
+.ltable tbody tr:nth-child(even) td { background: rgba(255, 255, 255, 0.018); }
+.ltable tbody tr:hover td { background: rgba(255, 122, 47, 0.05); }
+.ltable .dec.approve, .ltable .dec.reject { font-weight: 600; }
+body.light-theme .ltable tbody tr:nth-child(even) td { background: rgba(15, 18, 26, 0.025); }
+body.light-theme .ltable tbody tr:hover td { background: rgba(255, 122, 47, 0.06); }
+
+/* Blast-radius graph: frame it as a designed viewport, not loose dots */
+.canvas-wrap {
+  background:
+    radial-gradient(58% 58% at 50% 46%, rgba(255, 122, 47, 0.07), transparent 70%),
+    radial-gradient(80% 80% at 50% 50%, var(--ks-bg-surface), var(--ks-bg)) !important;
+  border-radius: var(--ks-radius-md, 12px);
+  box-shadow: inset 0 0 0 1px var(--ks-edge), inset 0 0 70px -22px rgba(0, 0, 0, 0.65);
+  margin: 0 var(--ks-sp-3, 12px) var(--ks-sp-3, 12px);
+}
+body.light-theme .canvas-wrap {
+  box-shadow: inset 0 0 0 1px rgba(15, 18, 26, 0.10), inset 0 0 70px -26px rgba(15, 18, 26, 0.18);
+}
+#bsvg ellipse.ring-guide { opacity: 0.7 !important; stroke-dasharray: 2 6; }
