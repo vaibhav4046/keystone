@@ -1970,6 +1970,26 @@ function _pickTopSymbol(data) {
   });
   return (cappedN >= 4 ? capped : best) || best;
 }
+// Find the pair of symbols whose blast radii overlap most — a real silent collision
+// in the analyzed repo (two changes that would pass review and break together).
+function _findCollisionPair(data) {
+  var det = (data.definitions && data.definitions.details) || {};
+  var imp = data.impact || {};
+  var names = Object.keys(det).filter(function (n) { return (det[n].total_affected || 0) >= 3 && imp[n]; })
+    .sort(function (a, b) { return (det[b].total_affected || 0) - (det[a].total_affected || 0); }).slice(0, 45);
+  var sets = {}; names.forEach(function (n) { sets[n] = new Set(imp[n].affected_ids || []); });
+  var best = null, bestN = 1;
+  for (var i = 0; i < names.length; i++) {
+    var epiI = imp[names[i]].epicenter.id;
+    for (var j = i + 1; j < names.length; j++) {
+      if (sets[names[i]].has(imp[names[j]].epicenter.id) || sets[names[j]].has(epiI)) continue;
+      var a = sets[names[i]], b = sets[names[j]], sh = 0;
+      a.forEach(function (x) { if (b.has(x)) sh++; });
+      if (sh > bestN) { bestN = sh; best = { a: names[i], b: names[j], shared: sh }; }
+    }
+  }
+  return best;
+}
 function runRepoAnalysis(url) {
   var statusEl = document.getElementById("repo-status");
   var btn = document.getElementById("repo-go");
@@ -1989,11 +2009,20 @@ function runRepoAnalysis(url) {
     var prov = document.getElementById("data-provenance"); if (prov) { prov.textContent = data.status.data_provenance; prov.hidden = false; }
     if (typeof renderDefList === "function") renderDefList(currentDefView());
     if (typeof updateShowAllLabel === "function") updateShowAllLabel();
-    var top = _pickTopSymbol(data);
+    var pair = _findCollisionPair(data);
+    if (pair) STATE.openMrs = [{ id: "MR · change " + pair.a, symbols: [pair.a] }, { id: "MR · change " + pair.b, symbols: [pair.b] }];
+    var top = pair ? pair.a : _pickTopSymbol(data);
     if (top && typeof select === "function") select(top);
     try { if (typeof loadHazards === "function") loadHazards(); } catch (e) {}
-    if (typeof showView === "function") showView("cockpit");
-    setS("Analyzed " + slug + " — " + data.definitions.names.length + " definitions. Pick any symbol for its real blast radius; add two as MRs to find silent collisions.");
+    if (pair && statusEl) {
+      statusEl.classList.remove("err");
+      statusEl.innerHTML = '<div class="repo-finding"><span class="rf-tag">SILENT COLLISION FOUND</span>'
+        + '<p>In <b>' + esc(slug) + '</b>, editing both <code>' + esc(pair.a) + '</code> and <code>' + esc(pair.b) + '</code> would ripple into <strong>' + pair.shared + '</strong> shared runtime dependents — two merge requests that pass review and break together.</p>'
+        + '<button type="button" class="rf-go" onclick="showView(\'cockpit\')">Explore the blast radius →</button>'
+        + '<span class="rf-meta">' + data.definitions.names.length + ' definitions analyzed · client-side static approximation</span></div>';
+    } else {
+      setS("Analyzed " + slug + " — " + data.definitions.names.length + " definitions. No overlapping blast radii among the top symbols (clean). Pick any symbol for its real blast radius.");
+    }
     if (btn) btn.disabled = false;
   }).catch(function (err) { setS((err && err.message) || "Analysis failed.", true); if (btn) btn.disabled = false; });
 }

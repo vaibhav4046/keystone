@@ -590,6 +590,16 @@ button.cite-chip:hover, button.cite-chip:focus-visible {
   .kilo-footer-grid { grid-template-columns: 1fr 1fr; }
   .kilo-footer-brand { grid-column: 1 / -1; }
 }
+
+/* Repo analysis finding — the "we found a real silent collision in YOUR repo" payoff */
+.repo-finding { display: flex; flex-direction: column; gap: 9px; align-items: flex-start; margin-top: 4px; }
+.rf-tag { font-family: var(--ks-font-sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--ks-block); background: var(--ks-block-bg); border: 1px solid var(--ks-block-border); padding: 3px 9px; border-radius: 999px; }
+.repo-finding p { margin: 0; font-family: var(--ks-font-sans); font-size: var(--ks-text-sm, 13px); color: var(--ks-fg); line-height: 1.55; }
+.repo-finding code { font-family: var(--ks-font-mono); color: var(--ks-accent); font-size: 0.92em; }
+.repo-finding strong { color: var(--ks-block); font-weight: 700; }
+.rf-go { align-self: flex-start; font-family: var(--ks-font-sans); font-size: var(--ks-text-sm, 12px); font-weight: 600; color: var(--ks-accent); background: var(--ks-accent-subtle); border: 1px solid var(--ks-accent-border); border-radius: 8px; padding: 6px 13px; cursor: pointer; transition: background .12s ease, color .12s ease; }
+.rf-go:hover { background: var(--ks-accent); color: #190a02; }
+.rf-meta { font-family: var(--ks-font-mono); font-size: 10px; color: var(--ks-fg-dim); }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
 }
