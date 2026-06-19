@@ -480,6 +480,13 @@ body:not(.light-theme) .ov-cmd { background: rgba(0, 0, 0, 0.42); }
 @media (max-width: 640px) {
   .cf-mrs { grid-template-columns: 1fr; }
   .cf-arrow { transform: rotate(90deg); }
+  /* QA #6: trim the mobile hero so the SILENT COLLISION payoff + giant number land above the fold */
+  .hero-thesis { display: none; }
+  .collision-frame { margin-top: var(--ks-sp-3, 12px); padding: var(--ks-sp-3, 12px); }
+  .cf-mr { padding: 9px 12px; gap: 5px; }
+  .cf-mr-id { font-size: 11px; }
+  .hero-stakes { margin: var(--ks-sp-3, 12px) 0; }
+  .stakes-big { font-size: clamp(44px, 14vw, 60px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .cf-verdict { animation: none; }
