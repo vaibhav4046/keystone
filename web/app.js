@@ -336,6 +336,7 @@ function paintStatus(st) {
         if (willOpen) more.removeAttribute('hidden'); else more.setAttribute('hidden', '');
         _sb.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         banner.classList.toggle('expanded', willOpen);
+        var tog = _sb.querySelector('.banner-toggle'); if (tog) tog.textContent = willOpen ? 'less' : 'details';
       };
     } else { banner.hidden = true; }
   }
@@ -366,11 +367,18 @@ function renderDefList(names) {
     li.setAttribute("aria-selected", n === STATE.selected ? "true" : "false");
     li.onclick = () => select(n);
     li.onkeydown = (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n); }
-      else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        const sib = e.key === "ArrowDown" ? li.nextElementSibling : li.previousElementSibling;
-        if (sib) { li.setAttribute("tabindex", "-1"); sib.setAttribute("tabindex", "0"); sib.focus(); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(n); return; }
+      let sib = null;
+      if (e.key === "ArrowDown") sib = li.nextElementSibling;
+      else if (e.key === "ArrowUp") sib = li.previousElementSibling;
+      else if (e.key === "Home") sib = li.parentElement.firstElementChild;
+      else if (e.key === "End") sib = li.parentElement.lastElementChild;
+      else return;
+      e.preventDefault();
+      if (sib) {
+        li.setAttribute("tabindex", "-1"); li.setAttribute("aria-selected", "false");
+        sib.setAttribute("tabindex", "0"); sib.setAttribute("aria-selected", "true");
+        sib.focus();
       }
     };
     if (n === STATE.selected) li.classList.add("sel");
@@ -1867,6 +1875,7 @@ function showView(name) {
     else t.removeAttribute("aria-current");
   });
   try { localStorage.setItem("ks-view", name); } catch (e) {}
+  document.body.setAttribute("data-active-view", name);
   window.scrollTo({ top: 0 });
   // re-render the blast graph when the cockpit becomes visible (it may have rendered while hidden)
   if (name === "cockpit" && typeof select === "function" && window.STATE && STATE.selected) {
