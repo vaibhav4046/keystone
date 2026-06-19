@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Keystone symbol logo">
+  <defs>
+    <linearGradient id="orangeCore" x1="512" y1="310" x2="512" y2="735" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFB000"/>
+      <stop offset="0.42" stop-color="#FF7A00"/>
+      <stop offset="1" stop-color="#E84A00"/>
+    </linearGradient>
+
+    <linearGradient id="orangeHot" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFC34D"/>
+      <stop offset="0.45" stop-color="#FF8500"/>
+      <stop offset="1" stop-color="#FF4B00"/>
+    </linearGradient>
+
+    <linearGradient id="blackPlate" x1="230" y1="210" x2="780" y2="850" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2B2C31"/>
+      <stop offset="0.48" stop-color="#0D0E11"/>
+      <stop offset="1" stop-color="#050507"/>
+    </linearGradient>
+
+    <linearGradient id="blackPlate2" x1="170" y1="390" x2="850" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B1C21"/>
+      <stop offset="0.55" stop-color="#08090C"/>
+      <stop offset="1" stop-color="#24262B"/>
+    </linearGradient>
+
+    <linearGradient id="edgeSheen" x1="260" y1="230" x2="812" y2="770" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="0.04"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.11"/>
+    </linearGradient>
+
+    <filter id="orangeGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0 0 0 1
+                0 0.42 0 0 0.33
+                0 0 0.05 0 0
+                0 0 0 0.72 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+
+    <clipPath id="coreClip">
+      <path d="M392 352H632L596 448H660L598 726H426L364 448H428L392 352Z"/>
+    </clipPath>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <g filter="url(#orangeGlow)" opacity="0.92">
+      <path d="M269 341L384 411L463 746L420 789L344 421L242 359Z" fill="url(#orangeHot)"/>
+      <path d="M755 341L640 411L561 746L604 789L680 421L782 359Z" fill="url(#orangeHot)"/>
+      <rect x="501" y="240" width="22" height="132" rx="7" fill="url(#orangeHot)"/>
+      <rect x="501" y="752" width="22" height="92" rx="7" fill="url(#orangeHot)"/>
+    </g>
+
+    <path d="M250 238H484L416 410H323L250 238Z" fill="url(#blackPlate)"/>
+    <path d="M540 238H774L701 410H608L540 238Z" fill="url(#blackPlate)"/>
+
+    <path d="M184 354L322 439L405 744L324 817L184 354Z" fill="url(#blackPlate2)"/>
+    <path d="M840 354L702 439L619 744L700 817L840 354Z" fill="url(#blackPlate2)"/>
+
+    <path d="M342 826L448 756H576L682 826L512 912L342 826Z" fill="url(#blackPlate)"/>
+
+    <path d="M328 416H438L394 502H436L486 748H538L588 502H630L586 416H696L612 796H412L328 416Z" fill="#020305"/>
+
+    <path d="M392 352H632L596 448H660L598 726H426L364 448H428L392 352Z" fill="url(#orangeCore)" filter="url(#orangeGlow)"/>
+
+    <g clip-path="url(#coreClip)" opacity="0.22">
+      <path d="M366 444H660" stroke="#FFFFFF" stroke-width="5"/>
+      <path d="M414 725H610" stroke="#000000" stroke-width="5" opacity="0.45"/>
+    </g>
+
+    <g fill="none" stroke="url(#orangeHot)" stroke-width="13" stroke-linejoin="miter" stroke-linecap="square" filter="url(#orangeGlow)">
+      <path d="M252 360L371 433L455 756L416 794" opacity="0.9"/>
+      <path d="M772 360L653 433L569 756L608 794" opacity="0.9"/>
+    </g>
+
+    <g fill="none" stroke="url(#edgeSheen)" stroke-width="3" opacity="0.75">
+      <path d="M250 238H484L416 410"/>
+      <path d="M540 238H774L701 410"/>
+      <path d="M184 354L322 439L405 744"/>
+      <path d="M840 354L702 439L619 744"/>
+      <path d="M342 826L448 756H576L682 826"/>
+    </g>
+
+    <g filter="url(#orangeGlow)">
+      <rect x="506" y="232" width="12" height="142" rx="5" fill="#FF8700"/>
+      <rect x="506" y="748" width="12" height="103" rx="5" fill="#FF8700"/>
+    </g>
+  </g>
+</svg>
