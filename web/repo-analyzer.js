@@ -189,8 +189,8 @@
     var nameById = {}; defs.forEach(function (d) { nameById[d.id] = d.name; });
 
     defs.forEach(function (def) {
-      // honest blast radius: direct dependents + one hop (ring 1-2), NOT a 6-deep transitive closure that explodes through hub symbols and inflates counts
-      var rings = ringsFor(model, def.id, 2);
+      // honest blast radius: DIRECT dependents only (ring 1). Every count is verifiable by grep — no transitive inference, no hub-driven explosion. Most defensible number.
+      var rings = ringsFor(model, def.id, 1);
       var affected = [];
       Object.keys(rings).forEach(function (r) { if (Number(r) > 0) affected = affected.concat(rings[r]); });
       var total = affected.length;
