@@ -1656,7 +1656,7 @@ const onboardingSteps = [
     title: "The 2am break",
     body: `
       <p>Two merge requests. Different files. No Git conflict. They still break production together, because one changes a function the other quietly depends on.</p>
-      <p>Keystone catches that on the GitLab Orbit call graph, before you merge.</p>
+      <p>Keystone catches that on the GitLab Orbit call graph, before you merge — and you can paste <b>your own</b> public repo to find these collisions in your code.</p>
       <button class="btn primary onboard-action" type="button" data-onboard-action="sim">Show me a collision Git can't see</button>
     `
   },
