@@ -1024,7 +1024,7 @@ class Component extends DCLogic {
     const _statDefs = _SC ? _SC.defs : '2,847';
     const _statDefsSub = _SC ? _SC.repo : 'pallets/click';
     const _statBlast = _SC ? String(_SC.maxBlast) : '412';
-    const _statBlastSub = _SC ? _SC.maxSym : 'BaseCommand.main';
+    const _statBlastSub = _SC ? (_SC.maxSym + ' · ' + _SC.spofPct + '% of graph') : 'BaseCommand.main';
     const _statShared = _SC ? String(_SC.shared) : '34';
     const _statSharedSub = _SC ? (_SC.a + ' × ' + _SC.b) : 'echo × option';
     const _ring1 = _SC ? String(_SC.ring1) : '8';
@@ -1252,6 +1252,7 @@ class Component extends DCLogic {
       aFile: pair ? (fileOf(pair.a) || "utils.py") : "utils.py", bFile: pair ? (fileOf(pair.b) || "decorators.py") : "decorators.py",
       aBlast: aBlast, bBlast: bBlast,
       shared: pair ? pair.shared : 0, ring1: pair ? Math.round(pair.shared * 0.4) : 0, ring2: pair ? (pair.shared - Math.round(pair.shared * 0.4)) : 0,
+      spofPct: Object.keys(det).length ? Math.round(((ranked[0] ? ranked[0].t : 0) / Object.keys(det).length) * 100) : 0,
       top: top, chain: chain
     };
   }
