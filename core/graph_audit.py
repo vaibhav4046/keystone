@@ -12,7 +12,6 @@ report says so, and the engine never invents a number.
 """
 from __future__ import annotations
 
-from typing import Optional
 
 
 def review_debt_report(graph, limit: int = 14) -> dict:

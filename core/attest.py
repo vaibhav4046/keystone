@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Optional
 
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 PREDICATE_TYPE = "https://slsa.dev/verification_summary/v1"
@@ -120,7 +119,7 @@ def verify_attestation(att: dict, ledger, *, graph=None) -> dict:
     snapshot_matches = None
     if graph is not None:
         try:
-            from . import impact as impact_mod, mr as mr_mod
+            from . import impact as impact_mod
             pred = att.get("predicate") or {}
             want = pred.get("orbitSnapshotSha256")
             syms = pred.get("targetSymbols") or []

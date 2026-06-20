@@ -44,7 +44,7 @@ import shutil
 import subprocess
 import threading
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass
 from typing import Any, Optional
 
 # glab binary name; override with KEYSTONE_GLAB_BINARY for an absolute path.
