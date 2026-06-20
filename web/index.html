@@ -142,7 +142,7 @@
 
         <p style="font:400 clamp(15px,1.4vw,18px)/1.65 'Inter',sans-serif; color:#B59B86; margin:0 0 36px; max-width:50ch; text-wrap:pretty">Two merge requests pass review, touch different files, have no Git conflict — and still break production together. Keystone reads the call graph and <span style="color:#F6EFE6; font-weight:600">vetoes a merge two humans already approved</span>, then locks that decision in a tamper-evident ledger.</p>
 
-        <p style="font:400 13.5px/1.6 'Inter',sans-serif; color:#8a6c52; margin:0 0 34px; max-width:52ch; text-wrap:pretty">AI coding agents now open merge requests faster than humans can hold the context between them — more parallel changes, more silent collisions. Keystone gates every agent and human MR <b style="color:#FFB14D">ALLOW / HOLD / BLOCK</b> on the call graph. On its own 262-symbol index it flags <b style="color:#FFC24D">17 silent collisions</b> that Git and review would wave through.</p>
+        <p style="font:400 13.5px/1.6 'Inter',sans-serif; color:#8a6c52; margin:0 0 34px; max-width:52ch; text-wrap:pretty">AI coding agents now open merge requests faster than humans can hold the context between them — more parallel changes, more silent collisions. Keystone gates every agent and human MR <b style="color:#FFB14D">ALLOW / HOLD / BLOCK</b> on the call graph. On its own 262-symbol index it flags <b style="color:#FFC24D">16 silent collisions</b> that Git and review would wave through.</p>
 
         <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:13px">Connect your repository</div>
         <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:32px">
@@ -351,7 +351,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2">
               <div>
                 <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">Blast Radius</div>
-                <div style="font:600 18px/1.2 'Space Grotesk',sans-serif; margin-top:8px; letter-spacing:-0.01em">echo <span style="color:#5F636D">×</span> option</div>
+                <div style="font:600 18px/1.2 'Space Grotesk',sans-serif; margin-top:8px; letter-spacing:-0.01em">{{ findA }} <span style="color:#5F636D">×</span> {{ findB }}</div>
               </div>
               <div style="text-align:right">
                 <div style="font:600 38px/1 'Space Grotesk',sans-serif; color:#FF6A3D; font-variant-numeric:tabular-nums">{{ affected }}</div>
@@ -378,7 +378,7 @@
                 </div>
               </div>
             </div>
-            <div style="position:absolute; left:22px; bottom:18px; font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; z-index:2">showing 22 of 34 · direct dependents, grep-verifiable</div>
+            <div style="position:absolute; left:22px; bottom:18px; font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; z-index:2">direct dependents · grep-verifiable</div>
           </div>
 
           <!-- impacted entities -->
@@ -468,7 +468,7 @@
           <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0 0 14px; color:#F6EFE6">Reviewer Cockpit</h1>
           <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:7px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
             <span style="color:#FF7A1A; font:600 12px/1 'JetBrains Mono',monospace">symbol</span>
-            <span style="font:500 13px/1 'JetBrains Mono',monospace; color:#C9CDD4">echo × option</span>
+            <span style="font:500 13px/1 'JetBrains Mono',monospace; color:#C9CDD4">{{ findA }} × {{ findB }}</span>
           </div>
         </section>
         <section style="display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:18px">
@@ -476,7 +476,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2">
               <div>
                 <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">Blast Radius</div>
-                <div style="font:600 18px/1.2 'Space Grotesk',sans-serif; margin-top:8px; letter-spacing:-0.01em">echo <span style="color:#5F636D">×</span> option</div>
+                <div style="font:600 18px/1.2 'Space Grotesk',sans-serif; margin-top:8px; letter-spacing:-0.01em">{{ findA }} <span style="color:#5F636D">×</span> {{ findB }}</div>
               </div>
               <div style="text-align:right">
                 <div style="font:600 38px/1 'Space Grotesk',sans-serif; color:#FF6A3D; font-variant-numeric:tabular-nums">{{ affected }}</div>
@@ -501,7 +501,7 @@
                 </div>
               </div>
             </div>
-            <div style="position:absolute; left:22px; bottom:18px; font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; z-index:2">showing 22 of 34 · direct dependents, grep-verifiable</div>
+            <div style="position:absolute; left:22px; bottom:18px; font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; z-index:2">direct dependents · grep-verifiable</div>
           </div>
           <div style="display:flex; flex-direction:column; gap:18px">
             <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
@@ -540,7 +540,7 @@
                   <span style="flex:1; text-align:center; padding:9px 4px; border-radius:7px; font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:{{ v.color }}; background:{{ v.bg }}; border:1px solid {{ v.border }}">{{ v.label }}</span>
                 </sc-for>
               </div>
-              <p style="font:400 13px/1.55 'Inter',sans-serif; color:#C9CDD4; margin:14px 0 0">Hold the merge: two pending MRs share <span style="color:#F5A623; font-weight:600">34</span> runtime dependents. Stack them into a single review before either lands.</p>
+              <p style="font:400 13px/1.55 'Inter',sans-serif; color:#C9CDD4; margin:14px 0 0">Hold the merge: two pending MRs share <span style="color:#F5A623; font-weight:600">{{ findShared }}</span> runtime dependents. Stack them into a single review before either lands.</p>
             </div>
           </div>
         </section>
@@ -561,7 +561,7 @@
               </div>
               <div style="flex:1; min-width:0">
                 <div style="font:600 15px/1.2 'JetBrains Mono',monospace; color:#F2F3F5">copilot-workspace</div>
-                <div style="font:400 12px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:5px">MR !482 · feat/refactor-echo-and-option</div>
+                <div style="font:400 12px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:5px">MR !482 · feat/refactor-{{ findA }}-and-{{ findB }}</div>
               </div>
               <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:5px 10px; border-radius:999px; color:#FF8A66; background:rgba(255,106,61,0.14); border:1px solid rgba(255,106,61,0.3)">BOT MR</span>
             </div>
@@ -1129,9 +1129,9 @@ class Component extends DCLogic {
         { label: 'BLOCK', color: '#5F636D', bg: 'transparent', border: 'transparent' }
       ],
       rings: [
-        { label: 'Direct dependents (ring 1)', count: _ring1, color: '#FF6A3D' },
-        { label: '1-hop dependents (ring 2)', count: _ring2, color: '#F5A623' },
-        { label: 'Total shared', count: _statShared, color: '#FFC24D' }
+        { label: 'Break together (shared by both)', count: _ring1, color: '#FF6A3D' },
+        { label: 'Hit by one change (ring 2)', count: _ring2, color: '#F5A623' },
+        { label: 'Combined blast radius', count: _SC ? String(_SC.ring1 + _SC.ring2) : '34', color: '#FFC24D' }
       ],
       rows: (_SC ? _SC.top.map(function (t) { return [t.sym, t.kind, t.level]; }) : rowsRaw).map(r => ({
         sym: r[0], type: r[1], impact: r[2],
@@ -1304,7 +1304,7 @@ class Component extends DCLogic {
   function loadOrbit() {
     if (window.__ksScan && window.__ksScan.orbit) { setTimeout(rerender, 50); orbitBadge(); return; }
     indicator("⟳  Loading the real GitLab Orbit graph…", "run");
-    fetch("orbit_snapshot.json").then(function (r) { return r.json(); }).then(function (d) {
+    fetch("orbit_snapshot.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
       window.__ksScan = d;
       indicator("✓  Live · GitLab Orbit self-index · " + d.defs + " defs · " + d.collisions + " collisions", "done");
       setTimeout(rerender, 150); orbitBadge();
