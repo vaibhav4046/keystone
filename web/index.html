@@ -1239,8 +1239,10 @@ class Component extends DCLogic {
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i]; if (el.__scanwired) continue;
       var t = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
-      if (el.childElementCount <= 3 && (/^TRY A LIVE DEMO/.test(t) || t === "START ANALYSIS")) {
+      if (el.childElementCount <= 3 && /^TRY A LIVE DEMO/.test(t)) {
         el.__scanwired = 1; el.addEventListener("click", function () { if (!window.__ksScan) runScan("pallets/click"); }, false);
+      } else if (el.childElementCount <= 3 && t === "START ANALYSIS") {
+        el.__scanwired = 1; el.style.cursor = "pointer"; el.addEventListener("click", function (e) { e.stopPropagation(); var r = prompt("Scan any public GitHub repo (owner/repo):", "pallets/click"); if (r && r.trim()) { window.__ksScan = null; runScan(r.trim()); } }, true);
       }
     }
   }
