@@ -1,28 +1,34 @@
 {
-  "verdict": "ALLOW",
-  "conflict_type": null,
+  "verdict": "HOLD",
+  "conflict_type": "blast_overlap",
   "git_conflict": "NONE",
-  "orbit_collision": false,
-  "shared_dependency": [],
+  "orbit_collision": true,
+  "shared_dependency": [
+    "approve",
+    "get_json",
+    "main",
+    "post_json",
+    "precedent"
+  ],
   "affected_count": {
-    "MR-301": 3,
-    "MR-302": 4
+    "MR-204": 12,
+    "MR-211": 17
   },
   "risk": {
     "mrs": 2,
-    "collisions": 0,
-    "colliding_mrs": 0
+    "collisions": 1,
+    "colliding_mrs": 2
   },
   "mr_a": {
-    "id": "MR-301",
-    "symbol": "clear_transcript",
-    "file": "core/orbit_cli.py"
+    "id": "MR-204",
+    "symbol": "compute_blast_radius",
+    "file": "core/impact.py"
   },
   "mr_b": {
-    "id": "MR-302",
-    "symbol": "precedent",
+    "id": "MR-211",
+    "symbol": "append",
     "file": "core/audit.py"
   },
-  "command": "python skills/keystone/run_review.py shadow-merge --safe",
-  "exit_code": 0
+  "command": "python skills/keystone/run_review.py shadow-merge",
+  "exit_code": 2
 }
