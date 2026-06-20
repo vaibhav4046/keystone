@@ -167,10 +167,10 @@
         </div>
 
         <div style="position:absolute; left:50%; top:50%; width:14%; height:18%; z-index:2; pointer-events:none; mix-blend-mode:screen; transform:translate(-50%,-48%) translate(calc(var(--mx) * -22px), calc(var(--my) * -17px)); transition:transform 0.35s cubic-bezier(0.22,0.61,0.36,1)">
-          <div style="position:absolute; inset:-110%; background:radial-gradient(circle at 50% 52%, rgba(255,238,180,1), rgba(255,138,30,0.6) 32%, rgba(240,72,10,0.18) 60%, transparent 78%); filter:blur(5px); animation:keyGlow 2.4s ease-in-out infinite"></div>
-          <div style="position:absolute; left:34%; bottom:30%; width:32%; height:64%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFE89A, #FF8A1A 58%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.6s ease-in-out infinite alternate"></div>
-          <div style="position:absolute; left:42%; bottom:28%; width:18%; height:50%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFF6D8, #FFB347 60%, transparent); filter:blur(1.5px); transform-origin:50% 100%; animation:flameLick2 0.48s 0.12s ease-in-out infinite alternate"></div>
-          <div style="position:absolute; left:28%; bottom:30%; width:16%; height:44%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFD27A, #F0480A 65%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.7s 0.26s ease-in-out infinite alternate"></div>
+          <div style="position:absolute; inset:-110%; background:radial-gradient(circle at 50% 52%, rgba(255,238,180,1), rgba(255,138,30,0.6) 32%, rgba(240,72,10,0.18) 60%, transparent 78%); filter:blur(5px); animation:keyGlow 3.4s ease-in-out infinite"></div>
+          <div style="position:absolute; left:34%; bottom:30%; width:32%; height:64%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFE89A, #FF8A1A 58%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.85s ease-in-out infinite alternate"></div>
+          <div style="position:absolute; left:42%; bottom:28%; width:18%; height:50%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFF6D8, #FFB347 60%, transparent); filter:blur(1.5px); transform-origin:50% 100%; animation:flameLick2 0.72s 0.12s ease-in-out infinite alternate"></div>
+          <div style="position:absolute; left:28%; bottom:30%; width:16%; height:44%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFD27A, #F0480A 65%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.98s 0.26s ease-in-out infinite alternate"></div>
         </div>
 
         <div style="position:absolute; left:0; top:0; width:240px; height:240px; margin:-120px 0 0 -120px; border-radius:50%; background:radial-gradient(circle, rgba(255,170,80,0.45), rgba(255,122,26,0.14) 45%, transparent 70%); mix-blend-mode:screen; transform:translate(var(--px), var(--py)); opacity:var(--torch); transition:opacity 0.3s ease-out; pointer-events:none; z-index:3"></div>
@@ -880,7 +880,7 @@ class Component extends DCLogic {
       const len = 120 + Math.pow(Math.random(), 1.5) * 250;
       const x1 = (cx + Math.cos(a) * inner).toFixed(1), y1 = (cy + Math.sin(a) * inner).toFixed(1);
       const x2 = (cx + Math.cos(a) * (inner + len)).toFixed(1), y2 = (cy + Math.sin(a) * (inner + len)).toFixed(1);
-      back.push(R('line', { key: 'b' + i, x1, y1, x2, y2, stroke: '#F0480A', strokeWidth: 2 + Math.random() * 1.8, strokeOpacity: 0.2, style: { opacity: 0, animation: 'rayIn 1.4s ease ' + (0.2 + (i / BN) * 1.8).toFixed(2) + 's forwards' } }));
+      back.push(R('line', { key: 'b' + i, x1, y1, x2, y2, stroke: '#F0480A', strokeWidth: 2 + Math.random() * 1.8, strokeOpacity: 0.2, style: { opacity: 0, animation: 'rayIn 2s cubic-bezier(0.22,0.61,0.36,1) ' + (0.3 + (i / BN) * 2.6).toFixed(2) + 's forwards' } }));
     }
     const backG = R('g', { key: 'back', style: { transformBox: 'fill-box', transformOrigin: 'center', filter: 'blur(4px)', animation: 'spinSlow 420s linear infinite reverse' } }, back);
 
@@ -896,10 +896,10 @@ class Component extends DCLogic {
       const op = (0.14 + (len / 330) * 0.52).toFixed(2);
       const w = (0.4 + Math.random() * 0.9).toFixed(2);
       const col = Math.random() < 0.14 ? '#FFC24D' : '#FF6A1A';
-      const delay = (0.2 + (i / RN) * 2.4 + Math.random() * 0.3).toFixed(2);
-      rays.push(R('line', { key: 'r' + i, x1, y1, x2, y2, stroke: col, strokeWidth: w, strokeOpacity: op, style: { opacity: 0, transformBox: 'fill-box', transformOrigin: cx + 'px ' + cy + 'px', animation: 'rayIn 1.1s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's both' } }));
+      const delay = (0.3 + (i / RN) * 3.4 + Math.random() * 0.3).toFixed(2);
+      rays.push(R('line', { key: 'r' + i, x1, y1, x2, y2, stroke: col, strokeWidth: w, strokeOpacity: op, style: { opacity: 0, transformBox: 'fill-box', transformOrigin: cx + 'px ' + cy + 'px', animation: 'rayIn 1.5s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's both' } }));
     }
-    const rayG = R('g', { key: 'rays', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'spinSlow 360s linear infinite, rayBreathe 7s ease-in-out infinite' } }, rays);
+    const rayG = R('g', { key: 'rays', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'spinSlow 480s linear infinite, rayBreathe 9s ease-in-out infinite' } }, rays);
 
     // ---- Layer 2: faint concentric rings ----
     const circ = [70, 124, 182, 244, 300].map((r, i) => R('circle', { key: 'cc' + i, cx, cy, r, fill: 'none', stroke: 'rgba(255,120,40,0.06)', strokeWidth: 0.6, style: { opacity: 0, animation: 'rayIn 1.2s ease ' + (0.5 + i * 0.25) + 's forwards' } }));
@@ -913,7 +913,7 @@ class Component extends DCLogic {
       const t1 = major ? tr - 10 : tr - 5;
       ticks.push(R('line', { key: 't' + i, x1: (cx + Math.cos(a) * t1).toFixed(1), y1: (cy + Math.sin(a) * t1).toFixed(1), x2: (cx + Math.cos(a) * tr).toFixed(1), y2: (cy + Math.sin(a) * tr).toFixed(1), stroke: major ? 'rgba(255,180,90,0.4)' : 'rgba(255,140,60,0.18)', strokeWidth: major ? 1.1 : 0.6 }));
     }
-    const tickG = R('g', { key: 'ticks', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'rayIn 1.6s ease 0.8s forwards, spinSlow 200s linear infinite reverse' } }, [R('circle', { key: 'tr', cx, cy, r: tr, fill: 'none', stroke: 'rgba(255,140,60,0.12)', strokeWidth: 0.6 }), ...ticks]);
+    const tickG = R('g', { key: 'ticks', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'rayIn 2s cubic-bezier(0.22,0.61,0.36,1) 0.9s forwards, spinSlow 300s linear infinite reverse' } }, [R('circle', { key: 'tr', cx, cy, r: tr, fill: 'none', stroke: 'rgba(255,140,60,0.12)', strokeWidth: 0.6 }), ...ticks]);
 
     // ---- Layer 3: molten branching bolts ----
     const paths = [];
@@ -933,11 +933,11 @@ class Component extends DCLogic {
       const delay = p.t0.toFixed(2);
       const common = { d: p.d, fill: 'none', pathLength: 1, strokeLinecap: 'round', strokeLinejoin: 'round' };
       // soft outer glow, then molten body, then bright core — all draw on
-      crackKids.push(R('path', { key: 'cg' + i, ...common, stroke: '#F0480A', strokeWidth: p.w * 4.2, strokeOpacity: 0.32, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.3s ease-out ' + delay + 's forwards' } }));
-      crackKids.push(R('path', { key: 'cm' + i, ...common, stroke: '#FF8A1A', strokeWidth: p.w * 2, strokeOpacity: 0.95, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.3s ease-out ' + delay + 's forwards' } }));
-      crackKids.push(R('path', { key: 'ck' + i, ...common, stroke: '#FFF2D0', strokeWidth: Math.max(0.9, p.w * 0.7), style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.3s ease-out ' + delay + 's forwards' } }));
+      crackKids.push(R('path', { key: 'cg' + i, ...common, stroke: '#F0480A', strokeWidth: p.w * 4.2, strokeOpacity: 0.32, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.9s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's forwards' } }));
+      crackKids.push(R('path', { key: 'cm' + i, ...common, stroke: '#FF8A1A', strokeWidth: p.w * 2, strokeOpacity: 0.95, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.9s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's forwards' } }));
+      crackKids.push(R('path', { key: 'ck' + i, ...common, stroke: '#FFF2D0', strokeWidth: Math.max(0.9, p.w * 0.7), style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.9s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's forwards' } }));
       // traveling spark that runs along the bolt after it draws (continuous)
-      crackKids.push(R('path', { key: 'cs' + i, ...common, stroke: '#FFFBEC', strokeWidth: Math.max(1.2, p.w * 1.1), strokeOpacity: 1, style: { strokeDasharray: '0.05 0.95', strokeDashoffset: 1, animation: 'sparkTravel ' + (2.6 + (i % 5) * 0.5) + 's linear ' + (delay + 1.4) + 's infinite' } }));
+      crackKids.push(R('path', { key: 'cs' + i, ...common, stroke: '#FFFBEC', strokeWidth: Math.max(1.2, p.w * 1.1), strokeOpacity: 1, style: { strokeDasharray: '0.05 0.95', strokeDashoffset: 1, animation: 'sparkTravel ' + (3.8 + (i % 5) * 0.6) + 's linear ' + (parseFloat(delay) + 2).toFixed(2) + 's infinite' } }));
     });
 
     // ---- Layer 4: drifting embers ----
@@ -950,7 +950,7 @@ class Component extends DCLogic {
     }
 
     // ---- Layer 4.5: ring of lava stones, illumination flows stone → stone ----
-    const SN = 10, ringR = 196, period = 5;
+    const SN = 10, ringR = 196, period = 6.6;
     const stoneCenters = [];
     const stoneG = [];
     for (let i = 0; i < SN; i++) {
@@ -969,7 +969,7 @@ class Component extends DCLogic {
       for (let k = 0; k < 3; k++) { const v0 = vp[(k * 3) % verts], v1 = vp[(k * 3 + 4) % verts]; veinD += 'M' + ((sx + v0[0]) / 2).toFixed(1) + ' ' + ((sy + v0[1]) / 2).toFixed(1) + ' Q' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' ' + ((sx + v1[0]) / 2).toFixed(1) + ' ' + ((sy + v1[1]) / 2).toFixed(1) + ' '; }
       // rim highlight arc (top-left lit edge)
       const rimD = 'M' + vp[5][0].toFixed(1) + ' ' + vp[5][1].toFixed(1) + ' L' + vp[6][0].toFixed(1) + ' ' + vp[6][1].toFixed(1) + ' L' + vp[7][0].toFixed(1) + ' ' + vp[7][1].toFixed(1);
-      const bob = (5 + (i % 4)).toFixed(1);
+      const bob = (7.5 + (i % 4)).toFixed(1);
       stoneG.push(R('g', { key: 'stg' + i, style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'stoneBob ' + bob + 's ease-in-out ' + (i * 0.3).toFixed(1) + 's infinite' } }, [
         R('circle', { key: 'gl', cx: sx.toFixed(1), cy: sy.toFixed(1), r: base * 2.8, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'stoneFlow ' + period + 's ease-in-out ' + flowDelay + 's infinite' } }),
         R('path', { key: 'bd', d: dp, fill: 'url(#stonefill)', stroke: 'rgba(120,60,28,0.6)', strokeWidth: 1, style: { opacity: 0, animation: 'rayIn 0.9s ease ' + (0.6 + i * 0.1).toFixed(2) + 's forwards' } }),
@@ -991,18 +991,18 @@ class Component extends DCLogic {
     }
 
     // ---- shockwave rings pulsing out from the keyhole ----
-    const shock = [0, 1.4, 2.8, 4.2].map((d, i) => R('circle', { key: 'sw' + i, cx, cy, r: 210, fill: 'none', stroke: 'rgba(255,150,50,0.7)', strokeWidth: 1.6, style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'shockwave 5.6s cubic-bezier(0.22,0.61,0.36,1) ' + (1.6 + d) + 's infinite' } }));
+    const shock = [0, 1.85, 3.7, 5.55].map((d, i) => R('circle', { key: 'sw' + i, cx, cy, r: 210, fill: 'none', stroke: 'rgba(255,150,50,0.7)', strokeWidth: 1.6, style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'shockwave 7.4s cubic-bezier(0.22,0.61,0.36,1) ' + (1.8 + d) + 's infinite' } }));
 
     // ---- Layer 5: the keyhole core ----
     const keyhole = [
-      R('circle', { key: 'kg2', cx, cy, r: 120, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'rayIn 1.4s ease 0.1s forwards, keyGlow 3.2s ease-in-out 1.4s infinite' } }),
-      R('circle', { key: 'kg1', cx, cy, r: 64, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 2.4s ease-in-out infinite' } }),
+      R('circle', { key: 'kg2', cx, cy, r: 120, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'rayIn 1.8s cubic-bezier(0.22,0.61,0.36,1) 0.1s forwards, keyGlow 4s ease-in-out 1.8s infinite' } }),
+      R('circle', { key: 'kg1', cx, cy, r: 64, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 3.4s ease-in-out infinite' } }),
       R('circle', { key: 'kc', cx, cy: cy - 13, r: 18, fill: 'url(#khot)' }),
       R('path', { key: 'kw', d: 'M ' + (cx - 7.5) + ' ' + (cy - 2) + ' L ' + (cx - 14) + ' ' + (cy + 44) + ' L ' + (cx + 14) + ' ' + (cy + 44) + ' L ' + (cx + 7.5) + ' ' + (cy - 2) + ' Z', fill: 'url(#khot)' }),
-      R('circle', { key: 'kcore', cx, cy: cy - 13, r: 7, fill: '#FFF6D8', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 1.6s ease-in-out infinite' } })
+      R('circle', { key: 'kcore', cx, cy: cy - 13, r: 7, fill: '#FFF6D8', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 2.4s ease-in-out infinite' } })
     ];
 
-    this._art = R('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet', style: { display: 'block', overflow: 'visible', filter: 'drop-shadow(0 0 18px rgba(240,72,10,0.5))' } }, [backG, rayG, ...circ, tickG, ...crackKids, ...linkG, ...stoneG, ...shock, ...sparks, ...keyhole]);
+    this._art = R('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet', shapeRendering: 'geometricPrecision', style: { display: 'block', overflow: 'visible', filter: 'drop-shadow(0 0 18px rgba(240,72,10,0.5))' } }, [backG, rayG, ...circ, tickG, ...crackKids, ...linkG, ...stoneG, ...shock, ...sparks, ...keyhole]);
     return this._art;
   }
 
@@ -1139,19 +1139,21 @@ class Component extends DCLogic {
 </script>
 <script>
 (function () {
+  // Integration: route the premium dc design's "Sign in" to the real working
+  // analyzer (app.html); the rest of the prototype (demo, nav, panels) stays
+  // natively explorable. Ported from the previous landing build.
   function go(url) { return function (e) { e.preventDefault(); e.stopPropagation(); location.href = url; }; }
   function wire() {
-    var nodes = document.querySelectorAll('div,span,button,a');
+    var nodes = document.querySelectorAll("div,span,button,a");
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i]; if (el.__wired) continue;
-      var t = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
-      // Route "Sign in" to the real working analyzer; leave "Try a live demo" + all nav native so the full dc prototype stays explorable.
-      if (el.childElementCount <= 3 && /\bSIGN IN\b/.test(t) && t.length < 30) {
-        el.__wired = 1; el.style.cursor = 'pointer'; el.addEventListener('click', go('app.html'), true);
+      var t = (el.textContent || "").replace(/s+/g, " ").trim().toUpperCase();
+      if (el.childElementCount <= 3 && /SIGN IN/.test(t) && t.length < 30) {
+        el.__wired = 1; el.style.cursor = "pointer"; el.addEventListener("click", go("app.html"), true);
       }
     }
   }
-  window.addEventListener('load', function () { setTimeout(wire, 600); setTimeout(wire, 1500); setTimeout(wire, 3000); });
+  window.addEventListener("load", function () { setTimeout(wire, 600); setTimeout(wire, 1500); setTimeout(wire, 3000); });
 })();
 </script>
 </body>
