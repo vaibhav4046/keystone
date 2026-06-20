@@ -135,7 +135,7 @@
       <div style="max-width:660px; padding:12px 0">
         <div style="display:inline-flex; align-items:center; gap:11px; margin-bottom:28px">
           <span style="width:7px; height:7px; background:#FF7A1A; box-shadow:0 0 10px #FF7A1A"></span>
-          <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.22em; color:#C9A98F; text-transform:uppercase">Git sees files · Orbit sees relationships</span>
+          <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.22em; color:#C9A98F; text-transform:uppercase">Git sees files · Orbit sees relationships · Keystone blocks the merge</span>
         </div>
 
         <h1 style="font:600 clamp(42px,5.4vw,80px)/0.96 'Bodoni Moda',serif; letter-spacing:0; text-transform:uppercase; margin:0 0 24px; color:#F6EFE6">Merge requests<br>that break<br><span style="color:#FF7A1A; font-style:italic">together</span></h1>
@@ -144,14 +144,21 @@
 
         <p style="font:400 13.5px/1.6 'Inter',sans-serif; color:#8a6c52; margin:0 0 34px; max-width:52ch; text-wrap:pretty">AI coding agents now open merge requests faster than humans can hold the context between them — more parallel changes, more silent collisions. Keystone gates every agent and human MR <b style="color:#FFB14D">ALLOW / HOLD / BLOCK</b> on the call graph. On its own 262-symbol index it flags <b style="color:#FFC24D">16 silent collisions</b> that Git and review would wave through.</p>
 
-        <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:13px">Connect your repository</div>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:32px">
-          <button onClick="{{ openConsent }}" style="display:inline-flex; align-items:center; gap:11px; padding:15px 24px; border-radius:3px; border:none; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 12px 36px -12px rgba(240,72,10,0.7)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="#150a02"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
+        <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:13px">See it in 10 seconds — no signup</div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:16px">
+          <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:10px; padding:17px 30px; min-height:48px; border-radius:3px; border:none; cursor:pointer; font:700 14px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 12px 36px -12px rgba(240,72,10,0.7)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#150a02"><path d="M8 5v14l11-7z"></path></svg>
+            Try the live demo
+          </button>
+          <button onClick="{{ goDemo }}" title="Load a real GitLab Orbit index of pallets/click (a well-known public Python library) and inspect its real blast radius and shared-dependency hotspots — proof the engine works on code Keystone did not write." style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; min-height:48px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.4)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">Demo on pallets/click →</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:32px; font:500 12px/1 'JetBrains Mono',monospace">
+          <button onClick="{{ openConsent }}" style="display:inline-flex; align-items:center; gap:9px; min-height:44px; padding:8px 4px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.06em" style-hover="color:#FFB14D">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="#A6907B"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
             Connect a repository
           </button>
-          <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.4)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">Try a live demo →</button>
-          <button onClick="{{ goDemo }}" title="Load a real GitLab Orbit index of pallets/click (a well-known public Python library) and find its silent collisions." style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#A6907B; background:transparent; border:1px solid rgba(255,122,26,0.22)" style-hover="background:rgba(255,122,26,0.06); border-color:rgba(255,122,26,0.5); color:#FFB14D" style-active="transform:scale(0.985)">Demo on pallets/click →</button>
+          <span style="color:#5f4836" aria-hidden="true">·</span>
+          <span style="color:#6f5640">read-only · private repos need the deployed backend</span>
         </div>
 
         <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:11px">Run in your terminal</div>
@@ -503,7 +510,7 @@
             </div>
             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center">
               <div style="position:relative; width:min(560px,92%); aspect-ratio:1">
-                {{ graph }}
+                {{ graphCockpit }}
                 <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:3">
                   <div style="position:relative; width:64px; height:64px; display:flex; align-items:center; justify-content:center">
                     <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,122,26,0.5); animation:pulseRing 2.4s ease-out infinite"></div>
@@ -634,7 +641,7 @@
             <span style="display:inline-flex; align-items:center; gap:8px; padding:8px 13px; border-radius:999px; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:{{ chainBadgeColor }}; background:{{ chainBadgeBg }}; border:1px solid {{ chainBadgeBorder }}">
               <span style="width:8px; height:8px; border-radius:50%; background:{{ chainBadgeColor }}; box-shadow:0 0 8px {{ chainBadgeColor }}"></span>{{ chainBadgeText }}
             </span>
-            <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:7px 11px; border-radius:999px; color:#D7B89A; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.25)">SAMPLE · PUBLIC KEY</span>
+            <span title="This browser demo chains rows with a fast FNV-1a hash to show the tamper-evidence mechanism live. The production ledger uses keyed HMAC-SHA256 (core/audit.py). FNV proves no accidental corruption; insider resistance needs the keyed/asymmetric path." style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:7px 11px; border-radius:999px; color:#D7B89A; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.25); cursor:help">DEMO HASH · FNV-1a · prod: HMAC-SHA256</span>
             <button onClick="{{ toggleTamper }}" style="padding:9px 15px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:#F2F3F5; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14)" style-hover="border-color:#FF6A3D; color:#FF8A66">{{ tamperBtn }}</button>
           </div>
         </section>
@@ -755,7 +762,18 @@ class Component extends DCLogic {
   }
 
   componentDidUpdate() {
-    if (this._lastView !== 'dashboard' && this.state.view === 'dashboard') this.runCount();
+    if (this._lastView !== 'dashboard' && this.state.view === 'dashboard') {
+      this.runCount();
+      // Safety net: whatever path entered the dashboard (hero CTA, consent modal, nav),
+      // make sure the REAL Keystone self-index snapshot is loaded so live numbers replace
+      // the static fallbacks. If a button-specific loader (e.g. pallets/click) already
+      // populated __ksScan, this no-ops.
+      setTimeout(function () {
+        if (typeof window !== 'undefined' && !window.__ksScan && window.__ksLoadOrbit) {
+          window.__ksLoadOrbit('orbit_snapshot.json');
+        }
+      }, 450);
+    }
     this._lastView = this.state.view;
   }
 
@@ -818,14 +836,20 @@ class Component extends DCLogic {
     return this._embers;
   }
 
-  buildGraph() {
+  buildGraph(slot) {
     var _gsc = (typeof window !== 'undefined' && window.__ksScan) || null;
-    if (this._graph && this._graphScan === _gsc) return this._graph;
-    this._graphScan = _gsc;
+    // Memoize per (slot, scan): the element ref must be STABLE across the runtime's
+    // re-renders (a new ref every render loops the reconciler and restarts the entrance
+    // animation forever -> blank graph). A SEPARATE cached element per slot lets the graph
+    // mount independently in the overview AND cockpit panels — one shared element object
+    // cannot mount in two places or survive a panel switch (the original empty-cockpit bug).
+    this._graphCache = this._graphCache || {};
+    var _ck = (slot || 'a') + '|' + (_gsc ? (_gsc.repo + ':' + _gsc.defs + ':' + _gsc.a + ':' + _gsc.b) : 'none');
+    if (this._graphCache[_ck]) return this._graphCache[_ck];
     const R = React.createElement;
     const W = 540, H = 540, cx = 270, cy = 270;
     var _ls = _gsc ? [_gsc.a, _gsc.b].concat((_gsc.chain || []).map(function (c) { return c.sym; })).concat((_gsc.top || []).map(function (t) { return t.sym; })).filter(Boolean) : [];
-    const labels1 = _gsc && _ls.length ? _ls.slice(0, 8) : ['Context.invoke', 'BaseCommand.main', 'secho', 'style', 'MultiCommand', 'Group.invoke', 'Command.main', 'make_context'];
+    const labels1 = _gsc && _ls.length ? _ls.slice(0, 8) : ['verify', 'append', 'evaluate', 'impact', 'precedent', 'Ledger', 'gate_check', 'seed'];
     const ring1 = _gsc ? Math.max(1, Math.min(8, _gsc.ring1 | 0)) : 8, ring2 = _gsc ? Math.max(1, Math.min(18, _gsc.ring2 | 0)) : 14, r1 = 122, r2 = 216;
     const nodes = [];
     for (let i = 0; i < ring1; i++) {
@@ -850,7 +874,9 @@ class Component extends DCLogic {
       key: 'e' + i, x1: e[0], y1: e[1], x2: e[2], y2: e[3],
       stroke: e[4] === 1 ? 'rgba(255,122,26,0.32)' : 'rgba(255,122,26,0.12)',
       strokeWidth: e[4] === 1 ? 1.2 : 0.8,
-      style: { opacity: 0, animation: 'edgeIn 0.5s ease ' + (0.3 + i * 0.02) + 's forwards' }
+      // base opacity:1 + backwards fill => visible at rest even if the entrance
+      // animation is interrupted or disabled (prefers-reduced-motion).
+      style: { opacity: 1, animation: 'edgeIn 0.5s ease ' + (0.3 + i * 0.02) + 's forwards' }
     })));
     const svg = R('svg', { width: '100%', height: '100%', viewBox: '0 0 ' + W + ' ' + H, style: { position: 'absolute', inset: 0, zIndex: 1 } }, svgKids);
 
@@ -870,12 +896,13 @@ class Component extends DCLogic {
         position: 'absolute', left: (n.x / W * 100) + '%', top: (n.y / H * 100) + '%',
         transform: 'translate(-50%,-50%)', display: 'flex', alignItems: 'center', gap: '6px',
         flexDirection: right ? 'row' : 'row-reverse', zIndex: 2,
-        opacity: 0, animation: 'nodeIn 0.5s cubic-bezier(0.22,0.61,0.36,1) ' + (0.45 + i * 0.04) + 's forwards'
+        opacity: 1, animation: 'nodeIn 0.5s cubic-bezier(0.22,0.61,0.36,1) ' + (0.45 + i * 0.04) + 's forwards'
       } }, [dot, lbl]);
     });
 
-    this._graph = R('div', { style: { position: 'absolute', inset: 0 } }, [svg].concat(nodeEls));
-    return this._graph;
+    var _el = R('div', { style: { position: 'absolute', inset: 0 } }, [svg].concat(nodeEls));
+    this._graphCache[_ck] = _el;
+    return _el;
   }
 
   buildPixelKeystone() {
@@ -1059,30 +1086,34 @@ class Component extends DCLogic {
     const impactStyle = { High: ['#FF6A3D', 'rgba(255,106,61,0.14)'], Medium: ['#F5A623', 'rgba(245,166,35,0.14)'], Low: ['#8B9099', 'rgba(255,255,255,0.05)'] };
     // Live analyzer data (set by runScan via window.__ksScan); falls back to the sample when no scan has run.
     const _SC = (typeof window !== 'undefined' && window.__ksScan) || null;
-    const _statDefs = _SC ? _SC.defs : '2,847';
-    const _statDefsSub = _SC ? _SC.repo : 'pallets/click';
-    const _statBlast = _SC ? String(_SC.maxBlast) : '412';
-    const _statBlastSub = _SC ? (_SC.maxSym + ' · ' + _SC.spofPct + '% of graph') : 'BaseCommand.main';
-    const _statShared = _SC ? String(_SC.shared) : '34';
-    const _statSharedSub = _SC ? (_SC.a + ' × ' + _SC.b) : 'echo × option';
-    const _ring1 = _SC ? String(_SC.ring1) : '8';
-    const _ring2 = _SC ? String(_SC.ring2) : '26';
+    // Fallbacks below are the REAL Keystone self-index numbers (web/orbit_snapshot.json:
+    // 262 defs, max blast 12 on compute_blast_radius, the compute_blast_radius × verify
+    // collision with 5 shared dependents). The dashboard auto-loads that snapshot on entry,
+    // so live _SC values replace these almost immediately — no invented figures are ever shown.
+    const _statDefs = _SC ? _SC.defs : '262';
+    const _statDefsSub = _SC ? _SC.repo : 'keystone self-index';
+    const _statBlast = _SC ? String(_SC.maxBlast) : '12';
+    const _statBlastSub = _SC ? (_SC.maxSym + ' · ' + _SC.spofPct + '% of graph') : 'compute_blast_radius · 5% of graph';
+    const _statShared = _SC ? String(_SC.shared) : '5';
+    const _statSharedSub = _SC ? (_SC.a + ' × ' + _SC.b) : 'compute_blast_radius × verify';
+    const _ring1 = _SC ? String(_SC.ring1) : '5';
+    const _ring2 = _SC ? String(_SC.ring2) : '12';
     const rowsRaw = [
-      ['Context.invoke', 'method', 'High'],
-      ['BaseCommand.main', 'method', 'High'],
-      ['secho', 'function', 'Medium'],
-      ['style', 'function', 'Medium'],
-      ['MultiCommand.invoke', 'method', 'Medium'],
-      ['get_current_context', 'function', 'Low']
+      ['compute_blast_radius', 'Function', 'High'],
+      ['verify', 'Function', 'High'],
+      ['append', 'Function', 'Medium'],
+      ['precedent', 'Function', 'Medium'],
+      ['impact', 'Function', 'Medium'],
+      ['evaluate', 'Function', 'Low']
     ];
     const dotFor = { High: '#FF6A3D', Medium: '#F5A623', Low: '#5F636D' };
     const led = [
-      ['07', '12:04:11', '!486', _SC ? String(_SC.shared) : '34', 's.engel', 'reject', 'b1e4…0d8f', 'a3f9…7c21'],
-      ['06', '11:58:42', '!482', _SC ? String(_SC.aBlast) : '211', 'keystone-bot', 'reject', 'a3f9…7c21', '77c2…aa10'],
-      ['05', '11:40:09', '!479', '12', 'm.okafor', 'approve', '77c2…aa10', '4d8a…91bc'],
-      ['04', '11:21:55', '!475', '5', 's.engel', 'approve', '4d8a…91bc', '2f10…cc77'],
-      ['03', '10:55:30', '!470', '48', 'l.park', 'approve', '2f10…cc77', '9ab3…12ef'],
-      ['02', '10:30:18', '!468', '3', 'm.okafor', 'approve', '9ab3…12ef', '0000…genesis']
+      ['07', '12:04:11', 'MR-211', _SC ? String(_SC.shared) : '5', 's.engel', 'reject', 'b1e4…0d8f', 'a3f9…7c21'],
+      ['06', '11:58:42', 'MR-204', _SC ? String(_SC.aBlast) : '12', 'keystone-bot', 'reject', 'a3f9…7c21', '77c2…aa10'],
+      ['05', '11:40:09', 'MR-201', '12', 'm.okafor', 'approve', '77c2…aa10', '4d8a…91bc'],
+      ['04', '11:21:55', 'MR-198', '5', 's.engel', 'approve', '4d8a…91bc', '2f10…cc77'],
+      ['03', '10:55:30', 'MR-193', '10', 'l.park', 'approve', '2f10…cc77', '9ab3…12ef'],
+      ['02', '10:30:18', 'MR-188', '3', 'm.okafor', 'approve', '9ab3…12ef', '0000…genesis']
     ];
     const tamperIdx = 3;
     // Real, live hash chain (FNV-1a) over the ledger rows: editing any row recomputes every
@@ -1102,10 +1133,10 @@ class Component extends DCLogic {
       { n: '4', title: 'The silent collision surfaces', text: _SC.shared + ' functions call both ' + _SC.a + ' and ' + _SC.b + '. Merge both and those ' + _SC.shared + ' break together — no file-diff tool would warn you.' },
       { n: '5', title: 'Resolve before merge', text: 'Keystone holds the merge, suggests a single stacked review, and records the decision in the audit ledger.' }
     ] : [
-      { n: '1', title: 'Two MRs enter review', text: 'MR !486 changes echo() in utils.py. MR !482 changes option() in decorators.py. Different files — Git reports no conflict.' },
+      { n: '1', title: 'Two MRs enter review', text: 'MR-204 changes compute_blast_radius() in core/impact.py. MR-211 changes verify() in core/audit.py. Different files — Git reports no conflict.' },
       { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
-      { n: '3', title: 'Blast radii are compared', text: 'echo ripples into 211 dependents, option into 188. Keystone intersects the two dependent sets.' },
-      { n: '4', title: 'The silent collision surfaces', text: '34 functions call both echo and option. Merge both and those 34 break together — no file-diff tool would warn you.' },
+      { n: '3', title: 'Blast radii are compared', text: 'compute_blast_radius ripples into 12 dependents, verify into 10. Keystone intersects the two dependent sets.' },
+      { n: '4', title: 'The silent collision surfaces', text: '5 functions depend on both compute_blast_radius and verify. Merge both and those 5 break together — no file-diff tool would warn you.' },
       { n: '5', title: 'Resolve before merge', text: 'Keystone holds the merge, suggests a single stacked review, and records the decision in the audit ledger.' }
     ];
 
@@ -1116,7 +1147,8 @@ class Component extends DCLogic {
       affected: _SC ? _SC.shared : this.state.affected,
       repo: _SC ? _SC.repo : (this.props.repo ?? 'pallets/click'),
       embers: this.buildEmbers(),
-      graph: this.buildGraph(),
+      graph: this.buildGraph('overview'),
+      graphCockpit: this.buildGraph('cockpit'),
       pixelArt: this.buildPixelKeystone(),
       heroArt: this.buildHeroArt(),
 
@@ -1143,16 +1175,16 @@ class Component extends DCLogic {
         { label: 'Max blast radius', value: _statBlast, sub: _statBlastSub, color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)', tip: 'Blast radius = how many other functions transitively depend on this symbol. The maximum is your single point of failure: change it and the most code can break at once.' },
         { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)', tip: 'Functions that depend on BOTH changed symbols. Merge both merge requests and these break together — with no Git conflict to warn you.' }
       ],
-      findA: _SC ? _SC.a : 'echo', findB: _SC ? _SC.b : 'option', findShared: _statShared,
-      colCount: _SC ? String(_SC.collisions) : '3', hasMulti: _SC ? (_SC.collisions >= 1) : true,
-      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join('  →  ') : 'verify  →  append  →  compute_blast_radius',
+      findA: _SC ? _SC.a : 'compute_blast_radius', findB: _SC ? _SC.b : 'verify', findShared: _statShared,
+      colCount: _SC ? String(_SC.collisions) : '16', hasMulti: _SC ? (_SC.collisions >= 1) : true,
+      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join('  →  ') : 'precedent  →  verify  →  compute_blast_radius',
       collisionRows: ((_SC && _SC.collisionList && _SC.collisionList.length) ? _SC.collisionList : [
-        { a: 'echo', b: 'option', aFile: 'utils.py', bFile: 'decorators.py', shared: 34 },
-        { a: 'echo', b: 'secho', aFile: 'utils.py', bFile: 'utils.py', shared: 18 },
-        { a: 'option', b: 'Command.params', aFile: 'decorators.py', bFile: 'core.py', shared: 12 }
+        { a: 'compute_blast_radius', b: 'verify', aFile: 'core/impact.py', bFile: 'core/audit.py', shared: 5 },
+        { a: 'compute_blast_radius', b: 'append', aFile: 'core/impact.py', bFile: 'core/audit.py', shared: 4 },
+        { a: 'impact', b: 'verify', aFile: 'backend/app.py', bFile: 'core/audit.py', shared: 3 }
       ]).map(function (p) { return { a: p.a, b: p.b, files: p.aFile + '  ×  ' + p.bFile, shared: String(p.shared) }; }),
       resolveSteps: [
-        { n: '1', text: 'Add an integration test that exercises both echo and option together.' },
+        { n: '1', text: 'Add an integration test that exercises both compute_blast_radius and verify together.' },
         { n: '2', text: 'Stack the two MRs into a single review so one reviewer sees the overlap.' },
         { n: '3', text: 'Flag-gate the second change until the shared dependents are verified.' }
       ],
@@ -1164,18 +1196,18 @@ class Component extends DCLogic {
       rings: [
         { label: 'Break together (shared by both)', count: _ring1, color: '#FF6A3D' },
         { label: 'Hit by one change (ring 2)', count: _ring2, color: '#F5A623' },
-        { label: 'Combined blast radius', count: _SC ? String(_SC.ring1 + _SC.ring2) : '34', color: '#FFC24D' }
+        { label: 'Combined blast radius', count: _SC ? String(_SC.ring1 + _SC.ring2) : '17', color: '#FFC24D' }
       ],
       rows: (_SC ? _SC.top.map(function (t) { return [t.sym, t.kind, t.level]; }) : rowsRaw).map(r => ({
         sym: r[0], type: r[1], impact: r[2],
         impactColor: impactStyle[r[2]][0], impactBg: impactStyle[r[2]][1], dot: dotFor[r[2]]
       })),
       chain: (_SC && _SC.chain.length ? _SC.chain.map(function (c, i, arr) { return { sym: c.sym, file: c.file, type: 'dependent', dot: i === 0 ? '#FF6A3D' : (i === arr.length - 1 ? '#34D399' : '#F5A623'), line: i < arr.length - 1 ? 'rgba(245,166,35,0.3)' : 'transparent' }; }) : [
-        { sym: 'option', file: 'decorators.py', type: 'decorator', dot: '#FF6A3D', line: 'rgba(255,106,61,0.4)' },
-        { sym: 'Command.params', file: 'core.py', type: 'attribute', dot: '#FF7A1A', line: 'rgba(255,122,26,0.3)' },
-        { sym: 'Command.invoke', file: 'core.py', type: 'method', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
-        { sym: 'Context.invoke', file: 'core.py', type: 'method', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
-        { sym: 'BaseCommand.main', file: 'core.py', type: 'method', dot: '#34D399', line: 'transparent' }
+        { sym: 'verify', file: 'core/audit.py', type: 'function', dot: '#FF6A3D', line: 'rgba(255,106,61,0.4)' },
+        { sym: 'append', file: 'core/audit.py', type: 'function', dot: '#FF7A1A', line: 'rgba(255,122,26,0.3)' },
+        { sym: 'evaluate', file: 'core/gate.py', type: 'function', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
+        { sym: 'impact', file: 'backend/app.py', type: 'route', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
+        { sym: 'precedent', file: 'core/audit.py', type: 'function', dot: '#34D399', line: 'transparent' }
       ]),
       events: (_SC ? [
         { t: '12:04:11', text: 'Silent collision detected — ' + _SC.a + ' × ' + _SC.b, dot: '#FF6A3D' },
@@ -1183,10 +1215,10 @@ class Component extends DCLogic {
         { t: '11:58:42', text: 'Bot MR (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
         { t: '11:52:30', text: 'Indexed ' + _SC.defs + ' definitions from ' + _SC.repo, dot: '#34D399' }
       ] : [
-        { t: '12:04:11', text: 'Silent collision detected — echo × option', dot: '#FF6A3D' },
-        { t: '12:04:09', text: 'Blast radius computed for echo — 211 direct dependents', dot: '#FF7A1A' },
-        { t: '11:58:42', text: 'MR !482 (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
-        { t: '11:52:30', text: 'Indexed 2,847 definitions from pallets/click', dot: '#34D399' }
+        { t: '12:04:11', text: 'Silent collision detected — compute_blast_radius × verify', dot: '#FF6A3D' },
+        { t: '12:04:09', text: 'Blast radius computed for compute_blast_radius — 12 direct dependents', dot: '#FF7A1A' },
+        { t: '11:58:42', text: 'MR-204 (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
+        { t: '11:52:30', text: 'Indexed 262 definitions from keystone self-index', dot: '#34D399' }
       ]),
       perms: ['Read repository contents and metadata', 'Read merge requests and diffs', 'No write access · no secrets · no code execution'],
 
@@ -1197,17 +1229,17 @@ class Component extends DCLogic {
       isLedger: this.state.panel === 'ledger',
       isDemo: this.state.panel === 'demo',
 
-      symbolList: (_SC ? [[_SC.a, _SC.aFile, 'definition', String(_SC.aBlast), true], [_SC.b, _SC.bFile, 'definition', String(_SC.bBlast), true]].concat(_SC.chain.slice(0, 3).map(function (c) { return [c.sym, c.file, 'shared dependent', '—', false]; })) : [['echo', 'utils.py', 'definition', '211', true], ['option', 'decorators.py', 'definition', '188', true], ['Context.invoke', 'core.py', 'shared dependent', '—', false], ['BaseCommand.main', 'core.py', 'shared dependent', '—', false], ['secho', 'utils.py', 'shared dependent', '—', false]]).map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
+      symbolList: (_SC ? [[_SC.a, _SC.aFile, 'definition', String(_SC.aBlast), true], [_SC.b, _SC.bFile, 'definition', String(_SC.bBlast), true]].concat(_SC.chain.slice(0, 3).map(function (c) { return [c.sym, c.file, 'shared dependent', '—', false]; })) : [['compute_blast_radius', 'core/impact.py', 'definition', '12', true], ['verify', 'core/audit.py', 'definition', '10', true], ['append', 'core/audit.py', 'shared dependent', '—', false], ['evaluate', 'core/gate.py', 'shared dependent', '—', false], ['precedent', 'core/audit.py', 'shared dependent', '—', false]]).map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
 
-      botPipeline: (_SC ? [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', _SC.a + ' → ' + _SC.aBlast + ' · ' + _SC.b + ' → ' + _SC.bBlast + ' direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches ' + _SC.aFile + ' and ' + _SC.bFile, true, 'PASS'], ['4', 'Collision Scan', _SC.shared + ' shared dependents overlap the second MR', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']] : [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'echo → 211 · option → 188 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core.py', true, 'PASS'], ['4', 'Collision Scan', '34 shared dependents overlap open MR !486', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']]).map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
+      botPipeline: (_SC ? [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', _SC.a + ' → ' + _SC.aBlast + ' · ' + _SC.b + ' → ' + _SC.bBlast + ' direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches ' + _SC.aFile + ' and ' + _SC.bFile, true, 'PASS'], ['4', 'Collision Scan', _SC.shared + ' shared dependents overlap the second MR', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']] : [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'compute_blast_radius → 12 · verify → 10 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core/impact.py', true, 'PASS'], ['4', 'Collision Scan', '5 shared dependents overlap open MR-211', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']]).map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
       botSymbols: (_SC ? [
         { sym: _SC.a, file: _SC.aFile, blast: String(_SC.aBlast), res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
         { sym: _SC.b, file: _SC.bFile, blast: String(_SC.bBlast), res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
         { sym: (_SC.chain[0] && _SC.chain[0].sym) || 'shared dependent', file: (_SC.chain[0] && _SC.chain[0].file) || 'core.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
       ] : [
-        { sym: 'echo', file: 'utils.py', blast: '211', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
-        { sym: 'option', file: 'decorators.py', blast: '188', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
-        { sym: 'Context.invoke', file: 'core.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
+        { sym: 'compute_blast_radius', file: 'core/impact.py', blast: '12', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
+        { sym: 'verify', file: 'core/audit.py', blast: '10', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
+        { sym: 'append', file: 'core/audit.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
       ]),
 
       chainOk: _cleanChain.every((c, i) => (this.state.tampered ? _tamperedChain : _cleanChain)[i].hash === c.hash),
@@ -1335,6 +1367,7 @@ class Component extends DCLogic {
       document.body.appendChild(el);
     }
   }
+  window.__ksLoadOrbit = loadOrbit;
   function loadOrbit(url) {
     url = url || "orbit_snapshot.json";
     indicator("⟳  Loading the real GitLab Orbit graph…", "run");
@@ -1381,7 +1414,7 @@ class Component extends DCLogic {
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i]; if (el.__scanwired) continue;
       var t = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
-      if (el.childElementCount <= 3 && /^TRY A LIVE DEMO/.test(t)) {
+      if (el.childElementCount <= 3 && /^TRY THE LIVE DEMO/.test(t)) {
         el.__scanwired = 1; el.addEventListener("click", function () { loadOrbit("orbit_snapshot.json"); }, false);
       } else if (el.childElementCount <= 3 && /^DEMO ON PALLETS/.test(t)) {
         el.__scanwired = 1; el.addEventListener("click", function () { loadOrbit("orbit_snapshot_click.json"); }, false);
