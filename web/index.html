@@ -265,13 +265,6 @@
               <span style="font:500 13px/1 'JetBrains Mono',monospace; color:#C9CDD4">{{ repo }}</span>
               <span style="font:500 10px/1 'JetBrains Mono',monospace; color:#34D399; padding:3px 7px; border-radius:999px; background:rgba(52,211,153,0.12); letter-spacing:0.06em">INDEXED</span>
             </div>
-            <sc-if value="{{ isOrbit }}" hint-placeholder-val="{{ true }}">
-            <div title="This graph came from GitLab Orbit's own index (glab orbit local index) — the gl_definition / gl_edge CALLS tables — not a regex approximation." style="display:inline-flex; align-items:center; gap:9px; margin-top:11px; padding:7px 13px; border-radius:999px; background:linear-gradient(135deg,rgba(255,122,26,0.18),rgba(240,72,10,0.07)); border:1px solid rgba(255,122,26,0.42); cursor:help">
-              <span style="width:7px; height:7px; border-radius:50%; background:#FF7A1A; box-shadow:0 0 9px #FF7A1A"></span>
-              <span style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.07em; color:#FFB14D">REAL GITLAB ORBIT GRAPH</span>
-              <span style="font:500 11px/1 'JetBrains Mono',monospace; color:#C9A98F">· gl_definition / gl_edge · {{ orbitDefs }} defs</span>
-            </div>
-            </sc-if>
           </div>
           <div style="display:flex; gap:11px">
             <button style="padding:12px 20px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A); box-shadow:0 8px 26px -10px rgba(240,72,10,0.6)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.98)">Start analysis</button>
