@@ -345,6 +345,27 @@
           </div>
         </section>
 
+        <!-- all silent collisions, inspectable -->
+        <section style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:14px">
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">All silent collisions · {{ colCount }} found</div>
+            <div style="font:500 11px/1.5 'JetBrains Mono',monospace; color:#5F636D">ranked by shared runtime dependents · every pair grep-verifiable</div>
+          </div>
+          <sc-for list="{{ collisionRows }}" as="c" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,0.05)">
+              <div style="min-width:0">
+                <div style="font:500 13px/1.3 'JetBrains Mono',monospace; color:#E7E9EC; white-space:nowrap; overflow:hidden; text-overflow:ellipsis"><span style="color:#FFC24D">{{ c.a }}</span> <span style="color:#5F636D">×</span> <span style="color:#FFC24D">{{ c.b }}</span></div>
+                <div style="font:400 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:4px">{{ c.files }}</div>
+              </div>
+              <span style="flex:none; font:600 11px/1 'JetBrains Mono',monospace; padding:5px 11px; border-radius:999px; color:#FF8A66; background:rgba(255,106,61,0.13); border:1px solid rgba(255,106,61,0.3)">{{ c.shared }} shared</span>
+            </div>
+          </sc-for>
+          <div style="margin-top:16px; padding:13px 15px; border-radius:10px; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.22)">
+            <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#34D399">Safe merge order</span>
+            <span style="font:600 12px/1.6 'JetBrains Mono',monospace; color:#A6F0CC; margin-left:8px">{{ safeOrderStr }}</span>
+          </div>
+        </section>
+
         <!-- blast graph + cockpit list -->
         <section style="display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:18px">
           <div data-blast="1" style="position:relative; background:#0b0806; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px; overflow:hidden; min-height:560px">
@@ -1117,7 +1138,12 @@ class Component extends DCLogic {
       ],
       findA: _SC ? _SC.a : 'echo', findB: _SC ? _SC.b : 'option', findShared: _statShared,
       colCount: _SC ? String(_SC.collisions) : '3', hasMulti: _SC ? (_SC.collisions >= 1) : true,
-      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 4).join('  →  ') : 'option  →  echo  →  secho  →  style',
+      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join('  →  ') : 'option  →  echo  →  secho  →  style',
+      collisionRows: ((_SC && _SC.collisionList && _SC.collisionList.length) ? _SC.collisionList : [
+        { a: 'echo', b: 'option', aFile: 'utils.py', bFile: 'decorators.py', shared: 34 },
+        { a: 'echo', b: 'secho', aFile: 'utils.py', bFile: 'utils.py', shared: 18 },
+        { a: 'option', b: 'Command.params', aFile: 'decorators.py', bFile: 'core.py', shared: 12 }
+      ]).map(function (p) { return { a: p.a, b: p.b, files: p.aFile + '  ×  ' + p.bFile, shared: String(p.shared) }; }),
       resolveSteps: [
         { n: '1', text: 'Add an integration test that exercises both echo and option together.' },
         { n: '2', text: 'Stack the two MRs into a single review so one reviewer sees the overlap.' },

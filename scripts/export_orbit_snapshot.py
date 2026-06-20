@@ -65,7 +65,7 @@ def main() -> None:
     ranked_ok = [i for i in ranked if ok(i)]
 
     cand = [i for i in ranked_ok if blast[i] > 2][:16]
-    best, collisions, overlap = None, 0, collections.defaultdict(int)
+    best, collisions, overlap, pairs = None, 0, collections.defaultdict(int), []
     for x in range(len(cand)):
         for y in range(x + 1, len(cand)):
             a, b = cand[x], cand[y]
@@ -76,9 +76,12 @@ def main() -> None:
                 collisions += 1
                 overlap[a] += sh
                 overlap[b] += sh
+                pairs.append({"a": nm(a), "b": nm(b), "aFile": fo(a),
+                              "bFile": fo(b), "shared": sh})
                 if best is None or sh > best["sh"]:
                     best = {"a": a, "b": b, "sh": sh}
-    safe = sorted(cand, key=lambda i: overlap[i])[:4]
+    safe = sorted(cand, key=lambda i: overlap[i])[:6]
+    collision_list = sorted(pairs, key=lambda p: -p["shared"])[:8]
 
     head = ranked_ok if ranked_ok else ranked
     mx = blast[head[0]] if head else 1
@@ -115,6 +118,7 @@ def main() -> None:
         "bBlast": blast[best["b"]] if best else 0,
         "shared": sh, "ring1": ring1, "ring2": ring2,
         "collisions": collisions,
+        "collisionList": collision_list,
         "safeOrder": [nm(i) for i in safe],
         "spofPct": round(blast[head[0]] / len(defs) * 100) if defs and head else 0,
         "top": top, "chain": chain,
