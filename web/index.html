@@ -1256,9 +1256,27 @@ class Component extends DCLogic {
     };
   }
   function rerender() { var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
+  function indicator(text, kind) {
+    var el = document.getElementById("ks-scan-ind");
+    if (!el) { el = document.createElement("div"); el.id = "ks-scan-ind"; el.style.cssText = "position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:99999;font:600 12.5px/1 'JetBrains Mono',monospace;padding:11px 20px;border-radius:999px;letter-spacing:0.02em;transition:opacity .45s ease;box-shadow:0 10px 34px -8px rgba(0,0,0,0.7);pointer-events:none"; document.body.appendChild(el); }
+    var done = kind === "done", fail = kind === "fail";
+    el.textContent = text;
+    el.style.background = fail ? "rgba(255,106,61,0.16)" : (done ? "rgba(52,211,153,0.16)" : "rgba(255,122,26,0.16)");
+    el.style.color = fail ? "#FF8A66" : (done ? "#34D399" : "#FFC24D");
+    el.style.border = "1px solid " + (fail ? "rgba(255,106,61,0.4)" : (done ? "rgba(52,211,153,0.4)" : "rgba(255,122,26,0.4)"));
+    el.style.opacity = "1";
+    if (done || fail) setTimeout(function () { el.style.opacity = "0"; }, 3000);
+  }
   function runScan(repo) {
     if (scanning || !window.analyzeRepo) return; scanning = true;
-    window.analyzeRepo(repo, function () {}).then(function (S) { try { window.__ksScan = mapScan(S); } catch (e) {} scanning = false; setTimeout(rerender, 150); }).catch(function () { scanning = false; });
+    indicator("⟳  Scanning " + repo + " on the call graph…", "run");
+    window.analyzeRepo(repo, function () {}).then(function (S) {
+      try { window.__ksScan = mapScan(S); } catch (e) {}
+      scanning = false;
+      var sc = window.__ksScan;
+      indicator("✓  Live · " + ((sc && sc.repo) || repo) + " · " + ((sc && sc.defs) || "?") + " defs · " + ((sc && sc.collisions) || 0) + " collisions", "done");
+      setTimeout(rerender, 150);
+    }).catch(function () { scanning = false; indicator("Scan failed — try another public repo", "fail"); });
   }
   function wire() {
     var nodes = document.querySelectorAll("div,span,button,a");
