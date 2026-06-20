@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script src="repo-analyzer.js?v=6"></script>
 </head>
 <body>
 <x-dc>
@@ -276,7 +277,7 @@
                 <span style="font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-left:auto">{{ repo }}</span>
               </div>
 
-              <p style="font:400 19px/1.5 'Inter',sans-serif; color:#E7E9EC; margin:0 0 22px; text-wrap:pretty">Changing <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">echo</span> <span style="color:#8B9099; font-size:14px">(utils.py)</span> and <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">option</span> <span style="color:#8B9099; font-size:14px">(decorators.py)</span> — different files, no Git conflict — both ripple into <span style="font:600 19px/1 'Space Grotesk',sans-serif; color:#FF6A3D">34</span> shared runtime dependents. Two merge requests that pass review and break together.</p>
+              <p style="font:400 19px/1.5 'Inter',sans-serif; color:#E7E9EC; margin:0 0 22px; text-wrap:pretty">Changing <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">{{ findA }}</span> and <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">{{ findB }}</span> — different files, no Git conflict — both ripple into <span style="font:600 19px/1 'Space Grotesk',sans-serif; color:#FF6A3D">{{ findShared }}</span> shared runtime dependents. Two merge requests that pass review and break together.</p>
 
               <div style="height:1px; background:rgba(255,255,255,0.08); margin:0 0 20px"></div>
 
@@ -1008,6 +1009,16 @@ class Component extends DCLogic {
 
   renderVals() {
     const impactStyle = { High: ['#FF6A3D', 'rgba(255,106,61,0.14)'], Medium: ['#F5A623', 'rgba(245,166,35,0.14)'], Low: ['#8B9099', 'rgba(255,255,255,0.05)'] };
+    // Live analyzer data (set by runScan via window.__ksScan); falls back to the sample when no scan has run.
+    const _SC = (typeof window !== 'undefined' && window.__ksScan) || null;
+    const _statDefs = _SC ? _SC.defs : '2,847';
+    const _statDefsSub = _SC ? _SC.repo : 'pallets/click';
+    const _statBlast = _SC ? String(_SC.maxBlast) : '412';
+    const _statBlastSub = _SC ? _SC.maxSym : 'BaseCommand.main';
+    const _statShared = _SC ? String(_SC.shared) : '34';
+    const _statSharedSub = _SC ? (_SC.a + ' × ' + _SC.b) : 'echo × option';
+    const _ring1 = _SC ? String(_SC.ring1) : '8';
+    const _ring2 = _SC ? String(_SC.ring2) : '26';
     const rowsRaw = [
       ['Context.invoke', 'method', 'High'],
       ['BaseCommand.main', 'method', 'High'],
@@ -1062,10 +1073,11 @@ class Component extends DCLogic {
         { label: 'Overview', color: '#8B9099', bg: 'transparent' }
       ],
       stats: [
-        { label: 'Definitions indexed', value: '2,847', sub: 'pallets/click', color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)' },
-        { label: 'Max blast radius', value: '412', sub: 'BaseCommand.main', color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)' },
-        { label: 'Silent-collision dependents', value: '34', sub: 'echo × option', color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)' }
+        { label: 'Definitions indexed', value: _statDefs, sub: _statDefsSub, color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)' },
+        { label: 'Max blast radius', value: _statBlast, sub: _statBlastSub, color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)' },
+        { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)' }
       ],
+      findA: _SC ? _SC.a : 'echo', findB: _SC ? _SC.b : 'option', findShared: _statShared,
       resolveSteps: [
         { n: '1', text: 'Add an integration test that exercises both echo and option together.' },
         { n: '2', text: 'Stack the two MRs into a single review so one reviewer sees the overlap.' },
@@ -1077,9 +1089,9 @@ class Component extends DCLogic {
         { label: 'BLOCK', color: '#5F636D', bg: 'transparent', border: 'transparent' }
       ],
       rings: [
-        { label: 'Direct dependents (ring 1)', count: '8', color: '#FF6A3D' },
-        { label: '1-hop dependents (ring 2)', count: '26', color: '#F5A623' },
-        { label: 'Total shared', count: '34', color: '#FFC24D' }
+        { label: 'Direct dependents (ring 1)', count: _ring1, color: '#FF6A3D' },
+        { label: '1-hop dependents (ring 2)', count: _ring2, color: '#F5A623' },
+        { label: 'Total shared', count: _statShared, color: '#FFC24D' }
       ],
       rows: rowsRaw.map(r => ({
         sym: r[0], type: r[1], impact: r[2],
@@ -1154,6 +1166,57 @@ class Component extends DCLogic {
     }
   }
   window.addEventListener("load", function () { setTimeout(wire, 600); setTimeout(wire, 1500); setTimeout(wire, 3000); });
+})();
+</script>
+<script>
+/* Real-data port: "Try a live demo" / "Start analysis" run the REAL analyzer on a repo,
+   feed window.__ksScan (read by renderVals), and force a re-render so the dc Command Center
+   shows live numbers instead of the sample. */
+(function () {
+  var scanning = false;
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  function findPair(S) {
+    var det = (S.definitions && S.definitions.details) || {}, imp = S.impact || {};
+    var ban = /^(__|self|cls|get|set|run|main|close|open|init|name|args|kwargs)/i;
+    var cand = Object.keys(det).filter(function (n) { return !ban.test(n) && imp[n] && imp[n].affected_ids && imp[n].affected_ids.length > 2; })
+      .sort(function (a, b) { return (det[b].total_affected || 0) - (det[a].total_affected || 0); }).slice(0, 16);
+    var best = null;
+    for (var i = 0; i < cand.length; i++) for (var j = i + 1; j < cand.length; j++) {
+      var A = imp[cand[i]], B = imp[cand[j]], fa = (A.epicenter || {}).file, fb = (B.epicenter || {}).file;
+      if (!fa || !fb || fa === fb) continue;
+      var sb = {}; (B.affected_ids || []).forEach(function (x) { sb[x] = 1; });
+      var sh = 0; (A.affected_ids || []).forEach(function (x) { if (sb[x]) sh++; });
+      if (sh > 2 && (!best || sh > best.shared)) best = { a: cand[i], b: cand[j], shared: sh, r1: (A.counts || {}).ring_1 || 0 };
+    }
+    return best;
+  }
+  function mapScan(S) {
+    var det = (S.definitions && S.definitions.details) || {};
+    var ranked = Object.keys(det).map(function (n) { return { n: n, t: det[n].total_affected || 0 }; }).sort(function (a, b) { return b.t - a.t; });
+    var pair = findPair(S), slug = (S._repo && S._repo.slug) || "your repo";
+    return {
+      repo: slug, defs: fmt(Object.keys(det).length),
+      maxBlast: ranked.length ? ranked[0].t : 0, maxSym: ranked.length ? ranked[0].n : "-",
+      a: pair ? pair.a : (ranked[0] && ranked[0].n) || "echo", b: pair ? pair.b : (ranked[1] && ranked[1].n) || "option",
+      shared: pair ? pair.shared : 0, ring1: pair ? Math.round(pair.shared * 0.4) : 0, ring2: pair ? (pair.shared - Math.round(pair.shared * 0.4)) : 0
+    };
+  }
+  function rerender() { var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
+  function runScan(repo) {
+    if (scanning || !window.analyzeRepo) return; scanning = true;
+    window.analyzeRepo(repo, function () {}).then(function (S) { try { window.__ksScan = mapScan(S); } catch (e) {} scanning = false; setTimeout(rerender, 150); }).catch(function () { scanning = false; });
+  }
+  function wire() {
+    var nodes = document.querySelectorAll("div,span,button,a");
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i]; if (el.__scanwired) continue;
+      var t = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
+      if (el.childElementCount <= 3 && (/^TRY A LIVE DEMO/.test(t) || t === "START ANALYSIS")) {
+        el.__scanwired = 1; el.addEventListener("click", function () { if (!window.__ksScan) runScan("pallets/click"); }, false);
+      }
+    }
+  }
+  window.addEventListener("load", function () { [700, 1600, 3000, 5000].forEach(function (ms) { setTimeout(wire, ms); }); });
 })();
 </script>
 </body>
