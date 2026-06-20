@@ -11,7 +11,8 @@ Run the same governed review in your own terminal (Python 3.13):
 ```bash
 pip install -r requirements.txt
 python -m pytest -q                                   # 103 passed, 2 skipped
-python skills/keystone/run_review.py memory-gate compute_blast_radius   # THE moment: an AI agent's APPROVE is OVERRULED by Orbit precedent (exits 2)
+python skills/keystone/run_review.py shadow-merge                       # THE hook: two MRs, no Git conflict, but they COLLIDE on the Orbit graph (exits 2)
+python skills/keystone/run_review.py memory-gate compute_blast_radius   # second act: an AI agent's APPROVE is OVERRULED by Orbit precedent (exits 2)
 python skills/keystone/run_review.py harness sample    # the full review for MR-204
 ```
 

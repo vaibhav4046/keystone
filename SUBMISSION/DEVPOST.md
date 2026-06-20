@@ -13,7 +13,7 @@ Video (public, under 3 min): <PASTE YOUTUBE OR VIMEO URL>
 
 ## Elevator pitch (one line)
 
-Keystone is an Orbit Memory Gate: when an AI agent proposes a merge, Keystone reads the GitLab Orbit code graph and the precedent ledger and OVERRULES the agent's approval if it repeats a dependency-risk decision a human already rejected. The model proposes; the engine decides; the ledger remembers.
+Git sees files. Orbit sees relationships. Keystone catches hidden merge-request collisions before they ship: two MRs touch different files (no Git text conflict) yet collide through a shared dependency on the GitLab Orbit graph. As a second act, when an AI agent proposes the merge, Keystone overrules an approval that contradicts recorded precedent. The model proposes; the engine decides; the ledger remembers.
 
 ## Inspiration
 
