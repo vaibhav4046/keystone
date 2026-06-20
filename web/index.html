@@ -777,10 +777,13 @@ class Component extends DCLogic {
   }
 
   buildGraph() {
-    if (this._graph) return this._graph;
+    var _gsc = (typeof window !== 'undefined' && window.__ksScan) || null;
+    if (this._graph && this._graphScan === _gsc) return this._graph;
+    this._graphScan = _gsc;
     const R = React.createElement;
     const W = 540, H = 540, cx = 270, cy = 270;
-    const labels1 = ['Context.invoke', 'BaseCommand.main', 'secho', 'style', 'MultiCommand', 'Group.invoke', 'Command.main', 'make_context'];
+    var _ls = _gsc ? [_gsc.a, _gsc.b].concat((_gsc.chain || []).map(function (c) { return c.sym; })).concat((_gsc.top || []).map(function (t) { return t.sym; })).filter(Boolean) : [];
+    const labels1 = _gsc && _ls.length ? _ls.slice(0, 8) : ['Context.invoke', 'BaseCommand.main', 'secho', 'style', 'MultiCommand', 'Group.invoke', 'Command.main', 'make_context'];
     const ring1 = 8, ring2 = 14, r1 = 122, r2 = 216;
     const nodes = [];
     for (let i = 0; i < ring1; i++) {
