@@ -252,6 +252,13 @@
               <span style="font:500 13px/1 'JetBrains Mono',monospace; color:#C9CDD4">{{ repo }}</span>
               <span style="font:500 10px/1 'JetBrains Mono',monospace; color:#34D399; padding:3px 7px; border-radius:999px; background:rgba(52,211,153,0.12); letter-spacing:0.06em">INDEXED</span>
             </div>
+            <sc-if value="{{ isOrbit }}" hint-placeholder-val="{{ true }}">
+            <div title="This graph came from GitLab Orbit's own index (glab orbit local index) — the gl_definition / gl_edge CALLS tables — not a regex approximation." style="display:inline-flex; align-items:center; gap:9px; margin-top:11px; padding:7px 13px; border-radius:999px; background:linear-gradient(135deg,rgba(255,122,26,0.18),rgba(240,72,10,0.07)); border:1px solid rgba(255,122,26,0.42); cursor:help">
+              <span style="width:7px; height:7px; border-radius:50%; background:#FF7A1A; box-shadow:0 0 9px #FF7A1A"></span>
+              <span style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.07em; color:#FFB14D">REAL GITLAB ORBIT GRAPH</span>
+              <span style="font:500 11px/1 'JetBrains Mono',monospace; color:#C9A98F">· gl_definition / gl_edge · {{ orbitDefs }} defs</span>
+            </div>
+            </sc-if>
           </div>
           <div style="display:flex; gap:11px">
             <button style="padding:12px 20px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A); box-shadow:0 8px 26px -10px rgba(240,72,10,0.6)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.98)">Start analysis</button>
@@ -262,7 +269,7 @@
         <!-- stat cards -->
         <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px">
           <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
-            <div style="position:relative; background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:12px; padding:22px; overflow:hidden">
+            <div title="{{ s.tip }}" style="position:relative; background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:12px; padding:22px; overflow:hidden; cursor:help">
               <div style="position:absolute; top:0; left:0; width:100%; height:2px; background:{{ s.bar }}"></div>
               <div style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:16px">{{ s.label }}</div>
               <div style="font:600 42px/1 'Space Grotesk',sans-serif; letter-spacing:-0.03em; color:{{ s.color }}; font-variant-numeric:tabular-nums">{{ s.value }}</div>
@@ -278,7 +285,7 @@
             <div style="position:absolute; inset:0; background:radial-gradient(80% 60% at 100% 0%, rgba(240,72,10,0.14), transparent 60%); pointer-events:none"></div>
             <div style="position:relative">
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px">
-                <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:999px; background:rgba(255,106,61,0.15); border:1px solid rgba(255,106,61,0.4)">
+                <span title="A silent collision: two merge requests touch different files (no Git conflict) yet both change functions the same downstream code depends on — so they break together once both merge." style="display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:999px; background:rgba(255,106,61,0.15); border:1px solid rgba(255,106,61,0.4); cursor:help">
                   <span style="width:7px; height:7px; border-radius:50%; background:#FF6A3D; box-shadow:0 0 8px #FF6A3D"></span>
                   <span style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; color:#FF8A66">SILENT COLLISION FOUND</span>
                 </span>
@@ -620,7 +627,7 @@
               <span style="font:400 11px/1 'JetBrains Mono',monospace; color:{{ r.hashColor }}">{{ r.prev }} <span style="color:#5F636D">→</span> {{ r.hash }}</span>
             </div>
           </sc-for>
-          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640">Each row is hash-chained to the one before it. This public sample signs with a shared demo key, so it is illustrative — not cryptographically tamper-proof.</div>
+          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640"><span title="Hash-chained: each ledger row stores a hash of the row before it, so altering any past decision changes every hash after it — tampering is detectable." style="border-bottom:1px dotted rgba(201,169,143,0.5); cursor:help">Each row is hash-chained</span> to the one before it. This public sample signs with a shared demo key, so it is illustrative — not cryptographically tamper-proof.</div>
         </section>
         </sc-if>
 
@@ -1093,10 +1100,12 @@ class Component extends DCLogic {
         { label: 'Reports', color: '#8B9099', bg: 'transparent' },
         { label: 'Overview', color: '#8B9099', bg: 'transparent' }
       ],
+      isOrbit: !!(_SC && _SC.orbit),
+      orbitDefs: _SC ? String(_SC.defs) : '262',
       stats: [
-        { label: 'Definitions indexed', value: _statDefs, sub: _statDefsSub, color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)' },
-        { label: 'Max blast radius', value: _statBlast, sub: _statBlastSub, color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)' },
-        { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)' }
+        { label: 'Definitions indexed', value: _statDefs, sub: _statDefsSub, color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)', tip: 'Every function, method and class Keystone resolved on the call graph — GitLab Orbit\'s gl_definition table.' },
+        { label: 'Max blast radius', value: _statBlast, sub: _statBlastSub, color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)', tip: 'Blast radius = how many other functions transitively depend on this symbol. The maximum is your single point of failure: change it and the most code can break at once.' },
+        { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)', tip: 'Functions that depend on BOTH changed symbols. Merge both merge requests and these break together — with no Git conflict to warn you.' }
       ],
       findA: _SC ? _SC.a : 'echo', findB: _SC ? _SC.b : 'option', findShared: _statShared,
       colCount: _SC ? String(_SC.collisions) : '3', hasMulti: _SC ? (_SC.collisions >= 1) : true,
@@ -1273,13 +1282,24 @@ class Component extends DCLogic {
     el.style.opacity = "1";
     if (done || fail) setTimeout(function () { el.style.opacity = "0"; }, 3000);
   }
+  function orbitBadge() {
+    var on = !!(window.__ksScan && window.__ksScan.orbit);
+    var el = document.getElementById("ks-orbit-badge");
+    if (!on) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement("div"); el.id = "ks-orbit-badge";
+      el.style.cssText = "position:fixed;left:18px;bottom:18px;z-index:99997;display:flex;align-items:center;gap:8px;font:600 11px/1 'JetBrains Mono',monospace;padding:9px 13px;border-radius:9px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.34);color:#34D399;box-shadow:0 10px 30px -10px rgba(0,0,0,0.6);pointer-events:none;letter-spacing:0.01em";
+      el.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>REAL GitLab Orbit graph · gl_definition / gl_edge';
+      document.body.appendChild(el);
+    }
+  }
   function loadOrbit() {
-    if (window.__ksScan && window.__ksScan.orbit) { setTimeout(rerender, 50); return; }
+    if (window.__ksScan && window.__ksScan.orbit) { setTimeout(rerender, 50); orbitBadge(); return; }
     indicator("⟳  Loading the real GitLab Orbit graph…", "run");
     fetch("orbit_snapshot.json").then(function (r) { return r.json(); }).then(function (d) {
       window.__ksScan = d;
       indicator("✓  Live · GitLab Orbit self-index · " + d.defs + " defs · " + d.collisions + " collisions", "done");
-      setTimeout(rerender, 150);
+      setTimeout(rerender, 150); orbitBadge();
     }).catch(function () { indicator("Orbit snapshot unavailable — falling back to live scan", "fail"); runScan("pallets/click"); });
   }
   function runScan(repo) {
@@ -1290,7 +1310,7 @@ class Component extends DCLogic {
       scanning = false;
       var sc = window.__ksScan;
       indicator("✓  Live · " + ((sc && sc.repo) || repo) + " · " + ((sc && sc.defs) || "?") + " defs · " + ((sc && sc.collisions) || 0) + " collisions", "done");
-      setTimeout(rerender, 150);
+      setTimeout(rerender, 150); orbitBadge();
     }).catch(function () { scanning = false; indicator("Scan failed — try another public repo", "fail"); });
   }
   function askRepo() {
