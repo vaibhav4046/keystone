@@ -163,6 +163,16 @@
           <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#A6907B">On Click, two MRs change <b style="color:#F6EFE6">echo()</b> in utils.py and <b style="color:#F6EFE6">option()</b> in decorators.py — different files, zero Git conflict, both pass review and CODEOWNERS. Yet they ripple into <b style="color:#FFC24D">dozens of shared runtime dependents</b>. Merge both and those break together. Keystone holds the merge and hands you the safe order — live, in this demo.</div>
         </div>
         <p style="font:400 11px/1.5 'Inter',sans-serif; color:#5f4836; margin:13px 0 0; max-width:48ch">This in-browser demo computes the call graph client-side. The production engine reads the live <b style="color:#8a6c52">GitLab Orbit</b> graph (gl_definition / gl_edge) and drives <b style="color:#8a6c52">glab orbit local</b> — see the repo + demo video.</p>
+        <div style="margin:22px 0 0; max-width:52ch; background:#0c0805; border:1px solid rgba(255,122,26,0.18); border-radius:11px; padding:16px 18px">
+          <div style="font:600 10.5px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF7A1A; text-transform:uppercase; margin-bottom:11px">Run it on your own Orbit graph</div>
+          <pre style="margin:0; font:500 12px/1.7 'JetBrains Mono',monospace; color:#C9A98F; white-space:pre-wrap"><span style="color:#6b5440">$</span> glab orbit local index .            <span style="color:#5f4836"># build the call graph</span>
+<span style="color:#6b5440">$</span> python -m uvicorn backend.app:app   <span style="color:#5f4836"># start the engine</span>
+<span style="color:#6b5440">$</span> open keystone — sign in, scan, review</pre>
+          <div style="display:flex; gap:14px; margin-top:13px; font:600 11.5px/1 'Inter',sans-serif">
+            <a href="https://github.com/vaibhav4046/keystone#readme" target="_blank" rel="noopener" style="color:#FFC24D; text-decoration:none">View on GitHub →</a>
+            <a href="https://github.com/vaibhav4046/keystone#demo" target="_blank" rel="noopener" style="color:#A6907B; text-decoration:none">Watch the 3-min demo →</a>
+          </div>
+        </div>
       </div>
 
       <!-- BLAST ARTIFACT right (medium-big) -->
@@ -1363,6 +1373,31 @@ class Component extends DCLogic {
     }
   }
   window.addEventListener("load", function () { [800, 1800, 3500].forEach(function (ms) { setTimeout(wireNav, ms); }); });
+})();
+</script>
+<script>
+/* Judge fix: jargon tooltips (Design). title= on short standalone labels. */
+(function () {
+  var TIPS = [
+    ["blast radius", "Blast radius: the count of definitions that transitively depend on a symbol — what breaks if you change it."],
+    ["runtime dependents", "Runtime dependents: functions that call into this symbol on the live call graph (not just text references)."],
+    ["single point of failure", "SPOF: the share of the whole graph that funnels through the single highest-blast symbol."],
+    ["silent collision", "Silent collision: two changes in different files whose blast radii overlap — no Git conflict, breaks together."],
+    ["hash-chained", "Hash-chained ledger: each decision's hash includes the previous one, so any tamper breaks the chain."]
+  ];
+  function wireTips() {
+    var nodes = document.querySelectorAll("div,span,th,td,h1,h2,h3,h4,p,a,button");
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i]; if (el.__tipwired || el.childElementCount > 2) continue;
+      var raw = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (raw.length > 64) continue;
+      var low = raw.toLowerCase();
+      for (var j = 0; j < TIPS.length; j++) {
+        if (low.indexOf(TIPS[j][0]) !== -1) { el.__tipwired = 1; el.title = TIPS[j][1]; el.style.cursor = "help"; break; }
+      }
+    }
+  }
+  window.addEventListener("load", function () { [900, 2000, 4000].forEach(function (ms) { setTimeout(wireTips, ms); }); });
 })();
 </script>
 </body>
