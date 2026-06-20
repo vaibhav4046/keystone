@@ -151,6 +151,7 @@
             Connect a repository
           </button>
           <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.4)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">Try a live demo →</button>
+          <button onClick="{{ goDemo }}" title="Load a real GitLab Orbit index of pallets/click (a well-known public Python library) and find its silent collisions." style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#A6907B; background:transparent; border:1px solid rgba(255,122,26,0.22)" style-hover="background:rgba(255,122,26,0.06); border-color:rgba(255,122,26,0.5); color:#FFB14D" style-active="transform:scale(0.985)">Demo on pallets/click →</button>
         </div>
 
         <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:11px">Run in your terminal</div>
@@ -1334,12 +1335,12 @@ class Component extends DCLogic {
       document.body.appendChild(el);
     }
   }
-  function loadOrbit() {
-    if (window.__ksScan && window.__ksScan.orbit) { setTimeout(rerender, 50); orbitBadge(); return; }
+  function loadOrbit(url) {
+    url = url || "orbit_snapshot.json";
     indicator("⟳  Loading the real GitLab Orbit graph…", "run");
-    fetch("orbit_snapshot.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+    fetch(url, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
       window.__ksScan = d;
-      indicator("✓  Live · GitLab Orbit self-index · " + d.defs + " defs · " + d.collisions + " collisions", "done");
+      indicator("✓  Live · " + (d.repo || "GitLab Orbit") + " · " + d.defs + " defs · " + d.collisions + " collisions", "done");
       setTimeout(rerender, 150); orbitBadge();
     }).catch(function () { indicator("Orbit snapshot unavailable — falling back to live scan", "fail"); runScan("pallets/click"); });
   }
@@ -1381,7 +1382,9 @@ class Component extends DCLogic {
       var el = nodes[i]; if (el.__scanwired) continue;
       var t = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
       if (el.childElementCount <= 3 && /^TRY A LIVE DEMO/.test(t)) {
-        el.__scanwired = 1; el.addEventListener("click", function () { if (!window.__ksScan) loadOrbit(); }, false);
+        el.__scanwired = 1; el.addEventListener("click", function () { loadOrbit("orbit_snapshot.json"); }, false);
+      } else if (el.childElementCount <= 3 && /^DEMO ON PALLETS/.test(t)) {
+        el.__scanwired = 1; el.addEventListener("click", function () { loadOrbit("orbit_snapshot_click.json"); }, false);
       } else if (el.childElementCount <= 3 && t === "START ANALYSIS") {
         el.__scanwired = 1; el.style.cursor = "pointer"; el.addEventListener("click", function (e) { e.stopPropagation(); askRepo(); }, true);
       }

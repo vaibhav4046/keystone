@@ -14,6 +14,7 @@ merge order is restricted to symbols that actually take part in a collision pair
 import collections
 import json
 import re
+import sys
 
 import duckdb
 
@@ -41,7 +42,10 @@ def ok_file(fp: str) -> bool:
 
 
 def main() -> None:
-    con = duckdb.connect(DB, read_only=True)
+    db = sys.argv[1] if len(sys.argv) > 1 else DB
+    out = sys.argv[2] if len(sys.argv) > 2 else OUT
+    repo_label = sys.argv[3] if len(sys.argv) > 3 else "GitLab Orbit · keystone self-index"
+    con = duckdb.connect(db, read_only=True)
     defs: dict[int, dict] = {}
     for i, name, fp, dt in con.execute(
         "select id, name, file_path, definition_type from gl_definition"
@@ -112,7 +116,7 @@ def main() -> None:
 
     snap = {
         # ASCII-escaped middot so the repo string is encoding-safe in any environment.
-        "repo": "GitLab Orbit · keystone self-index",
+        "repo": repo_label,
         "orbit": True,
         "defs": f"{len(defs):,}",
         "maxBlast": blast[head[0]] if head else 0,
@@ -129,7 +133,7 @@ def main() -> None:
         "spofPct": round(blast[head[0]] / len(defs) * 100) if defs and head else 0,
         "top": top, "chain": chain,
     }
-    with open(OUT, "w", encoding="utf-8") as f:
+    with open(out, "w", encoding="utf-8") as f:
         json.dump(snap, f, ensure_ascii=True)
     print("SNAP", snap["defs"], "defs", collisions, "collisions",
           snap["a"], "x", snap["b"], "shared", sh,
