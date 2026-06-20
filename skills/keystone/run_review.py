@@ -139,11 +139,14 @@ def _print_report(rep):
     print()
 
 
-def _local_callables(prefer_live=True, graph_path=None):
+def _local_callables(prefer_live=True, graph_path=None, ledger_path=None, seed=True):
     """Wire get/post directly to the in-process core (no server), so the gate runs
     in CI with nothing to start. Used by --local. prefer_live=False forces the
     committed fixture so the gate is deterministic on any machine (use in CI).
-    graph_path overrides the graph location (e.g. the committed self-index)."""
+    graph_path overrides the graph location (e.g. the committed self-index).
+    ledger_path overrides the ledger file. seed=False starts from an EMPTY ledger
+    (used by `memory-gate --prove`, which records the precedent through the real
+    reject path instead of relying on a pre-seeded contradiction)."""
     import os
     here = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, os.path.abspath(os.path.join(here, "..", "..")))
@@ -151,15 +154,16 @@ def _local_callables(prefer_live=True, graph_path=None):
     from core import graph as graph_mod, impact as impact_mod, seed as seed_mod
     from core.audit import Ledger
     g = graph_mod.Graph(prefer_live=prefer_live, path=graph_path)
-    if not prefer_live:
-        # hermetic: a fresh temp ledger, always reseeded, so the fixture contradiction
-        # fires deterministically regardless of any prior ~/.keystone state.
-        ledger_path = os.path.join(tempfile.mkdtemp(), "gate_ledger.jsonl")
-    else:
-        ledger_path = os.environ.get("KEYSTONE_LEDGER_PATH") or \
-            os.path.join(os.path.expanduser("~"), ".keystone", "gate_ledger.jsonl")
+    if ledger_path is None:
+        if not prefer_live:
+            # hermetic: a fresh temp ledger, always reseeded, so the fixture contradiction
+            # fires deterministically regardless of any prior ~/.keystone state.
+            ledger_path = os.path.join(tempfile.mkdtemp(), "gate_ledger.jsonl")
+        else:
+            ledger_path = os.environ.get("KEYSTONE_LEDGER_PATH") or \
+                os.path.join(os.path.expanduser("~"), ".keystone", "gate_ledger.jsonl")
     led = Ledger(ledger_path)
-    if (not prefer_live) or (not led.rows()):
+    if seed and ((not prefer_live) or (not led.rows())):
         for row in seed_mod.seed_rows_for(g):
             sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
             led.append(actor=row["actor"], change_id=row["change_id"], target_symbols=row["target_symbols"],
@@ -412,8 +416,12 @@ def _shadow_merge(argv):
         sym_a, sym_b = a.a or "clear_transcript", a.b or "precedent"
         ida, idb = a.a_id or "MR-301", a.b_id or "MR-302"
     else:
-        sym_a, sym_b = a.a or "compute_blast_radius", a.b or "append"
-        ida, idb = a.a_id or "MR-204", a.b_id or "MR-211"
+        # Headline demo: a DIRECTIONAL change_in_blast collision (BLOCK), not just an
+        # overlap (HOLD). MR-207 edits impact(), which is itself a dependent inside
+        # MR-204's blast radius for compute_blast_radius() -> the two safe-looking changes
+        # become unsafe together. See `--safe` for the passing counter-example.
+        sym_a, sym_b = a.a or "compute_blast_radius", a.b or "impact"
+        ida, idb = a.a_id or "MR-204", a.b_id or "MR-207"
 
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     sys.path.insert(0, root)
@@ -461,7 +469,15 @@ def _shadow_merge(argv):
           + (f"  ({kind}, {len(shared)} shared dependents)" if collided else ""))
     if collided:
         print(f"  shared dependency : {shared_str}")
+    if kind == "change_in_blast":
+        print(f"  relationship path : {idb} edits {sym_b}(), which sits INSIDE {ida}'s blast radius "
+              f"for {sym_a}()")
+        print(f"                      -> each MR is safe alone; merged together {sym_b}() runs against "
+              f"{sym_a}()'s changed contract and breaks. Git saw two unrelated files.")
     print(f"  VERDICT           : {verdict}")
+    if exit_code and not a.safe:
+        print(f"  safe alternative  : python skills/keystone/run_review.py shadow-merge --safe  "
+              f"(non-overlapping pair -> ALLOW, exit 0)")
     print()
 
     # ---- decision packet (markdown) ----
@@ -561,13 +577,41 @@ def _memory_gate(argv):
     ap.add_argument("--proposes", choices=["approve", "reject"], default="approve")
     ap.add_argument("--fixture", action="store_true",
                     help="use the deterministic committed fixture graph")
+    ap.add_argument("--prove", action="store_true",
+                    help="start from an EMPTY ledger and RECORD the precedent live through the real "
+                         "reject path, then show the agent's APPROVE overridden by it (non-theatrical)")
+    ap.add_argument("--reject-by", default="staff-engineer",
+                    help="reviewer id that records the prior reject in --prove mode")
     ap.add_argument("--out", default=None, help="write the decision packet markdown to this path")
     a = ap.parse_args(argv)
 
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     self_graph = os.path.join(root, "data", "keystone_self_graph.duckdb")
     graph_path = None if a.fixture else (self_graph if os.path.exists(self_graph) else None)
-    get_json, _post, gate_check, _ci = _local_callables(prefer_live=not a.fixture, graph_path=graph_path)
+    recorded_row = None
+    if a.prove:
+        # Non-theatrical proof: empty ledger, then a REAL recorded reject (same gate+append
+        # path a human uses), THEN the agent's approve is overruled by that recorded decision.
+        import tempfile as _tf
+        led_path = os.path.join(_tf.mkdtemp(), "prove_ledger.jsonl")
+        get_json, post_json, gate_check, _ci = _local_callables(
+            prefer_live=not a.fixture, graph_path=graph_path, ledger_path=led_path, seed=False)
+        rationale = (f"Rejecting changes to {a.symbol}: this symbol's blast radius is too large to "
+                     f"alter without a coordinated migration; prior incident on a similar change.")
+        rec = post_json("/api/post", {
+            "name": a.symbol, "decision": "reject", "reviewer": a.reject_by,
+            "change_id": "MR-PRIOR", "rationale": rationale, "author_kind": "human"})
+        recorded_row = (rec or {}).get("row")
+        if recorded_row:
+            print(f"\n[1/2] {a.reject_by} REJECTED {a.symbol} -> recorded ledger row "
+                  f"#{recorded_row.get('seq')} (chain "
+                  f"{'VERIFIED' if (rec.get('verify') or {}).get('ok') else 'BROKEN'}). "
+                  f"Identity: {'self-asserted' if rec.get('self_asserted', True) else 'GitLab-OIDC attested'}.")
+            print(f"[2/2] {a.agent} now proposes APPROVE for {a.symbol} -> consulting the ledger...")
+        else:
+            print(f"WARN: could not record prior reject ({rec}); falling back to seeded precedent.")
+    else:
+        get_json, _post, gate_check, _ci = _local_callables(prefer_live=not a.fixture, graph_path=graph_path)
 
     imp = get_json(f"/api/impact/{parse.quote(a.symbol)}")
     if not imp or "counts" not in imp:
@@ -581,7 +625,13 @@ def _memory_gate(argv):
     c = imp["counts"]
     cc = prec.get("contradiction") if prec.get("contradiction_same_signature") else None
 
-    lines = ["# Keystone - Orbit Memory Gate decision packet", "",
+    lines = ["# Keystone - Orbit Memory Gate decision packet", ""]
+    if a.prove and recorded_row:
+        lines += [
+            f"> **Recorded live in this run** (not pre-seeded): `{a.reject_by}` rejected `{a.symbol}` "
+            f"into an empty ledger as row #{recorded_row.get('seq')}, then `{a.agent}` proposed APPROVE "
+            f"below and Keystone overruled it from that recorded decision.", ""]
+    lines += [
              f"- Symbol: `{a.symbol}` (`{imp.get('epicenter', {}).get('file', '?')}`)",
              f"- AI agent proposed: **{a.proposes.upper()}** (by `{a.agent}`)",
              f"- Orbit blast radius: **{c.get('total_affected', 0)}** dependents (ring-1 {c.get('ring_1', 0)})",
