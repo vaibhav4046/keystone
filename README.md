@@ -55,6 +55,18 @@ Then pick a symbol that is about to change. Keystone reads the GitLab Orbit Loca
 
 Branch protection enforces who clicked approve. Signed commits and GPG git-notes, Sigstore, and in-toto attest who authored or signed code. None of them bind the computed impact of a change and the human rationale and the decision together into one tamper-evident record at the moment of decision, and none surface a contradicting prior rejection while you are about to approve. That binding, plus precedent at the moment of choice, is Keystone. It is complementary to Sigstore and in-toto, not a replacement: they attest the artifact, Keystone attests the decision.
 
+## Prior art, and the new delta
+
+The foundations are well-trodden and Keystone does not pretend otherwise. Static call-graph impact analysis (computing what a change reaches) is decades old; change-coupling / co-change mining (files that historically change together) is a known mining-software-repositories technique; and "blast radius" is a phrase GitLab itself markets for Orbit. Keystone stands on all three.
+
+The genuinely new delta is the combination, applied **pre-merge, on Orbit specifically**:
+
+- **Cross-MR blast-radius intersection as a merge gate.** Existing impact analysis scores one change in isolation. Keystone intersects the dependent sets of two *independently-approved, conflict-free* open merge requests and BLOCKs the pair when they overlap, with a computed safe merge order. That cross-MR, pre-merge intersection is the primitive nobody ships.
+- **Binding the decision to tamper-evident precedent.** A rejected blast signature becomes binding precedent: re-approving it is refused until an accountable override. Impact tools surface risk; they do not remember and enforce a prior verdict.
+- **Delivered as a GitLab-native gate** (a project `SKILL.md` plus a CI gate) reading Orbit's own graph, not a bolt-on that re-parses source.
+
+So the claim is precise: not a new way to compute dependents, but a new *control* assembled from known parts that no existing tool (Git, CODEOWNERS, branch protection, Sigstore/in-toto, or standalone impact analyzers) provides.
+
 ## Engineering Harness
 
 The Engineering Harness is a deterministic governance pipeline that wraps coding agent output through the Orbit code graph before it reaches a merge request. Coding agents can write patches. Keystone decides if they are safe to merge.
