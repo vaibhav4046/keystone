@@ -3,9 +3,11 @@
 Paste these into the Devpost fields. Written to be honest and specific. No em-dashes, no
 hashtags, no invented numbers or users. Fill the two links and the video URL where marked.
 
-Repo: https://github.com/vaibhav4046/keystone
+GitLab repo (PRIMARY — required by the rules): https://gitlab.com/<YOUR_USERNAME>/keystone   <-- create public + MIT, push main, paste the exact URL
+GitHub mirror (secondary): https://github.com/vaibhav4046/keystone
+AI Catalog artifact: <PASTE CATALOG LINK — publish .gitlab/agents/keystone/agent.yml to the AI Catalog, then paste>
 Live demo: https://vaibhav4046.github.io/keystone/
-Video: <PASTE YOUTUBE OR VIMEO URL>
+Video (public, under 3 min): <PASTE YOUTUBE OR VIMEO URL>
 
 ---
 
@@ -55,6 +57,30 @@ is deterministic, so continuous integration rebuilds the bundle byte-for-byte an
 
 The AI runs on a free provider ladder (OpenRouter and others) behind hard timeouts, with a
 deterministic fallback so the whole product works with zero API keys.
+
+## How it uses the GitLab Duo Agent Platform and AI Catalog
+
+The submitted artifact is a Duo Agent Platform agent defined at `.gitlab/agents/keystone/agent.yml`:
+a governed-review persona with a fixed workflow (resolve symbol on the Orbit graph, compute blast
+radius, surface precedent and contradictions, require a human decision, verify the ledger) and a
+tool set bound to the Keystone engine endpoints. It is published to the GitLab AI Catalog so other
+teams can install it.
+
+The same workflow ships as a runnable skill that needs no server:
+`python skills/keystone/run_review.py <symbol> --local` performs the full automation in-process
+against the committed real Orbit index, and `--fail-on-block` makes it an enforceable CI gate that
+exits non-zero on a governance BLOCK. That is the proof the agent automates an action rather than
+chatting: it produces a deterministic report, a verdict, and a tamper-evident ledger row.
+
+## How GitLab Orbit is used (specifically)
+
+The engine reads the Orbit Local graph database directly (the DuckDB file `orbit index` produces:
+`gl_definition`, `gl_edge`, `gl_file`, `gl_directory`) and drives Orbit's own CLI
+(`glab orbit local schema`, `glab orbit local sql`) for live introspection and cross-check. The
+blast radius is a bounded reverse-BFS over `gl_edge` CALLS rows; the cross-MR collision is the
+intersection of two symbols' dependent sets. Remove the Orbit graph and there is nothing to compute.
+The public demo serves a real `orbit index` of this repo (262 defs) and a second real index of
+pallets/click (1,841 defs) so the hazard is shown on recognizable code, not a toy.
 
 ## Challenges we ran into
 

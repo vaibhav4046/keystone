@@ -1,150 +1,86 @@
-# Keystone - 3-minute demo script
+# Keystone — 3-minute demo script (canonical)
 
-Record your screen + voice. Upload to YouTube as Unlisted and paste the URL into Devpost.
-Keep it under 3 minutes. Do not call fallback data "live."
+This is the ONLY demo script. It shows the real skill workflow producing a real result, not a
+website tour. Record screen + voice, upload public/unlisted, paste the URL into Devpost. Under 3:00.
 
----
-
-## Setup (before you hit record)
-
-1. Open two terminals side by side:
-   - Terminal A: Keystone backend
-   - Terminal B: orbit CLI
-2. Open the live demo in a browser: https://vaibhav4046.github.io/keystone/
-3. Start the backend on the real graph:
-
-```powershell
-$env:KEYSTONE_ORBIT_BINARY = "$env:LOCALAPPDATA\glab-cli\bin\orbit.exe"
-cd D:\project\keystone
-python -m uvicorn backend.app:app --port 8787
+Pre-record setup (one terminal, repo root):
 ```
-
-Wait for the startup log to show `Orbit CLI verified`, `graph rows=262`, `edges=689`, and `symbols=120`.
-
----
-
-## Shot list & narration
-
-### 0:00-0:15 — The problem in one sentence
-
-**Visual:** Browser on the Keystone hero page, terminal visible in background.
-
-**Narration:**
-"A staff engineer is about to approve a refactor. Git says no conflict, but the call graph says
-this function is under twelve dependents. I built Keystone to surface what the normal review page
-cannot see, and to refuse approvals that contradict the record."
-
-Click the primary CTA: **Open reviewer cockpit**.
+cd D:\project\keystone
+```
+The skill runs server-less against the committed real Orbit index, so nothing else needs starting.
 
 ---
 
-### 0:15-0:35 — The graph is real
+## 0:00–0:15 — The pain (terminal + one sentence)
 
-**Visual:** Status panel at the top of the cockpit.
+Show two file paths changing in a diff (e.g. `core/impact.py` and `core/audit.py`).
 
-**Narration:**
-"The status panel tells the truth. Source is live. Orbit access is CLI-verified. The graph is this
-very repo: 262 definitions, 689 relationships, 120 verified symbols. This is not a mock."
+Say: "These two merge requests touch different files. Git reports no conflict. They still break
+production together, because both change a function the same downstream code depends on."
 
-Point at each status chip as you say it.
+## 0:15–0:30 — The killer workflow (one sentence)
 
----
+Say: "Keystone uses the GitLab Orbit code graph to investigate change impact, find precedent,
+detect risk, produce a decision, and verify that decision in a tamper-evident ledger. Here it is
+as a skill, running for real."
 
-### 0:35-0:55 — Blast radius
+## 0:30–1:35 — The real skill, producing a real result (THE core)
 
-**Visual:** Symbol selector or the default view; click `compute_blast_radius`.
+Type and run, on camera:
+```
+python skills/keystone/run_review.py compute_blast_radius --local
+```
+Point at the actual output as it prints:
+- `blast radius : ring1=12 ... affected=12` — "Twelve definitions depend on this symbol. Computed
+  from the real Orbit graph, not estimated."
+- `precedent : 3 matches approved=1 rejected=2`
+- `CONTRADICTION (identical-signature): Antigravity rejected ... "Requires migration tests first"`
+  — "This exact blast signature was already rejected. Keystone surfaces it."
+- `chain : VERIFIED`
 
-**Narration:**
-"Pick a symbol. Keystone computes its bounded reverse blast radius from the real Orbit graph: 12
-direct callers. The concentric rings show scope and severity. The number is deterministic, not
-estimated."
+Then run the enforceable gate:
+```
+python skills/keystone/run_review.py compute_blast_radius --local --fail-on-block
+```
+Point at: `GATE BLOCKED (GOVERNANCE_BLOCK): compute_blast_radius is refused by policy.`
+Say: "Non-zero exit. Dropped into CI, this fails the pipeline. The skill does work; it does not chat."
 
-Let the ring animation finish.
+## 1:35–2:05 — The Orbit graph is the source (evidence)
 
----
+Say: "Every number came from a real GitLab Orbit index." Show one of:
+```
+"$LOCALAPPDATA\glab-cli\bin\orbit.exe" sql "SELECT count(*) FROM gl_edge WHERE relationship_kind='CALLS'"
+```
+or open the live site, click **Demo on pallets/click**: "This is a real Orbit index of pallets/click
+— 1,841 definitions. Keystone flags Context colliding with HelpFormatter across core.py and
+formatting.py, and ranks Context an 81-dependent single point of failure." (Recognizable, not a toy.)
 
-### 0:55-1:20 — The contradiction
+## 2:05–2:30 — Decision, block, verified output
 
-**Visual:** Precedent panel, showing the seeded contradiction for `compute_blast_radius`.
+On the live site Audit Ledger: click **Simulate tamper** — "Edit a past decision and every hash
+after it recomputes: the chain goes BROKEN." Click **Restore chain** — "Restore, it re-verifies.
+You cannot quietly rewrite an approval."
 
-**Narration:**
-"This is the beat. A teammate already rejected this exact blast signature in MR-203. Keystone
-matches by signature and blocks me from approving the same change without an accountable override."
+## 2:30–2:50 — Why developers care
 
-Scroll to the precedent row and highlight `contradiction_strength: identical`.
+Say: "AI agents now author merge requests faster than anyone can review them. Keystone runs every
+human and agent change through the same Orbit-graph gate — ALLOW, HOLD, or BLOCK — and refuses an
+approval that contradicts a recorded rejection. It is packaged as a GitLab AI Catalog agent
+(.gitlab/agents/keystone/agent.yml) and a CI gate."
 
----
+## 2:50–3:00 — One-sentence close
 
-### 1:20-1:45 — Policy tier and governance action
+Say: "Keystone: deterministic, auditable change governance on the GitLab Orbit graph. The model
+proposes; the engine decides; the ledger remembers."
 
-**Visual:** Policy / gate panel, showing the computed tier and ALLOW/HOLD/BLOCK.
-
-**Narration:**
-"The blast radius maps to a policy tier written as code. Cross-team scope means two approvers and
-a 24-hour review window. The action is ALLOW, but the precedent contradiction turns the effective
-gate into a BLOCK until I check the override box."
-
-Check the override box, type a reviewer ID, and type a reason.
-
----
-
-### 1:45-2:10 — Decision and tamper-evident ledger
-
-**Visual:** Click **Record approval**. Scroll to the audit ledger.
-
-**Narration:**
-"Every decision is appended to an HMAC-keyed, hash-chained ledger. The chain verifies green. If
-someone edits a row, the badge flips red and the verifier catches it. Let me show the tamper demo
-— edit a row, the chain breaks, then it self-heals when the row is restored."
-
-Trigger the tamper demo, watch the badge flip red, then restore and watch it go green.
-
----
-
-### 2:10-2:30 — Cross-MR collisions and merge order
-
-**Visual:** Collisions panel / merge-order section.
-
-**Narration:**
-"Keystone also scans open merge requests for blast-radius collisions that Git cannot detect. It
-finds seven collision pairs in this fixture and computes a safe merge order. If a cycle exists,
-it reports the MRs that cannot safely merge together."
-
-Point at the merge-order list and one collision pair.
-
----
-
-### 2:30-2:50 — AI agent, catalog, and close
-
-**Visual:** Switch to the repo README or the `skills/keystone/SKILL.md` file.
-
-**Narration:**
-"There is an AI layer, but it is intentionally off the trust path. The agent calls deterministic
-tools for blast radius, precedent, and reviewers, then recommends. The model proposes; the engine
-decides. The same workflow is packaged as a GitLab AI Catalog agent."
-
-Show `.gitlab/agents/keystone/agent.yml` briefly.
-
-**Narration:**
-"Keystone: deterministic governance on top of the GitLab Orbit graph. MIT repo, live demo, and
-this video are in the Devpost entry."
-
----
-
-## End card
-
-Show on screen for 3 seconds:
-
-- Repo: https://github.com/vaibhav4046/keystone
+End card (3s):
+- GitLab repo: https://gitlab.com/<YOUR_USERNAME>/keystone
+- AI Catalog: <paste artifact link>
 - Live demo: https://vaibhav4046.github.io/keystone/
-- Devpost: gitlab-transcend.devpost.com
 
 ---
 
-## Recording tips
-
-- Use OBS or similar, 1920x1080, capture browser + mic only.
-- If the backend is not running, the page switches to the committed SNAPSHOT. Say so out loud; do
-  not call it live.
-- Keep mouse movements slow and deliberate.
-- Pause narration briefly after clicking so the UI finishes animating.
+Honesty rules while recording:
+- Do not call the committed snapshot "live" unless the backend status panel says LIVE.
+- The in-browser ledger hash is a fast FNV demo of the mechanism; production uses HMAC-SHA256.
+- The 120/120 Orbit cross-check is a build-time artifact ("we ran"), not a query running on the page.
