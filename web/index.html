@@ -1273,6 +1273,15 @@ class Component extends DCLogic {
     el.style.opacity = "1";
     if (done || fail) setTimeout(function () { el.style.opacity = "0"; }, 3000);
   }
+  function loadOrbit() {
+    if (window.__ksScan && window.__ksScan.orbit) { setTimeout(rerender, 50); return; }
+    indicator("⟳  Loading the real GitLab Orbit graph…", "run");
+    fetch("orbit_snapshot.json").then(function (r) { return r.json(); }).then(function (d) {
+      window.__ksScan = d;
+      indicator("✓  Live · GitLab Orbit self-index · " + d.defs + " defs · " + d.collisions + " collisions", "done");
+      setTimeout(rerender, 150);
+    }).catch(function () { indicator("Orbit snapshot unavailable — falling back to live scan", "fail"); runScan("pallets/click"); });
+  }
   function runScan(repo) {
     if (scanning || !window.analyzeRepo) return; scanning = true;
     indicator("⟳  Scanning " + repo + " on the call graph…", "run");
@@ -1311,7 +1320,7 @@ class Component extends DCLogic {
       var el = nodes[i]; if (el.__scanwired) continue;
       var t = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
       if (el.childElementCount <= 3 && /^TRY A LIVE DEMO/.test(t)) {
-        el.__scanwired = 1; el.addEventListener("click", function () { if (!window.__ksScan) runScan("pallets/click"); }, false);
+        el.__scanwired = 1; el.addEventListener("click", function () { if (!window.__ksScan) loadOrbit(); }, false);
       } else if (el.childElementCount <= 3 && t === "START ANALYSIS") {
         el.__scanwired = 1; el.style.cursor = "pointer"; el.addEventListener("click", function (e) { e.stopPropagation(); askRepo(); }, true);
       }
