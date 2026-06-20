@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+  // Force unregister all service workers immediately to prevent routing conflicts
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for (let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+</script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences.</title>
+<meta name="description" content="Keystone: X-ray hazards in the GitLab Orbit graph, then govern the change. A command center for code risk analysis and governed review on the GitLab Orbit graph." />
+<meta property="og:title" content="Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences." />
+<meta property="og:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences." />
+<meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
+<link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="styles.css?v=2.3" />
+<link rel="stylesheet" href="ui-v3.css?v=2.0" />
+<link rel="stylesheet" href="ui-glass.css?v=4.6" />
+<link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
+<!-- Live GitHub OAuth: public client id below. Deploy web/ to Vercel with GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET env vars (secret server-side only). See DEPLOY.md. -->
+<script>window.KS_GH_CLIENT_ID = "Ov23liRue1X1qjAaki0F";</script>
+<meta name="theme-color" content="#0b0d12" />
+</head>
+<body>
+<a class="skip-link" href="#blast-radius" onclick="event.preventDefault(); if(typeof goToEl==='function') goToEl('blast-radius');">Skip to blast radius</a>
+<noscript><div class="noscript-msg">Keystone is a command center that needs JavaScript to render. Enable JavaScript, or run it locally - see the README.</div></noscript>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div class="scanlines" aria-hidden="true"></div>
+<div id="landing" class="landing" role="dialog" aria-label="Sign in to Keystone" hidden>
+  <div class="landing-inner">
+    <img class="landing-logo" src="keystone-k.svg?v=1" width="74" height="74" alt="Keystone" />
+    <h1 class="landing-title">Keystone</h1>
+    <p class="landing-sub">Two merge requests can pass review, touch different files, have no conflict — and still break production together. Sign in to catch those silent collisions on your repo's call graph before you merge.</p>
+    <div class="landing-ctas">
+      <button id="landing-signin" class="btn primary landing-cta" type="button">
+        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        Sign in with GitHub
+      </button>
+      <button id="landing-demo" class="landing-cta2" type="button">Try a live demo <span aria-hidden="true">→</span></button>
+    </div>
+    <div class="landing-hint">No account needed for the demo — Keystone analyzes real public repos right in your browser.</div>
+    <div class="landing-foot">See Everything. Impact Nothing.</div>
+  </div>
+</div>
+<div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+<!-- Sidebar Navigation -->
+<nav class="sidebar" id="sidebar" aria-label="Main navigation">
+  <div class="sidebar-brand">
+    <span class="sidebar-brand-text">KEYSTONE</span>
+  </div>
+  <div class="sidebar-nav">
+    <button class="sidebar-item active" data-section="overview" title="Overview">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span class="sidebar-label">Overview</span>
+    </button>
+    <button class="sidebar-item" data-section="symbols" title="Symbols">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M7 4L3 10l4 6M13 4l4 6-4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M11 3l-2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="sidebar-label">Symbols</span>
+    </button>
+    <button class="sidebar-item" data-section="impact" title="Impact">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="sidebar-label">Impact</span>
+    </button>
+    <button class="sidebar-item" data-section="audit" title="Audit">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M10 2L3 5.5v4.5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V5.5L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="sidebar-label">Audit</span>
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <button class="sidebar-item help" data-section="help" title="Help & Keyboard Shortcuts">
+      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 7.5a2 2 0 1 1 2.5 1.94c-.29.1-.5.37-.5.68V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="10" cy="13.5" r="0.75" fill="currentColor"/>
+      </svg>
+      <span class="sidebar-label">Help</span>
+    </button>
+    <div class="sidebar-meta">v2.0</div>
+  </div>
+</nav>
+
+<!-- App Shell -->
+<div class="app-shell">
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">hazard x-ray + governed review</span></div>
+    <button class="topbar-search" type="button" aria-label="Search symbols and run the demo (Ctrl K)" onclick="if(window.__ksCmdOpen)window.__ksCmdOpen()">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>
+      <span>Search symbols, run the demo…</span>
+      <kbd>⌘K</kbd>
+    </button>
+  </div>
+  <div class="topbar-right">
+    <div class="status" id="status" aria-live="polite">
+      <span class="chip" id="src-chip">source ...</span>
+      <span class="chip" id="orbit-chip">orbit ...</span>
+      <span class="chip" id="chain-chip">chain ...</span>
+      <span class="chip" id="integ-chip">integrity ...</span>
+      <button id="connection-toggle" class="chip ok" aria-label="Connection settings" title="Switch between static and live backend mode" style="cursor: pointer; display: inline-flex; align-items: center; border: 1px solid var(--border-subtle); outline: none;">
+        <span class="dot g" id="conn-dot"></span><span id="conn-text">mode: snapshot</span>
+      </button>
+    </div>
+    <div class="gh-auth" id="gh-auth">
+      <button id="gh-signin" class="gh-btn" type="button" aria-label="Sign in with GitHub">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        <span>Sign in</span>
+      </button>
+      <div id="gh-user" class="gh-user" hidden>
+        <span class="gh-udot"></span><span id="gh-handle">@you</span>
+        <button id="gh-signout" class="gh-signout" type="button" aria-label="Sign out">sign out</button>
+      </div>
+    </div>
+    <button id="theme-toggle" class="btn ghost theme-toggle" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
+      <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<nav class="hubnav" id="hubnav" aria-label="Section navigation">
+  <button type="button" class="hubnav-tab active" data-goview="home" aria-current="page">Home</button>
+  <button type="button" class="hubnav-tab" data-goview="demo">Live demo</button>
+  <button type="button" class="hubnav-tab" data-goview="harness">Harness</button>
+  <button type="button" class="hubnav-tab" data-goview="cockpit">Cockpit</button>
+  <button type="button" class="hubnav-tab" data-goview="ledger">Ledger</button>
+</nav>
+
+<div id="hero-strip" class="hero-strip">
+  <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
+  <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
+  <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
+  <div class="repo-analyze" id="repo-analyze">
+    <div class="repo-analyze-label"><b>Sign in with GitHub</b> (top-right) and your repos load automatically — no username, no token. Or analyze any public repo right now — paste <code>owner/repo</code>:</div>
+    <div class="repo-analyze-row">
+      <input id="repo-input" class="repo-input" type="text" placeholder="owner/repo   ·   e.g. pallets/click" aria-label="owner/repo to analyze, or a GitHub username to browse" autocomplete="off" spellcheck="false" />
+      <button id="repo-go" class="btn primary" type="button">Browse / Analyze</button>
+    </div>
+    <div class="repo-examples">try <button type="button" class="repo-ex" data-repo-example="pallets">pallets (browse)</button><button type="button" class="repo-ex" data-repo-example="pallets/click">pallets/click</button><button type="button" class="repo-ex" data-repo-example="psf/requests">psf/requests</button></div>
+    <div id="repo-list" class="repo-list" role="list"></div>
+    <div id="repo-status" class="repo-status" role="status" aria-live="polite"></div>
+    <div id="repo-export" class="repo-export" hidden></div>
+  </div>
+  <div id="hero-collision-frame" class="collision-frame" aria-label="silent collision demonstration">
+    <div class="cf-mrs">
+      <div class="cf-mr">
+        <div class="cf-mr-id">MR-204 · speed up the blast engine</div>
+        <code class="cf-mr-sym">core/graph.py → compute_blast_radius</code>
+        <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
+      </div>
+      <div class="cf-arrow" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </div>
+      <div class="cf-mr">
+        <div class="cf-mr-id">MR-211 · ledger append fix</div>
+        <code class="cf-mr-sym">core/audit.py → append</code>
+        <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
+      </div>
+    </div>
+    <div class="cf-verdict" id="hero-collision-verdict" role="status" aria-live="assertive" hidden>
+      <span class="cf-block-tag">SILENT COLLISION</span>
+      <span class="cf-verdict-text"><strong id="hero-shared-count">5</strong> dependents sit in <em>both</em> blast radii — the overlap, not each MR's full ring-1 · Keystone <strong>BLOCKS</strong> the merge</span>
+      <span class="cf-shared" id="hero-shared-list"></span>
+    </div>
+  </div>
+  <div id="hero-stakes" class="hero-stakes">
+    <div class="stakes-line"><span class="stakes-big" id="hero-stakes-num">5</span> <span class="stakes-unit">shared dependents would break together</span></div>
+    <p class="stakes-sub">Git and CODEOWNERS both stamped these merge requests green. On the Orbit call graph they collide on runtime dependents neither reviewer can see — <strong>1 broken build</strong> that <strong>4 reviewers</strong> would have approved, caught before merge.</p>
+  </div>
+  <div class="hero-stat-strip" aria-label="what is real">
+    <span><strong>262</strong> definitions</span>
+    <span><strong>120</strong> Orbit-verified by <code>orbit sql</code></span>
+    <span><strong>2</strong> hidden collisions in the live scenario</span>
+    <span><strong>0</strong> invented numbers</span>
+  </div>
+  <div class="hero-actions">
+    <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="goToEl('simulation-section')">Run the hidden-collision demo</button>
+    <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
+    <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
+  </div>
+</div>
+<div id="open-banner" class="open-banner" role="note" hidden></div>
+<div id="data-provenance" class="data-prov" role="note" hidden></div>
+<div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
+  <span class="tour-step" id="tour-step">ready</span>
+  <span class="tour-meta" id="tour-meta"></span>
+  <button class="btn ghost btn-sm" type="button" id="tour-prev" style="margin-left: 12px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">&larr; Back</button>
+  <button class="btn primary btn-sm" type="button" id="tour-next" style="margin-left: 6px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">Next &rarr;</button>
+  <button class="btn ghost btn-sm" type="button" id="tour-stop" style="margin-left: 6px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">Skip</button>
+</div>
+
+<main>
+
+<section id="simulation-section" class="simulation panel" data-reveal>
+  <div class="p-h">FUTURE MERGE SIMULATOR
+    <span class="hint">cross-MR blast collisions on the committed Orbit snapshot</span>
+  </div>
+  <div class="sim-container">
+    <div class="sim-scenario-label">
+      <span class="dot a"></span> Recorded demo scenario from the committed Orbit snapshot
+    </div>
+    <div class="sim-mrs">
+      <div class="sim-mr mr-a">
+        <div class="mr-badge">MR-204</div>
+        <div class="mr-title">speed up the blast engine</div>
+        <code class="mr-file">core/graph.py</code>
+        <code class="mr-symbol">compute_blast_radius</code>
+      </div>
+      <div class="sim-mr mr-b">
+        <div class="mr-badge">MR-211</div>
+        <div class="mr-title">ledger append fix</div>
+        <code class="mr-file">core/audit.py</code>
+        <code class="mr-symbol">append</code>
+      </div>
+    </div>
+
+    <div class="sim-stepper">
+      <div class="sim-step active" data-step="1">
+        <div class="step-num">1</div>
+        <div class="step-label">Isolated Files</div>
+      </div>
+      <div class="sim-step" data-step="2">
+        <div class="step-num">2</div>
+        <div class="step-label">Git Diff</div>
+      </div>
+      <div class="sim-step" data-step="3">
+        <div class="step-num">3</div>
+        <div class="step-label">Orbit Scan</div>
+      </div>
+      <div class="sim-step" data-step="4">
+        <div class="step-num">4</div>
+        <div class="step-label">Collision</div>
+      </div>
+      <div class="sim-step" data-step="5">
+        <div class="step-num">5</div>
+        <div class="step-label">Gate Verdict</div>
+      </div>
+    </div>
+
+    <div class="sim-display" aria-live="polite">
+      <div class="sim-step-content active" id="sim-content-1">
+        <div class="sim-status-badge info">STEP 1: ISOLATED FILES</div>
+        <p class="sim-desc">Two merge requests touch completely different files. <code>MR-204</code> edits <code>core/graph.py</code> and <code>MR-211</code> edits <code>core/audit.py</code>. In Git's eyes, these changes are completely isolated.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-2" style="display:none;">
+        <div class="sim-status-badge success">GIT CONFLICT: NONE</div>
+        <p class="sim-desc">Git analyzes file paths. Since they edit entirely different files, Git's file-based diff finds zero conflicts. Traditional CI/CD and reviews will greenlight both, risking a broken build in production.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-3" style="display:none;">
+        <div class="sim-status-badge warning">ORBIT SCAN: BLAST RADIUS</div>
+        <p class="sim-desc">Orbit's call graph lets Keystone compute each MR's blast radius. <code>MR-204</code> (<code>compute_blast_radius</code>) reaches <strong>12</strong> dependents; <code>MR-211</code> (<code>append</code>) reaches <strong>17</strong>. Each count is cross-checked against a live <code>orbit sql</code> query that returns the same number.</p>
+        <div class="sim-visual-connection">
+          <code>orbit sql</code> ring-1 for <code>compute_blast_radius</code> = <strong>12</strong> <span class="conn-arrow">=</span> engine <strong>12</strong>
+        </div>
+      </div>
+      <div class="sim-step-content" id="sim-content-4" style="display:none;">
+        <div class="sim-status-badge danger">SILENT COLLISION: BLAST_OVERLAP (severity 6)</div>
+        <p class="sim-desc">Keystone joins the two blast radii and finds they overlap: both MRs ripple into the same <strong>5 dependents</strong>. The collision kind and fan-in severity are engine-computed in <code>core/collision.py</code> over the Orbit graph. Git and CODEOWNERS see two unrelated file edits and greenlight both.</p>
+        <div class="sim-visual-connection">
+          shared dependents: <code>approve</code> <code>get_json</code> <code>main</code> <code>post_json</code> <code>precedent</code>
+        </div>
+        <p class="sim-desc">Keystone classifies every cross-MR collision by how the two changes interact on the graph: <code>same_change</code> (both edit one symbol), <code>change_in_blast</code> (one edits inside the other's blast radius), or <code>blast_overlap</code> (their blast radii share dependents, like this one). The full scenario flags <strong>two</strong> collisions across the three open MRs.</p>
+      </div>
+      <div class="sim-step-content" id="sim-content-5" style="display:none;">
+        <div class="sim-status-badge danger">VERDICT: BLOCK (CROSS_TEAM)</div>
+        <p class="sim-desc">Keystone BLOCKs the merge at the CROSS_TEAM tier and returns the safe order from a Kahn topological sort over the collision graph. Merge in any other order and a shared dependent breaks at runtime.</p>
+        <div class="sim-safe-sequence">
+          <span class="seq-badge">1</span> <code>MR-204</code> &rarr; <span class="seq-badge">2</span> <code>MR-207</code> &rarr; <span class="seq-badge">3</span> <code>MR-211</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-controls">
+      <button id="sim-prev" class="btn ghost" disabled>Back</button>
+      <button id="sim-next" class="btn primary">Next Step</button>
+    </div>
+  </div>
+</section>
+
+<section id="orbit-diff-section" class="orbit-diff panel" data-reveal>
+  <div class="p-h">ORBIT DIFFERENCE MATRIX
+    <span class="hint">how Keystone compares to traditional review guardrails</span>
+  </div>
+  <div class="comparison-cards">
+    <div class="comp-card">
+      <div class="comp-card-title">Git / MR Diff</div>
+      <ul class="comp-card-list">
+        <li class="pro">Sees changed files and textual conflicts.</li>
+        <li class="con">Cannot see transitive dependency risk.</li>
+      </ul>
+    </div>
+    <div class="comp-card">
+      <div class="comp-card-title">CODEOWNERS</div>
+      <ul class="comp-card-list">
+        <li class="pro">Sees ownership rules.</li>
+        <li class="con">Cannot see runtime graph consequences.</li>
+      </ul>
+    </div>
+    <div class="comp-card highlight">
+      <div class="comp-card-title">GitLab Orbit <span class="comp-card-badge">Foundation</span></div>
+      <ul class="comp-card-list">
+        <li class="pro">Sees symbols, callers, dependents, and graph relationships.</li>
+        <li class="pro">Makes blast radius possible.</li>
+      </ul>
+    </div>
+    <div class="comp-card keystone-highlight">
+      <div class="comp-card-title">Keystone</div>
+      <ul class="comp-card-list">
+        <li class="pro">Uses Orbit to detect hidden collisions, compute blast radius, and gate decisions.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT WALKTHROUGH (optional, owner-filled video; facade pattern, no autoplay) -->
+<section id="product-demo" class="panel demo-embed" data-reveal>
+  <div class="p-h">PRODUCT WALKTHROUGH <span class="hint">2-minute narrated tour, optional</span></div>
+  <div class="demo-frame" id="demo-frame" data-embed-src="">
+    <img class="demo-poster" src="live.png?v=1" alt="Keystone reviewer cockpit preview" loading="lazy" />
+    <button class="demo-play" type="button" id="demo-play" aria-label="Play product walkthrough">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <p class="demo-note" id="demo-note" hidden>Walkthrough video not yet published. The live demo above and the 60-second tour are the working proof.</p>
+  </div>
+  <div class="demo-cap">To be recorded against the live backend; every number on screen is computed from a real <code>orbit index</code> of this repo.</div>
+</section>
+<script>
+(function(){var b=document.getElementById('demo-play');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('demo-frame');var src=f.getAttribute('data-embed-src');if(src){var i=document.createElement('iframe');i.loading='lazy';i.allowFullscreen=true;i.setAttribute('allow','fullscreen; picture-in-picture');i.style.cssText='width:100%;height:100%;border:0';i.src=src;f.innerHTML='';f.appendChild(i);}else{var n=document.getElementById('demo-note');if(n)n.hidden=false;b.style.display='none';}});})();
+</script>
+
+<!-- ENGINEERING HARNESS PIPELINE -->
+<section id="harness-pipeline" class="harness-section panel" data-reveal aria-labelledby="harness-h">
+  <div class="p-h" id="harness-h">ENGINEERING HARNESS
+    <span class="hint">deterministic governance pipeline for agent-authored code</span></div>
+  <p class="harness-pitch">Coding agents can write patches. Keystone decides if they are safe to merge.</p>
+
+  <!-- Agent Task Card -->
+  <div id="harness-task" class="harness-task-card">
+    <div class="harness-task-header">
+      <span class="harness-task-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="7" width="12" height="9" rx="2.5"/><path d="M10 4.6V7"/><circle cx="10" cy="3.6" r="1"/><circle cx="8" cy="11.2" r="0.7" fill="currentColor" stroke="none"/><circle cx="12" cy="11.2" r="0.7" fill="currentColor" stroke="none"/><path d="M8.6 14h2.8"/></svg></span>
+      <div class="harness-task-info">
+        <div class="harness-task-agent" id="harness-agent">copilot-workspace</div>
+        <div class="harness-task-mr" id="harness-mr">MR-204</div>
+      </div>
+      <span class="harness-task-kind" id="harness-kind">bot</span>
+    </div>
+    <div class="harness-task-symbols" id="harness-symbols">compute_blast_radius</div>
+  </div>
+
+  <!-- Pipeline Stages -->
+  <div class="harness-pipeline-flow" id="harness-stages">
+    <div class="harness-stage" data-stage="SYMBOL_RESOLVE">
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg></div>
+      <div class="harness-stage-name">Symbol Resolve</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="BLAST_COMPUTE">
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="4"/><circle cx="10" cy="10" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+      <div class="harness-stage-name">Blast Radius</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="POLICY_GATE">
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 2.5L4 5v4.2c0 3.6 2.5 6.6 6 7.8 3.5-1.2 6-4.2 6-7.8V5L10 2.5z"/><path d="M7.5 9.8l1.8 1.8 3.4-3.6"/></svg></div>
+      <div class="harness-stage-name">Policy Gate</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="COLLISION_SCAN">
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.6" cy="10" r="4.6"/><circle cx="12.4" cy="10" r="4.6"/></svg></div>
+      <div class="harness-stage-name">Collision Scan</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+    <div class="harness-connector"></div>
+    <div class="harness-stage" data-stage="VERDICT">
+      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.5"/><path d="M6.8 10.2l2.2 2.2 4.2-4.4"/></svg></div>
+      <div class="harness-stage-name">Verdict</div>
+      <div class="harness-stage-status">pending</div>
+    </div>
+  </div>
+
+  <!-- Per-Symbol Verdicts -->
+  <div class="harness-verdicts" id="harness-verdicts">
+    <div class="harness-verdict-header">Per-Symbol Gate Results</div>
+    <div class="harness-verdict-list" id="harness-verdict-list"></div>
+  </div>
+
+  <!-- Overall Verdict -->
+  <div class="harness-overall" id="harness-overall">
+    <div class="harness-overall-label">Overall Pipeline Verdict</div>
+    <div class="harness-overall-badge" id="harness-overall-badge">PENDING</div>
+  </div>
+</section>
+
+<!-- HAZARD X-RAY -->
+<section class="hazard panel" data-reveal aria-labelledby="hazard-h">
+  <div class="p-h" id="hazard-h">HAZARD X-RAY
+    <span class="hint">risk the Orbit graph sees that Git can't</span></div>
+  <div class="hazard-grid">
+    <div class="hz-col hz-collision">
+      <div class="hz-title">CROSS-MR BLAST COLLISION <span class="hz-sub">two MRs that silently break together. Add symbols below to build your own open MRs; the collision recomputes live in your browser, no backend.</span></div>
+      <div id="collision" class="hz-body" aria-live="polite"><div class="muted">loading open merge requests…</div></div>
+      <div class="hz-ctrl">
+        <input id="mr-add" class="ip" list="mr-symbols" placeholder="add any symbol + Enter — recomputes the collision live, in-browser" aria-label="add any symbol as an open MR; the collision recomputes live in your browser" maxlength="120" />
+        <datalist id="mr-symbols"></datalist>
+        <button id="mr-reset" class="btn ghost" type="button">reset</button>
+      </div>
+      <div id="mr-msg" class="hz-msg" role="status" aria-live="polite"></div>
+    </div>
+    <div class="hz-col hz-debt">
+      <div class="hz-title">REVIEW DEBT <span class="hz-sub">high blast, no test directly exercises it</span></div>
+      <div id="graph-audit" class="hz-body" aria-live="polite"><div class="muted">auditing the graph…</div></div>
+    </div>
+  </div>
+</section>
+
+<div id="reviewer-cockpit-intro" class="cockpit-intro">
+  <h2 class="cockpit-title">Reviewer Cockpit</h2>
+  <p class="cockpit-subtitle">Engine-computed from the Orbit graph. AI explains; the deterministic gate decides.</p>
+</div>
+
+<!-- 2-Panel Workspace -->
+<div class="workspace">
+
+  <!-- Primary Panel: Symbol Explorer + Blast Radius -->
+  <div class="primary-panel">
+    <section class="rail panel" data-reveal>
+      <div class="rail-h" id="symbols-h">SYMBOLS</div>
+      <input id="search" class="search" placeholder="filter symbols… (press / to focus)" autocomplete="off" aria-label="filter symbols" />
+      <div class="rail-filters">
+        <select id="filter-type" class="ip filter-select" aria-label="Filter by Type">
+          <option value="all">all types</option>
+          <option value="function">functions</option>
+          <option value="class">classes</option>
+          <option value="other">others</option>
+        </select>
+        <select id="filter-hazard" class="ip filter-select" aria-label="Filter by Hazard Severity">
+          <option value="all">all hazards</option>
+          <option value="block">BLOCK / contradiction</option>
+          <option value="hold">HOLD tier</option>
+          <option value="allow">ALLOW tier</option>
+          <option value="cross-team">CROSS_TEAM tier</option>
+          <option value="high-blast">high blast (&ge; 10)</option>
+          <option value="collision">collisions</option>
+          <option value="debt">review debt</option>
+        </select>
+      </div>
+      <div class="rail-hint">try <b>compute_blast_radius</b> (BLOCKed by precedent) or <b>append</b> (3-ring blast)</div>
+      <button id="show-all" type="button" class="rail-toggle" aria-pressed="false">show all</button>
+      <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
+      <div class="rail-foot">
+        <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
+        <div class="kv"><span>defs</span><b id="def-count">...</b></div>
+        <div class="kv"><span>db</span><b id="db-path" title="">...</b></div>
+        <div class="kv"><span>orbit cli</span><b id="orbit-cli" title="">-</b></div>
+      </div>
+    </section>
+
+    <section class="stage panel" data-reveal id="blast-radius" tabindex="-1">
+      <div class="stage-h">
+        <span>BLAST RADIUS</span>
+        <span class="epi" id="epi">select a symbol</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="g3d" aria-hidden="true"></canvas>
+        <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="bsvg-title"><title id="bsvg-title">Blast-radius graph; the exact rings and names are listed in the IMPACT panel.</title></svg>
+        <p class="visually-hidden">The blast radius is also listed as text in the IMPACT panel.</p>
+        <div class="counter"><span id="counter">0000</span><small>affected</small></div>
+      </div>
+      <div class="legend">
+        <span class="lg lg0">epicenter</span>
+        <span class="lg lg1">direct</span>
+        <span class="lg lg2">transitive</span>
+        <span class="lg lg3">at risk</span>
+        <span class="lg lgU">unaffected</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- Detail Panel -->
+  <aside class="detail-panel">
+    <div class="panel impact">
+      <div class="p-h panel-header" data-collapse="rings-body">IMPACT <span class="chevron">▾</span></div>
+      <div id="rings" class="rings panel-body" aria-live="polite" role="group" aria-label="blast radius by severity ring, the text alternative to the graph"><div class="muted">No symbol selected.</div></div>
+    </div>
+
+    <div class="panel precedent">
+      <div class="p-h panel-header" data-collapse="prec-body">PRECEDENT <span class="hint">prior decisions on this symbol</span> <span class="chevron">▾</span></div>
+      <div id="precedent" class="prec panel-body" aria-live="polite"><div class="muted">-</div></div>
+    </div>
+
+    <div class="panel brief">
+      <div class="p-h panel-header" data-collapse="brief-body">REVIEW BRIEF <span class="hint" id="brief-src"></span> <span class="chevron">▾</span></div>
+      <div id="brief" class="prec panel-body" aria-live="polite"><div class="muted">select a symbol</div></div>
+    </div>
+
+    <div class="panel assistant">
+      <div class="p-h panel-header" data-collapse="assistant-body">AI ASSISTANT <span class="agentic-badge" id="assistant-src" title="a bounded agent that calls the deterministic engine tools, then recommends a next step - it proposes, it never decides">tool-using agent</span> <span class="chevron">▾</span></div>
+      <div id="assistant" class="assistant-body panel-body" aria-live="polite"><div class="muted">select a symbol - the agent will inspect it with engine tools</div></div>
+      <div class="assistant-ask">
+        <input id="assistant-q" class="ip" placeholder="ask the agent (e.g. who should review this?)" aria-label="ask the review assistant" maxlength="400" />
+        <button id="assistant-go" class="btn ghost" disabled>ASK</button>
+      </div>
+    </div>
+
+    <div class="panel gate" id="gate">
+      <div class="p-h panel-header" data-collapse="gate-body-inner">APPROVAL GATE <span class="chevron">▾</span></div>
+      <div class="gate-body panel-body" id="gate-body-inner">
+        <select id="authorkind" class="ip" aria-label="author kind">
+          <option value="human">human reviewer</option>
+          <option value="agent">AI agent (enforce scope)</option>
+        </select>
+        <input id="reviewer" class="ip" value="demo-reviewer" placeholder="reviewer / agent id" aria-label="reviewer or agent id" maxlength="120" />
+        <input id="changeauthor" class="ip" placeholder="change author (four-eyes, optional)" aria-label="change author" maxlength="120" />
+        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" aria-describedby="reason-err" />
+        <div id="reason-err" class="gate-err" role="alert"></div>
+        <div class="gate-note id-note">in this browser demo the reviewer is self-asserted (the chain proves the text was not edited, not who typed it). On the GitLab CI gate path the actor IS bound: the runner injects an OIDC id_token and the recorded row carries its <code>sub</code> claim with <code>self_asserted=false</code> (core/identity.py, .gitlab-ci.yml). See README.</div>
+        <div class="gate-btns">
+          <button id="approve" class="btn approve" disabled>APPROVE</button>
+          <button id="reject" class="btn reject" disabled>REJECT</button>
+        </div>
+        <label id="override-row" class="gate-note" style="display:none"><input type="checkbox" id="override" /> override the policy BLOCK (recorded as an accountable override)</label>
+        <div id="gate-status" class="gate-note"></div>
+        <div class="gate-note">appends one HMAC-keyed hash-linked ledger row + mints a decision attestation. Nothing else changes.</div>
+        <button id="export-att" class="btn ghost" disabled>EXPORT ATTESTATION (in-toto / SLSA-VSA)</button>
+        <div id="sample-note" class="gate-note" style="opacity:0;color:var(--gold);transition:opacity .3s"></div>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /workspace -->
+
+</main>
+
+<!-- Audit Ledger -->
+<section class="ledger panel" data-reveal id="audit">
+  <div class="p-h">
+    AUDIT LEDGER
+    <span id="chain-verdict" class="verdict" role="status" aria-live="assertive">...</span>
+    <button id="verify" class="btn ghost">VERIFY CHAIN</button>
+    <button id="tamper" class="btn ghost danger-ghost" title="demo: prove tamper-evidence (in-memory only)">SIMULATE TAMPER</button>
+  </div>
+  <div id="tamper-note" class="tamper-note" role="status" aria-live="polite" hidden></div>
+  <div class="ltable-wrap">
+    <table class="ltable">
+      <caption class="visually-hidden">Append-only audit ledger: each row binds a decision to its blast radius and the previous row's hash.</caption>
+      <thead><tr><th scope="col">#</th><th scope="col">time</th><th scope="col">change</th><th scope="col">blast</th><th scope="col">reviewer</th><th scope="col">decision</th><th scope="col">hash (prev → this)</th></tr></thead>
+      <tbody id="lrows"></tbody>
+    </table>
+  </div>
+  <div id="trust-layer" class="trust-layer">
+    <div class="trust-title">Trust boundary:</div>
+    <ul class="trust-list">
+      <li><b>Static demo:</b> reviewer identity is self-asserted.</li>
+      <li><b>Live/CI path:</b> actor can be bound with GitLab OIDC.</li>
+      <li><b>AI assistant:</b> advisory only.</li>
+      <li><b>Gate decision:</b> deterministic.</li>
+      <li><b>Ledger:</b> HMAC hash-chained and tamper-evident.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ KILO-STYLE MARKETING SECTIONS (home view) ============ -->
+<section class="kilo-features" data-view="home" aria-labelledby="kf-h">
+  <div class="kilo-head">
+    <span class="kilo-eyebrow">What review can't see</span>
+    <h2 id="kf-h" class="kilo-h2">Consequence-aware review, on the call graph.</h2>
+    <p class="kilo-sub">Git and CODEOWNERS see files. Keystone sees what breaks — and records the decision.</p>
+  </div>
+  <div class="kilo-grid">
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></div>
+      <h3>Silent collision detection</h3>
+      <p>Two merge requests that pass review, touch different files, and share a runtime dependent are flagged before they break production together.</p>
+    </article>
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+      <h3>Deterministic blast radius</h3>
+      <p>Every change's true reach — direct callers, transitive dependents, owning files — computed from the graph and cross-checked by a real <code>orbit sql</code> query.</p>
+    </article>
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8-7 9.5C8 19 5 15.4 5 11V6l7-3z"/><path d="M9 11.5l2 2 4-4.5"/></svg></div>
+      <h3>Tamper-evident decisions</h3>
+      <p>Every approve and reject is appended to a sha256 hash-chained ledger. Change one row and the whole chain visibly breaks.</p>
+    </article>
+    <article class="kilo-card">
+      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h9"/><circle cx="6" cy="18" r="2.4"/><circle cx="6" cy="4" r="2"/><circle cx="18" cy="18" r="2.4"/></svg></div>
+      <h3>Point it at any repo</h3>
+      <p>Paste a public GitHub repo and Keystone builds its call graph in your browser — no backend, no signup, your code never leaves the page.</p>
+    </article>
+  </div>
+</section>
+
+<section class="kilo-how" data-view="home" aria-labelledby="kh-h">
+  <div class="kilo-head">
+    <span class="kilo-eyebrow">How it works</span>
+    <h2 id="kh-h" class="kilo-h2">Three steps, zero guesswork.</h2>
+  </div>
+  <ol class="kilo-steps">
+    <li class="kilo-step"><span class="kilo-step-n">1</span><div class="kilo-step-b"><h3>Point at a repo</h3><p>Paste any public GitHub repo. Keystone fetches it and builds the call graph in your browser.</p></div></li>
+    <li class="kilo-step"><span class="kilo-step-n">2</span><div class="kilo-step-b"><h3>See the blast radius</h3><p>Pick a symbol, or stage two merge requests. The hidden collisions and dependents light up on the graph.</p></div></li>
+    <li class="kilo-step"><span class="kilo-step-n">3</span><div class="kilo-step-b"><h3>Govern the merge</h3><p>The deterministic gate decides; you record an accountable, tamper-evident decision. Precedent surfaces if someone already said no.</p></div></li>
+  </ol>
+</section>
+
+<section class="kilo-faq" data-view="home" aria-labelledby="faq-h">
+  <div class="kilo-head">
+    <span class="kilo-eyebrow">FAQ</span>
+    <h2 id="faq-h" class="kilo-h2">Questions, answered honestly.</h2>
+  </div>
+  <div class="faq-list">
+    <details class="faq-item"><summary>Is this a real tool or a mockup?</summary><p>Real. Paste any public Python repo at the top and the call graph + blast radius is computed live in your browser. The demo scenario runs on a real Orbit index of this repo — 262 definitions, 120 cross-verified by <code>orbit sql</code>.</p></details>
+    <details class="faq-item"><summary>Does my code leave my machine?</summary><p>No. The analyzer fetches public files from GitHub and parses them entirely client-side. Nothing is uploaded — there is no backend in the static demo.</p></details>
+    <details class="faq-item"><summary>How accurate is the call graph?</summary><p>The in-browser analyzer is a static, regex-based approximation — Python dynamic dispatch is under-approximated, the same honest limit the engine concedes (it cross-verifies 120 of 262 symbols). The full Orbit backend produces the exact graph.</p></details>
+    <details class="faq-item"><summary>What exactly is a "silent collision"?</summary><p>Two merge requests that each pass review with no file conflict, but whose blast radii overlap on shared runtime dependents — so merged together they break, and no single reviewer can see it.</p></details>
+    <details class="faq-item"><summary>Is the audit ledger really tamper-evident?</summary><p>Each row is sha256 hash-chained to the previous. The public demo uses a published shared-secret HMAC key, so it proves no accidental corruption, not insider resistance (that needs an asymmetric signature — on the roadmap). Hit SIMULATE TAMPER to watch a chain break and heal.</p></details>
+    <details class="faq-item"><summary>What does it cost?</summary><p>Nothing. It's open source (MIT), runs entirely in your browser on the static deploy, and uses no paid services.</p></details>
+  </div>
+</section>
+
+<section class="kilo-cta" data-view="home">
+  <h2 class="kilo-cta-h">See what your merges hide.</h2>
+  <p class="kilo-cta-sub">Paste your repo. No backend, no signup — the analysis runs in your browser.</p>
+  <div class="kilo-cta-btns">
+    <button class="btn primary" type="button" onclick="(function(){var i=document.getElementById('repo-input');if(typeof showView==='function')showView('home');window.scrollTo({top:0,behavior:'smooth'});if(i)setTimeout(function(){i.focus();},420);})()">Analyze my repo</button>
+    <button class="btn secondary" type="button" onclick="goToEl('simulation-section')">Watch the demo</button>
+  </div>
+</section>
+
+<section id="attestation" class="visually-hidden" aria-label="attestation anchor"></section>
+
+<footer class="kilo-footer">
+  <div class="kilo-footer-grid">
+    <div class="kilo-footer-brand">
+      <div class="kilo-footer-logo"><img class="kf-logo-mark" src="keystone-k.svg?v=1" alt="Keystone" width="26" height="26" /> KEYSTONE</div>
+      <p>Consequence-aware code review on the GitLab Orbit graph. Every number is computed from the graph, never invented.</p>
+      <p id="foot-src" class="foot-src"></p>
+    </div>
+    <nav class="kilo-footer-col" aria-label="Product">
+      <h4>Product</h4>
+      <button type="button" onclick="showView('demo')">Live demo</button>
+      <button type="button" onclick="showView('cockpit')">Reviewer cockpit</button>
+      <button type="button" onclick="showView('harness')">Agent harness</button>
+      <button type="button" onclick="showView('ledger')">Audit ledger</button>
+    </nav>
+    <nav class="kilo-footer-col" aria-label="Open source">
+      <h4>Open source</h4>
+      <a href="https://github.com/vaibhav4046/keystone" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/vaibhav4046/keystone/blob/main/README.md" target="_blank" rel="noopener">README</a>
+      <a href="https://github.com/vaibhav4046/keystone/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </nav>
+    <nav class="kilo-footer-col" aria-label="Built on">
+      <h4>Built on</h4>
+      <a href="https://about.gitlab.com/" target="_blank" rel="noopener">GitLab Orbit</a>
+      <button type="button" onclick="showView('home')">How it works</button>
+    </nav>
+  </div>
+  <div class="kilo-footer-base">Keystone · open source (MIT) · the ledger proves its own integrity.</div>
+</footer>
+
+</div><!-- /app-shell -->
+
+<!-- Onboarding Walkthrough Wizard Modal -->
+<div class="onboarding-overlay" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboard-title" hidden>
+  <div class="onboarding-card">
+    <div class="onboarding-header">
+      <h2 id="onboard-title" class="onboard-title">Welcome to Keystone</h2>
+      <button class="onboard-close" id="onboard-close" aria-label="Close onboarding">&times;</button>
+    </div>
+    <div class="onboard-progress"><div class="onboard-progress-bar" id="onboard-progress" style="width: 25%"></div></div>
+    <div class="onboarding-body" id="onboard-body"></div>
+    <div class="onboarding-footer">
+      <button class="btn ghost btn-sm" id="onboard-prev">Back</button>
+      <div class="onboard-dots" id="onboard-dots"></div>
+      <button class="btn approve btn-sm" id="onboard-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- Connection Settings Modal -->
+<div class="onboarding-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+  <div class="onboarding-card" style="width: min(400px, 100%);">
+    <div class="onboarding-header">
+      <h2 id="settings-title" class="onboard-title">Connection Settings</h2>
+      <button class="onboard-close" id="settings-close" aria-label="Close settings">&times;</button>
+    </div>
+    <div class="onboarding-body" style="padding: var(--sp-4) var(--sp-5);">
+      <div style="display: flex; flex-direction: column; gap: var(--sp-3);">
+        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px;">
+          <input type="radio" name="api-mode" value="static" id="mode-static" style="accent-color: var(--orange);" />
+          <span>Static Snapshot Mode (data.json)</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px;">
+          <input type="radio" name="api-mode" value="live" id="mode-live" style="accent-color: var(--orange);" />
+          <span>Live Backend Mode (FastAPI)</span>
+        </label>
+        <div id="api-url-group" style="display: flex; flex-direction: column; gap: 6px; margin-left: 24px;">
+          <span style="font-size: 11px; color: var(--text-secondary);">Backend API URL:</span>
+          <input id="api-url" class="ip" placeholder="http://127.0.0.1:8787" style="height: 36px; min-height: 36px; padding: 6px 10px;" aria-label="Backend API URL" />
+        </div>
+      </div>
+    </div>
+    <div class="onboarding-footer">
+      <button class="btn ghost btn-sm" id="settings-cancel">Cancel</button>
+      <button class="btn approve btn-sm" id="settings-save">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="remember-overlay" id="remember-overlay" role="dialog" aria-modal="true" aria-labelledby="remember-title" hidden>
+  <div class="remember-card">
+    <img class="remember-ic" src="keystone-k.svg?v=1" width="44" height="44" alt="" />
+    <h3 class="remember-title" id="remember-title">Remember this repo?</h3>
+    <p class="remember-text">Keystone can remember <b id="remember-name"></b> and resume it next time you visit. Stored only in this browser — nothing leaves your machine.</p>
+    <div class="remember-btns">
+      <button class="btn ghost" id="remember-no" type="button">Not now</button>
+      <button class="btn primary" id="remember-yes" type="button">Remember it</button>
+    </div>
+  </div>
+</div>
+<div class="gh-consent-overlay" id="gh-consent" role="dialog" aria-modal="true" aria-labelledby="ghc-title" hidden>
+  <div class="gh-term">
+    <div class="gh-term-bar"><span class="gh-tdot r"></span><span class="gh-tdot y"></span><span class="gh-tdot g"></span><span class="gh-term-title">keystone — github connect</span></div>
+    <div class="gh-term-body">
+      <p class="gh-line"><span class="gh-prompt">$</span> keystone auth --connect github</p>
+      <p class="gh-out" id="ghc-title">Keystone requests <b>read-only</b> access to map your repository call graph.</p>
+      <ul class="gh-perms">
+        <li><span class="gh-ok">✓</span> Reads repository structure to find silent collisions before you merge</li>
+        <li><span class="gh-ok">✓</span> Runs in your browser — no password seen, nothing stored on a server</li>
+        <li><span class="gh-muted">›</span> Private-repo sign-in activates when the Keystone backend is deployed</li>
+      </ul>
+      <div class="gh-connect-row">
+        <span class="gh-prompt">$</span>
+        <input id="gh-handle-input" class="gh-handle-input" type="text" placeholder="github username  (public repos)" autocomplete="off" spellcheck="false" aria-label="GitHub username" />
+      </div>
+      <div class="gh-consent-btns">
+        <button class="btn ghost btn-sm" id="ghc-demo" type="button">Explore demo mode</button>
+        <button class="btn primary btn-sm" id="ghc-allow" type="button">Allow &amp; connect →</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  try {
+    if (matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var box = document.createElement('div'); box.className = 'embers'; box.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < 18; i++) {
+      var e = document.createElement('span'); e.className = 'ember';
+      var dur = 7 + (i % 6) * 1.6, delay = -(i * 0.9), left = (i * 53 + 17) % 100, drift = ((i % 2) ? 1 : -1) * (14 + (i % 4) * 10), sz = 2 + (i % 3);
+      e.style.left = left + '%'; e.style.width = sz + 'px'; e.style.height = sz + 'px';
+      e.style.setProperty('--drift', drift + 'px'); e.style.animationDuration = dur + 's'; e.style.animationDelay = delay + 's';
+      box.appendChild(e);
+    }
+    document.body.appendChild(box);
+  } catch (e) {}
+})();
+</script>
+<script src="repo-analyzer.js?v=6"></script>
+<script src="app.js?v=5.7"></script>
+<script src="motion.js?v=1.1"></script>
+</body>
+</html>

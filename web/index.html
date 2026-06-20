@@ -1,794 +1,1159 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-<script>
-  // Force unregister all service workers immediately to prevent routing conflicts
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for (let registration of registrations) {
-        registration.unregister();
-      }
-    });
-  }
-</script>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences.</title>
-<meta name="description" content="Keystone: X-ray hazards in the GitLab Orbit graph, then govern the change. A command center for code risk analysis and governed review on the GitLab Orbit graph." />
-<meta property="og:title" content="Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences." />
-<meta property="og:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
-<meta property="og:type" content="website" />
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="Keystone - Git sees files. Orbit sees relationships. Keystone sees consequences." />
-<meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
-<link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="styles.css?v=2.3" />
-<link rel="stylesheet" href="ui-v3.css?v=2.0" />
-<link rel="stylesheet" href="ui-glass.css?v=4.6" />
-<link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
-<!-- Live GitHub OAuth: public client id below. Deploy web/ to Vercel with GITHUB_CLIENT_ID + GITHUB_CLIENT_SECRET env vars (secret server-side only). See DEPLOY.md. -->
-<script>window.KS_GH_CLIENT_ID = "Ov23liRue1X1qjAaki0F";</script>
-<meta name="theme-color" content="#0b0d12" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
 </head>
 <body>
-<a class="skip-link" href="#blast-radius" onclick="event.preventDefault(); if(typeof goToEl==='function') goToEl('blast-radius');">Skip to blast radius</a>
-<noscript><div class="noscript-msg">Keystone is a command center that needs JavaScript to render. Enable JavaScript, or run it locally - see the README.</div></noscript>
-<canvas id="bg" aria-hidden="true"></canvas>
-<div class="scanlines" aria-hidden="true"></div>
-<div id="landing" class="landing" role="dialog" aria-label="Sign in to Keystone" hidden>
-  <div class="landing-inner">
-    <img class="landing-logo" src="keystone-k.svg?v=1" width="74" height="74" alt="Keystone" />
-    <h1 class="landing-title">Keystone</h1>
-    <p class="landing-sub">Two merge requests can pass review, touch different files, have no conflict — and still break production together. Sign in to catch those silent collisions on your repo's call graph before you merge.</p>
-    <div class="landing-ctas">
-      <button id="landing-signin" class="btn primary landing-cta" type="button">
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-        Sign in with GitHub
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Bodoni+Moda:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0b0e; }
+  * { box-sizing: border-box; }
+  ::selection { background: rgba(255,122,26,0.3); color: #fff; }
+  @keyframes emberRise {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    8%   { opacity: 0.9; }
+    85%  { opacity: 0.55; }
+    100% { transform: translateY(-86vh) translateX(var(--drift, 0px)); opacity: 0; }
+  }
+  @keyframes flicker {
+    0%,100% { opacity: 0.9; }
+    45%     { opacity: 0.72; }
+    70%     { opacity: 1; }
+  }
+  @keyframes edgeIn { to { opacity: 1; } }
+  @keyframes nodeIn { from { opacity: 0; transform: translate(-50%,-50%) scale(0.4); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes spinSlow { to { transform: rotate(360deg); } }
+  @keyframes pulseRing { 0% { transform: scale(0.6); opacity: 0.6; } 100% { transform: scale(1.7); opacity: 0; } }
+  @keyframes floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  @keyframes ignite {
+    0%   { filter: brightness(0.52) saturate(0.7) drop-shadow(0 0 18px rgba(240,72,10,0.25)); opacity: 0.6; }
+    50%  { filter: brightness(0.92) saturate(1.08) drop-shadow(0 0 48px rgba(240,72,10,0.42)); opacity: 1; }
+    100% { filter: brightness(1.05) saturate(1.18) drop-shadow(0 0 64px rgba(240,72,10,0.5)); opacity: 1; }
+  }
+  @keyframes emberFlicker {
+    0%,100% { filter: brightness(1.05) saturate(1.18) drop-shadow(0 0 64px rgba(240,72,10,0.5)); }
+    45%     { filter: brightness(0.97) saturate(1.12) drop-shadow(0 0 52px rgba(240,72,10,0.42)); }
+    72%     { filter: brightness(1.12) saturate(1.24) drop-shadow(0 0 76px rgba(255,140,40,0.58)); }
+  }
+  @keyframes groundPulse { 0%,100% { opacity: 0.5; transform: translateX(-50%) scaleX(1); } 50% { opacity: 0.85; transform: translateX(-50%) scaleX(1.08); } }
+  @keyframes keyGlow { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.16); } }
+  @keyframes flameLick { 0% { transform: translateY(3px) scaleY(0.9) scaleX(1.05); opacity: 0.6; } 100% { transform: translateY(-9px) scaleY(1.32) scaleX(0.8); opacity: 1; } }
+  @keyframes flameLick2 { 0% { transform: translateY(2px) scaleY(0.95) scaleX(1.1); opacity: 0.7; } 100% { transform: translateY(-13px) scaleY(1.45) scaleX(0.72); opacity: 1; } }
+  @keyframes revealBurst {
+    0%   { clip-path: circle(7% at 50% 33%); opacity: 0.25; filter: brightness(0.5) saturate(0.8); }
+    55%  { opacity: 1; }
+    100% { clip-path: circle(150% at 50% 33%); opacity: 1; filter: brightness(1.05) saturate(1.18); }
+  }
+  @keyframes scenePulse { 0%,100% { filter: brightness(1) saturate(1.1); } 50% { filter: brightness(1.13) saturate(1.26); } }
+  @keyframes dashRun { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes rayIn { from { opacity: 0; transform: scaleX(0.4) scaleY(0.4); } to { opacity: 1; transform: scaleX(1) scaleY(1); } }
+  @keyframes artFlicker { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.14); } }
+  @keyframes sparkTravel { from { stroke-dashoffset: 1; } to { stroke-dashoffset: -1; } }
+  @keyframes corePulse { 0%,100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.22); } }
+  @keyframes sparkFloat { 0% { transform: translate(0,0); opacity: 0; } 12% { opacity: 1; } 88% { opacity: 0.7; } 100% { transform: translate(var(--sdx), var(--sdy)); opacity: 0; } }
+  @keyframes rayBreathe { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
+  @keyframes stoneFlow { 0%,100% { opacity: 0.18; } 42% { opacity: 1; } 60% { opacity: 0.7; } }
+  @keyframes stoneCore { 0%,100% { opacity: 0.25; transform: scale(0.85); } 42% { opacity: 1; transform: scale(1.15); } }
+  @keyframes linkFlow { 0% { stroke-dashoffset: 1; opacity: 0.15; } 30% { opacity: 1; } 70% { opacity: 1; } 100% { stroke-dashoffset: -1; opacity: 0.15; } }
+  @keyframes shockwave { 0% { transform: scale(0.32); opacity: 0; } 18% { opacity: 0.55; } 100% { transform: scale(1.5); opacity: 0; } }
+  @keyframes stoneBob { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(0.6deg); } }
+  @keyframes veinPulse { 0%,100% { opacity: 0.2; } 45% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="kgrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#FFB14D"></stop>
+    <stop offset="0.5" stop-color="#FF7A1A"></stop>
+    <stop offset="1" stop-color="#F0480A"></stop>
+  </linearGradient>
+  <linearGradient id="kgrad2" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#C9420A"></stop>
+    <stop offset="1" stop-color="#7a1e05"></stop>
+  </linearGradient>
+  <radialGradient id="kglow">
+    <stop offset="0" stop-color="#FFE9A0" stop-opacity="0.95"></stop>
+    <stop offset="0.35" stop-color="#FF7A1A" stop-opacity="0.55"></stop>
+    <stop offset="1" stop-color="#F0480A" stop-opacity="0"></stop>
+  </radialGradient>
+  <linearGradient id="khot" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#FFEEA8"></stop>
+    <stop offset="0.5" stop-color="#FF8A1A"></stop>
+    <stop offset="1" stop-color="#F0480A"></stop>
+  </linearGradient>
+  <radialGradient id="stonefill" cx="0.38" cy="0.32" r="0.8">
+    <stop offset="0" stop-color="#43240f"></stop>
+    <stop offset="0.55" stop-color="#24140a"></stop>
+    <stop offset="1" stop-color="#100804"></stop>
+  </radialGradient>
+</defs></svg>
+
+<div style="position:relative; min-height:100vh; background:#0a0706; color:#F6EFE6; font-family:'Inter',system-ui,sans-serif; overflow-x:hidden">
+
+  <div style="position:fixed; inset:0; background-image:radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px); background-size:34px 34px; -webkit-mask-image:linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent); mask-image:linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent); pointer-events:none; z-index:0"></div>
+  <div style="position:fixed; left:0; right:0; bottom:0; height:62vh; background:radial-gradient(130% 100% at 50% 100%, rgba(240,72,10,0.30) 0%, rgba(255,122,26,0.10) 32%, rgba(255,122,26,0.02) 55%, transparent 72%); pointer-events:none; z-index:0; animation:flicker 6s ease-in-out infinite"></div>
+
+  <!-- ===================== LANDING ===================== -->
+  <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+  <div style="position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column">
+    {{ embers }}
+
+    <!-- top nav -->
+    <header style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:24px; padding:26px 48px; max-width:1440px; width:100%; margin:0 auto">
+      <nav style="display:flex; align-items:center; gap:30px">
+        <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">PRODUCT</span>
+        <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">DOCS</span>
+      </nav>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px">
+        <span style="font:600 23px/0.95 'Bodoni Moda',serif; letter-spacing:0.07em; color:#F6EFE6">KEYSTONE</span>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="#FF7A1A"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
+      </div>
+      <nav style="display:flex; align-items:center; gap:30px; justify-content:flex-end">
+        <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">PORTAL</span>
+        <button onClick="{{ openConsent }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#F6EFE6; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">SIGN IN →</button>
+      </nav>
+    </header>
+
+    <!-- hero -->
+    <main style="flex:1; display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); align-items:center; gap:clamp(20px,3vw,56px); padding:8px 48px 36px; max-width:1440px; margin:0 auto; width:100%">
+
+      <!-- content left -->
+      <div style="max-width:660px; padding:12px 0">
+        <div style="display:inline-flex; align-items:center; gap:11px; margin-bottom:28px">
+          <span style="width:7px; height:7px; background:#FF7A1A; box-shadow:0 0 10px #FF7A1A"></span>
+          <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.22em; color:#C9A98F; text-transform:uppercase">GitLab Orbit · call-graph analysis</span>
+        </div>
+
+        <h1 style="font:600 clamp(42px,5.4vw,80px)/0.96 'Bodoni Moda',serif; letter-spacing:0; text-transform:uppercase; margin:0 0 24px; color:#F6EFE6">Merge requests<br>that break<br><span style="color:#FF7A1A; font-style:italic">together</span></h1>
+
+        <p style="font:400 clamp(15px,1.4vw,18px)/1.65 'Inter',sans-serif; color:#B59B86; margin:0 0 36px; max-width:50ch; text-wrap:pretty">Two merge requests can pass review, touch different files, have no conflict — and still break production together. Keystone catches those silent collisions on your repo's call graph before you merge.</p>
+
+        <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:13px">Connect your repository</div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:32px">
+          <button onClick="{{ openConsent }}" style="display:inline-flex; align-items:center; gap:11px; padding:15px 24px; border-radius:3px; border:none; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 12px 36px -12px rgba(240,72,10,0.7)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="#150a02"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
+            Sign in with GitHub
+          </button>
+          <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.4)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">Try a live demo →</button>
+        </div>
+
+        <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:11px">Run in your terminal</div>
+        <div style="display:flex; align-items:center; gap:10px; padding:12px 2px; border-bottom:1px solid rgba(255,122,26,0.3); max-width:440px">
+          <span style="color:#FF7A1A; font:600 14px/1 'JetBrains Mono',monospace">$</span>
+          <span style="font:400 13px/1 'JetBrains Mono',monospace; color:#C9A98F; flex:1">keystone scan {{ repo }} --collisions</span>
+          <span style="width:7px; height:14px; background:#FF7A1A; animation:flicker 1.1s steps(2) infinite"></span>
+        </div>
+        <p style="font:400 12px/1.5 'Inter',sans-serif; color:#6f5640; margin:16px 0 0; max-width:46ch">No account needed for the demo — Keystone analyzes real public repos in your browser.</p>
+      </div>
+
+      <!-- BLAST ARTIFACT right (medium-big) -->
+      <div style="position:relative; align-self:center; display:flex; align-items:center; justify-content:center">
+      <div onMouseMove="{{ onArtMove }}" onMouseLeave="{{ onArtLeave }}" style="position:relative; width:100%; max-width:560px; aspect-ratio:1 / 1; --mx:0; --my:0; --px:50%; --py:50%; --torch:0; cursor:crosshair">
+
+        <div style="position:absolute; inset:0; background:radial-gradient(circle closest-side at 50% 50%, rgba(255,138,40,0.30), rgba(240,72,10,0.09) 50%, transparent 78%); pointer-events:none; z-index:0"></div>
+
+        <div style="position:absolute; inset:0; z-index:1; -webkit-mask-image:radial-gradient(circle closest-side at 50% 50%, #000 62%, rgba(0,0,0,0.5) 82%, transparent 96%); mask-image:radial-gradient(circle closest-side at 50% 50%, #000 62%, rgba(0,0,0,0.5) 82%, transparent 96%)">
+          <div style="position:absolute; inset:0; transform:translate(calc(var(--mx) * -16px), calc(var(--my) * -12px)); transition:transform 0.35s cubic-bezier(0.22,0.61,0.36,1); will-change:transform">{{ heroArt }}</div>
+        </div>
+
+        <div style="position:absolute; left:50%; top:50%; width:14%; height:18%; z-index:2; pointer-events:none; mix-blend-mode:screen; transform:translate(-50%,-48%) translate(calc(var(--mx) * -22px), calc(var(--my) * -17px)); transition:transform 0.35s cubic-bezier(0.22,0.61,0.36,1)">
+          <div style="position:absolute; inset:-110%; background:radial-gradient(circle at 50% 52%, rgba(255,238,180,1), rgba(255,138,30,0.6) 32%, rgba(240,72,10,0.18) 60%, transparent 78%); filter:blur(5px); animation:keyGlow 2.4s ease-in-out infinite"></div>
+          <div style="position:absolute; left:34%; bottom:30%; width:32%; height:64%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFE89A, #FF8A1A 58%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.6s ease-in-out infinite alternate"></div>
+          <div style="position:absolute; left:42%; bottom:28%; width:18%; height:50%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFF6D8, #FFB347 60%, transparent); filter:blur(1.5px); transform-origin:50% 100%; animation:flameLick2 0.48s 0.12s ease-in-out infinite alternate"></div>
+          <div style="position:absolute; left:28%; bottom:30%; width:16%; height:44%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFD27A, #F0480A 65%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.7s 0.26s ease-in-out infinite alternate"></div>
+        </div>
+
+        <div style="position:absolute; left:0; top:0; width:240px; height:240px; margin:-120px 0 0 -120px; border-radius:50%; background:radial-gradient(circle, rgba(255,170,80,0.45), rgba(255,122,26,0.14) 45%, transparent 70%); mix-blend-mode:screen; transform:translate(var(--px), var(--py)); opacity:var(--torch); transition:opacity 0.3s ease-out; pointer-events:none; z-index:3"></div>
+
+      </div>
+      </div>
+    </main>
+
+    <footer style="text-align:center; padding:22px 24px 34px">
+      <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.22em; text-transform:uppercase; color:#7a5e48">See Everything<span style="color:#FF7A1A"> · </span>Impact Nothing</span>
+    </footer>
+  </div>
+  </sc-if>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="Command Center" style="position:relative; z-index:1; min-height:100vh; display:flex">
+
+    <!-- icon rail -->
+    <nav style="position:sticky; top:0; align-self:flex-start; height:100vh; width:64px; flex:none; display:flex; flex-direction:column; align-items:center; gap:6px; padding:18px 0; border-right:1px solid rgba(255,255,255,0.07); background:rgba(11,8,5,0.65); backdrop-filter:blur(10px)">
+      <button onClick="{{ goLanding }}" title="Home" style="background:none; border:none; cursor:pointer; padding:6px; margin-bottom:10px">
+        <svg viewBox="0 0 48 48" style="width:26px; height:26px; filter:drop-shadow(0 0 8px rgba(255,122,26,0.55))">
+          <path d="M12 8 L36 8 L30 43 L18 43 Z" fill="url(#kgrad)"></path>
+          <path d="M12 8 L36 8 L34.6 13 L13.4 13 Z" fill="#FFE6B0" opacity="0.45"></path>
+          <circle cx="24" cy="22" r="5" fill="#0b0806"></circle>
+          <path d="M21.6 24 L20.2 37 L27.8 37 L26.4 24 Z" fill="#0b0806"></path>
+        </svg>
       </button>
-      <button id="landing-demo" class="landing-cta2" type="button">Try a live demo <span aria-hidden="true">→</span></button>
-    </div>
-    <div class="landing-hint">No account needed for the demo — Keystone analyzes real public repos right in your browser.</div>
-    <div class="landing-foot">See Everything. Impact Nothing.</div>
-  </div>
-</div>
-<div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+      <sc-for list="{{ railIcons }}" as="ic" hint-placeholder-count="5">
+        <button title="{{ ic.label }}" onClick="{{ ic.onClick }}" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border-radius:9px; cursor:pointer; border:1px solid {{ ic.border }}; background:{{ ic.bg }}; color:{{ ic.color }}" style-hover="background:rgba(255,255,255,0.06); color:#F2F3F5">
+          <span style="font:600 15px/1 'JetBrains Mono',monospace">{{ ic.glyph }}</span>
+        </button>
+      </sc-for>
+    </nav>
 
-<!-- Sidebar Navigation -->
-<nav class="sidebar" id="sidebar" aria-label="Main navigation">
-  <div class="sidebar-brand">
-    <span class="sidebar-brand-text">KEYSTONE</span>
-  </div>
-  <div class="sidebar-nav">
-    <button class="sidebar-item active" data-section="overview" title="Overview">
-      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
-      </svg>
-      <span class="sidebar-label">Overview</span>
-    </button>
-    <button class="sidebar-item" data-section="symbols" title="Symbols">
-      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M7 4L3 10l4 6M13 4l4 6-4 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M11 3l-2 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <span class="sidebar-label">Symbols</span>
-    </button>
-    <button class="sidebar-item" data-section="impact" title="Impact">
-      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.5"/>
-        <circle cx="10" cy="10" r="4" stroke="currentColor" stroke-width="1.5"/>
-        <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
-      </svg>
-      <span class="sidebar-label">Impact</span>
-    </button>
-    <button class="sidebar-item" data-section="audit" title="Audit">
-      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M10 2L3 5.5v4.5c0 4.5 3 8.3 7 9.5 4-1.2 7-5 7-9.5V5.5L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        <path d="M7 10l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="sidebar-label">Audit</span>
-    </button>
-  </div>
-  <div class="sidebar-footer">
-    <button class="sidebar-item help" data-section="help" title="Help & Keyboard Shortcuts">
-      <svg class="sidebar-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M8 7.5a2 2 0 1 1 2.5 1.94c-.29.1-.5.37-.5.68V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="10" cy="13.5" r="0.75" fill="currentColor"/>
-      </svg>
-      <span class="sidebar-label">Help</span>
-    </button>
-    <div class="sidebar-meta">v2.0</div>
-  </div>
-</nav>
+    <!-- main column -->
+    <div style="flex:1; min-width:0; display:flex; flex-direction:column">
 
-<!-- App Shell -->
-<div class="app-shell">
+      <!-- topbar -->
+      <header style="position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:20px; padding:0 28px; height:60px; border-bottom:1px solid rgba(255,255,255,0.07); background:rgba(10,7,5,0.78); backdrop-filter:blur(12px)">
+        <nav style="display:flex; align-items:center; gap:4px">
+          <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
+            <span style="font:500 14px/1 'Inter',sans-serif; padding:8px 12px; border-radius:7px; color:{{ t.color }}; background:{{ t.bg }}; cursor:pointer" style-hover="color:#F2F3F5">{{ t.label }}</span>
+          </sc-for>
+        </nav>
+        <div style="flex:1; max-width:340px; margin-left:auto; display:flex; align-items:center; gap:9px; padding:8px 13px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
+          <span style="color:#FF7A1A; font:600 13px/1 'JetBrains Mono',monospace">⌕</span>
+          <span style="font:400 13px/1 'JetBrains Mono',monospace; color:#5F636D">search symbols, MRs…</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px">
+          <div style="position:relative; cursor:pointer">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#8B9099" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
+            <span style="position:absolute; top:-3px; right:-3px; width:7px; height:7px; border-radius:50%; background:#FF6A3D; box-shadow:0 0 6px #FF6A3D"></span>
+          </div>
+          <div style="width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FFC24D,#F0480A); color:#1c0d02; font:700 13px/1 'Space Grotesk',sans-serif">SE</div>
+        </div>
+      </header>
 
-<!-- Topbar -->
-<header class="topbar">
-  <div class="topbar-left">
-    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar" title="Toggle sidebar">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-    </button>
-    <div class="brand"><span class="kx">KEYSTONE</span><span class="sub">hazard x-ray + governed review</span></div>
-    <button class="topbar-search" type="button" aria-label="Search symbols and run the demo (Ctrl K)" onclick="if(window.__ksCmdOpen)window.__ksCmdOpen()">
-      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg>
-      <span>Search symbols, run the demo…</span>
-      <kbd>⌘K</kbd>
-    </button>
-  </div>
-  <div class="topbar-right">
-    <div class="status" id="status" aria-live="polite">
-      <span class="chip" id="src-chip">source ...</span>
-      <span class="chip" id="orbit-chip">orbit ...</span>
-      <span class="chip" id="chain-chip">chain ...</span>
-      <span class="chip" id="integ-chip">integrity ...</span>
-      <button id="connection-toggle" class="chip ok" aria-label="Connection settings" title="Switch between static and live backend mode" style="cursor: pointer; display: inline-flex; align-items: center; border: 1px solid var(--border-subtle); outline: none;">
-        <span class="dot g" id="conn-dot"></span><span id="conn-text">mode: snapshot</span>
-      </button>
-    </div>
-    <div class="gh-auth" id="gh-auth">
-      <button id="gh-signin" class="gh-btn" type="button" aria-label="Sign in with GitHub">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
-        <span>Sign in</span>
-      </button>
-      <div id="gh-user" class="gh-user" hidden>
-        <span class="gh-udot"></span><span id="gh-handle">@you</span>
-        <button id="gh-signout" class="gh-signout" type="button" aria-label="Sign out">sign out</button>
-      </div>
-    </div>
-    <button id="theme-toggle" class="btn ghost theme-toggle" aria-label="Toggle light/dark theme" title="Toggle light/dark theme">
-      <svg class="sun-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-      <svg class="moon-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-    </button>
-  </div>
-</header>
+      <!-- scroll content -->
+      <div style="padding:32px 28px 80px; max-width:1380px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:22px">
 
-<nav class="hubnav" id="hubnav" aria-label="Section navigation">
-  <button type="button" class="hubnav-tab active" data-goview="home" aria-current="page">Home</button>
-  <button type="button" class="hubnav-tab" data-goview="demo">Live demo</button>
-  <button type="button" class="hubnav-tab" data-goview="harness">Harness</button>
-  <button type="button" class="hubnav-tab" data-goview="cockpit">Cockpit</button>
-  <button type="button" class="hubnav-tab" data-goview="ledger">Ledger</button>
-</nav>
+        <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+        <!-- hero strip -->
+        <section style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:24px; padding:6px 2px 4px">
+          <div>
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Real-time impact intelligence</div>
+            <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0 0 18px; color:#F6EFE6">Command Center</h1>
+            <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:7px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
+              <span style="color:#FF7A1A; font:600 12px/1 'JetBrains Mono',monospace">repo</span>
+              <span style="font:500 13px/1 'JetBrains Mono',monospace; color:#C9CDD4">{{ repo }}</span>
+              <span style="font:500 10px/1 'JetBrains Mono',monospace; color:#34D399; padding:3px 7px; border-radius:999px; background:rgba(52,211,153,0.12); letter-spacing:0.06em">INDEXED</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:11px">
+            <button style="padding:12px 20px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A); box-shadow:0 8px 26px -10px rgba(240,72,10,0.6)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.98)">Start analysis</button>
+            <button style="padding:12px 20px; border-radius:8px; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#F2F3F5; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13)" style-hover="background:rgba(255,255,255,0.08)">View dashboard</button>
+          </div>
+        </section>
 
-<div id="hero-strip" class="hero-strip">
-  <div class="hero-eyebrow">GitLab Orbit &middot; merge-safety command center &middot; 262 real definitions indexed</div>
-  <h1 class="hero-title">Stop safe-looking merge requests from breaking production.</h1>
-  <p class="hero-thesis">Two merge requests can pass review, touch different files, have no conflict, and still break production together. Keystone catches that on the GitLab Orbit call graph before you merge.</p>
-  <div class="repo-analyze" id="repo-analyze">
-    <div class="repo-analyze-label"><b>Sign in with GitHub</b> (top-right) and your repos load automatically — no username, no token. Or analyze any public repo right now — paste <code>owner/repo</code>:</div>
-    <div class="repo-analyze-row">
-      <input id="repo-input" class="repo-input" type="text" placeholder="owner/repo   ·   e.g. pallets/click" aria-label="owner/repo to analyze, or a GitHub username to browse" autocomplete="off" spellcheck="false" />
-      <button id="repo-go" class="btn primary" type="button">Browse / Analyze</button>
-    </div>
-    <div class="repo-examples">try <button type="button" class="repo-ex" data-repo-example="pallets">pallets (browse)</button><button type="button" class="repo-ex" data-repo-example="pallets/click">pallets/click</button><button type="button" class="repo-ex" data-repo-example="psf/requests">psf/requests</button></div>
-    <div id="repo-list" class="repo-list" role="list"></div>
-    <div id="repo-status" class="repo-status" role="status" aria-live="polite"></div>
-    <div id="repo-export" class="repo-export" hidden></div>
-  </div>
-  <div id="hero-collision-frame" class="collision-frame" aria-label="silent collision demonstration">
-    <div class="cf-mrs">
-      <div class="cf-mr">
-        <div class="cf-mr-id">MR-204 · speed up the blast engine</div>
-        <code class="cf-mr-sym">core/graph.py → compute_blast_radius</code>
-        <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
-      </div>
-      <div class="cf-arrow" aria-hidden="true">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </div>
-      <div class="cf-mr">
-        <div class="cf-mr-id">MR-211 · ledger append fix</div>
-        <code class="cf-mr-sym">core/audit.py → append</code>
-        <div class="cf-stamp green"><span class="cf-tick">✓</span> Git: no conflict · CODEOWNERS: approved</div>
-      </div>
-    </div>
-    <div class="cf-verdict" id="hero-collision-verdict" role="status" aria-live="assertive" hidden>
-      <span class="cf-block-tag">SILENT COLLISION</span>
-      <span class="cf-verdict-text"><strong id="hero-shared-count">5</strong> dependents sit in <em>both</em> blast radii — the overlap, not each MR's full ring-1 · Keystone <strong>BLOCKS</strong> the merge</span>
-      <span class="cf-shared" id="hero-shared-list"></span>
-    </div>
-  </div>
-  <div id="hero-stakes" class="hero-stakes">
-    <div class="stakes-line"><span class="stakes-big" id="hero-stakes-num">5</span> <span class="stakes-unit">shared dependents would break together</span></div>
-    <p class="stakes-sub">Git and CODEOWNERS both stamped these merge requests green. On the Orbit call graph they collide on runtime dependents neither reviewer can see — <strong>1 broken build</strong> that <strong>4 reviewers</strong> would have approved, caught before merge.</p>
-  </div>
-  <div class="hero-stat-strip" aria-label="what is real">
-    <span><strong>262</strong> definitions</span>
-    <span><strong>120</strong> Orbit-verified by <code>orbit sql</code></span>
-    <span><strong>2</strong> hidden collisions in the live scenario</span>
-    <span><strong>0</strong> invented numbers</span>
-  </div>
-  <div class="hero-actions">
-    <button class="btn primary hero-cta" type="button" id="cta-demo" onclick="goToEl('simulation-section')">Run the hidden-collision demo</button>
-    <button class="btn secondary hero-cta" type="button" id="cta-cockpit">Open reviewer cockpit</button>
-    <button class="btn ghost hero-cta" type="button" id="lede-tour">60-second tour</button>
-  </div>
-</div>
-<div id="open-banner" class="open-banner" role="note" hidden></div>
-<div id="data-provenance" class="data-prov" role="note" hidden></div>
-<div id="tour-bar" class="tour-bar" role="status" aria-live="polite" hidden>
-  <span class="tour-step" id="tour-step">ready</span>
-  <span class="tour-meta" id="tour-meta"></span>
-  <button class="btn ghost btn-sm" type="button" id="tour-prev" style="margin-left: 12px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">&larr; Back</button>
-  <button class="btn primary btn-sm" type="button" id="tour-next" style="margin-left: 6px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">Next &rarr;</button>
-  <button class="btn ghost btn-sm" type="button" id="tour-stop" style="margin-left: 6px; min-height: 28px !important; padding: 4px 12px !important; font-size: 11px !important;">Skip</button>
-</div>
+        <!-- stat cards -->
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:18px">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+            <div style="position:relative; background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:12px; padding:22px; overflow:hidden">
+              <div style="position:absolute; top:0; left:0; width:100%; height:2px; background:{{ s.bar }}"></div>
+              <div style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:16px">{{ s.label }}</div>
+              <div style="font:600 42px/1 'Space Grotesk',sans-serif; letter-spacing:-0.03em; color:{{ s.color }}; font-variant-numeric:tabular-nums">{{ s.value }}</div>
+              <div style="font:400 12px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:10px">{{ s.sub }}</div>
+            </div>
+          </sc-for>
+        </section>
 
-<main>
+        <!-- finding + verdict -->
+        <section style="display:grid; grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); gap:18px">
+          <!-- finding card -->
+          <div style="position:relative; background:linear-gradient(180deg,rgba(255,106,61,0.07),rgba(19,21,25,0.4)); border:1px solid rgba(255,106,61,0.28); border-radius:14px; padding:28px; overflow:hidden">
+            <div style="position:absolute; inset:0; background:radial-gradient(80% 60% at 100% 0%, rgba(240,72,10,0.14), transparent 60%); pointer-events:none"></div>
+            <div style="position:relative">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px">
+                <span style="display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:999px; background:rgba(255,106,61,0.15); border:1px solid rgba(255,106,61,0.4)">
+                  <span style="width:7px; height:7px; border-radius:50%; background:#FF6A3D; box-shadow:0 0 8px #FF6A3D"></span>
+                  <span style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; color:#FF8A66">SILENT COLLISION FOUND</span>
+                </span>
+                <span style="font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-left:auto">{{ repo }}</span>
+              </div>
 
-<section id="simulation-section" class="simulation panel" data-reveal>
-  <div class="p-h">FUTURE MERGE SIMULATOR
-    <span class="hint">cross-MR blast collisions on the committed Orbit snapshot</span>
-  </div>
-  <div class="sim-container">
-    <div class="sim-scenario-label">
-      <span class="dot a"></span> Recorded demo scenario from the committed Orbit snapshot
-    </div>
-    <div class="sim-mrs">
-      <div class="sim-mr mr-a">
-        <div class="mr-badge">MR-204</div>
-        <div class="mr-title">speed up the blast engine</div>
-        <code class="mr-file">core/graph.py</code>
-        <code class="mr-symbol">compute_blast_radius</code>
-      </div>
-      <div class="sim-mr mr-b">
-        <div class="mr-badge">MR-211</div>
-        <div class="mr-title">ledger append fix</div>
-        <code class="mr-file">core/audit.py</code>
-        <code class="mr-symbol">append</code>
-      </div>
-    </div>
+              <p style="font:400 19px/1.5 'Inter',sans-serif; color:#E7E9EC; margin:0 0 22px; text-wrap:pretty">Changing <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">echo</span> <span style="color:#8B9099; font-size:14px">(utils.py)</span> and <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">option</span> <span style="color:#8B9099; font-size:14px">(decorators.py)</span> — different files, no Git conflict — both ripple into <span style="font:600 19px/1 'Space Grotesk',sans-serif; color:#FF6A3D">34</span> shared runtime dependents. Two merge requests that pass review and break together.</p>
 
-    <div class="sim-stepper">
-      <div class="sim-step active" data-step="1">
-        <div class="step-num">1</div>
-        <div class="step-label">Isolated Files</div>
-      </div>
-      <div class="sim-step" data-step="2">
-        <div class="step-num">2</div>
-        <div class="step-label">Git Diff</div>
-      </div>
-      <div class="sim-step" data-step="3">
-        <div class="step-num">3</div>
-        <div class="step-label">Orbit Scan</div>
-      </div>
-      <div class="sim-step" data-step="4">
-        <div class="step-num">4</div>
-        <div class="step-label">Collision</div>
-      </div>
-      <div class="sim-step" data-step="5">
-        <div class="step-num">5</div>
-        <div class="step-label">Gate Verdict</div>
-      </div>
-    </div>
+              <div style="height:1px; background:rgba(255,255,255,0.08); margin:0 0 20px"></div>
 
-    <div class="sim-display" aria-live="polite">
-      <div class="sim-step-content active" id="sim-content-1">
-        <div class="sim-status-badge info">STEP 1: ISOLATED FILES</div>
-        <p class="sim-desc">Two merge requests touch completely different files. <code>MR-204</code> edits <code>core/graph.py</code> and <code>MR-211</code> edits <code>core/audit.py</code>. In Git's eyes, these changes are completely isolated.</p>
-      </div>
-      <div class="sim-step-content" id="sim-content-2" style="display:none;">
-        <div class="sim-status-badge success">GIT CONFLICT: NONE</div>
-        <p class="sim-desc">Git analyzes file paths. Since they edit entirely different files, Git's file-based diff finds zero conflicts. Traditional CI/CD and reviews will greenlight both, risking a broken build in production.</p>
-      </div>
-      <div class="sim-step-content" id="sim-content-3" style="display:none;">
-        <div class="sim-status-badge warning">ORBIT SCAN: BLAST RADIUS</div>
-        <p class="sim-desc">Orbit's call graph lets Keystone compute each MR's blast radius. <code>MR-204</code> (<code>compute_blast_radius</code>) reaches <strong>12</strong> dependents; <code>MR-211</code> (<code>append</code>) reaches <strong>17</strong>. Each count is cross-checked against a live <code>orbit sql</code> query that returns the same number.</p>
-        <div class="sim-visual-connection">
-          <code>orbit sql</code> ring-1 for <code>compute_blast_radius</code> = <strong>12</strong> <span class="conn-arrow">=</span> engine <strong>12</strong>
+              <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">How to resolve</div>
+              <div style="display:flex; flex-direction:column; gap:11px; margin-bottom:24px">
+                <sc-for list="{{ resolveSteps }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex; gap:13px; align-items:flex-start">
+                    <span style="flex:none; width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; background:rgba(255,122,26,0.12); border:1px solid rgba(255,122,26,0.3); color:#FFB14D; font:600 12px/1 'JetBrains Mono',monospace">{{ r.n }}</span>
+                    <span style="font:400 14px/1.5 'Inter',sans-serif; color:#C9CDD4">{{ r.text }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <button onClick="{{ scrollGraph }}" style="display:inline-flex; align-items:center; gap:9px; padding:12px 20px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A); box-shadow:0 8px 26px -10px rgba(240,72,10,0.6)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.98)">Explore the blast radius →</button>
+            </div>
+          </div>
+
+          <!-- verdict panel -->
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:24px; display:flex; flex-direction:column">
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:18px">Merge verdict</div>
+            <div style="display:flex; gap:6px; padding:5px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); margin-bottom:20px">
+              <sc-for list="{{ verdicts }}" as="v" hint-placeholder-count="3">
+                <span style="flex:1; text-align:center; padding:9px 4px; border-radius:7px; font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:{{ v.color }}; background:{{ v.bg }}; border:1px solid {{ v.border }}">{{ v.label }}</span>
+              </sc-for>
+            </div>
+            <p style="font:400 14px/1.55 'Inter',sans-serif; color:#C9CDD4; margin:0 0 20px">Two pending MRs share <span style="color:#F5A623; font-weight:600">34 runtime dependents</span>. Resolve the overlap before either merges.</p>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:auto">
+              <sc-for list="{{ rings }}" as="rg" hint-placeholder-count="3">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-radius:9px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06)">
+                  <div style="display:flex; align-items:center; gap:10px">
+                    <span style="width:9px; height:9px; border-radius:50%; background:{{ rg.color }}; box-shadow:0 0 8px {{ rg.color }}"></span>
+                    <span style="font:400 13px/1 'Inter',sans-serif; color:#A6ABB4">{{ rg.label }}</span>
+                  </div>
+                  <span style="font:600 16px/1 'Space Grotesk',sans-serif; color:#F2F3F5; font-variant-numeric:tabular-nums">{{ rg.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+
+        <!-- blast graph + cockpit list -->
+        <section style="display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:18px">
+          <div data-blast="1" style="position:relative; background:#0b0806; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px; overflow:hidden; min-height:560px">
+            <div style="display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2">
+              <div>
+                <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">Blast Radius</div>
+                <div style="font:600 18px/1.2 'Space Grotesk',sans-serif; margin-top:8px; letter-spacing:-0.01em">echo <span style="color:#5F636D">×</span> option</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font:600 38px/1 'Space Grotesk',sans-serif; color:#FF6A3D; font-variant-numeric:tabular-nums">{{ affected }}</div>
+                <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:6px; letter-spacing:0.08em">AFFECTED</div>
+              </div>
+            </div>
+            <!-- graph stage -->
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center">
+              <div style="position:relative; width:min(540px,92%); aspect-ratio:1">
+                {{ graph }}
+                <!-- epicenter -->
+                <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:8px; z-index:3">
+                  <div style="position:relative; width:64px; height:64px; display:flex; align-items:center; justify-content:center">
+                    <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,122,26,0.5); animation:pulseRing 2.4s ease-out infinite"></div>
+                    <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,122,26,0.5); animation:pulseRing 2.4s ease-out 1.2s infinite"></div>
+                    <div style="width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 25%, #FFC24D, #F0480A); box-shadow:0 0 32px rgba(240,72,10,0.7)">
+                      <svg viewBox="0 0 48 48" style="width:30px; height:30px">
+                        <path d="M12 8 L36 8 L30 43 L18 43 Z" fill="#1c0d02"></path>
+                        <circle cx="24" cy="22" r="5" fill="#FFD27A"></circle>
+                        <path d="M21.6 24 L20.2 37 L27.8 37 L26.4 24 Z" fill="#FFD27A"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="position:absolute; left:22px; bottom:18px; font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; z-index:2">showing 22 of 34 · direct dependents, grep-verifiable</div>
+          </div>
+
+          <!-- impacted entities -->
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px; display:flex; flex-direction:column">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px">
+              <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">Impacted Entities</div>
+              <span style="font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D">symbol · impact</span>
+            </div>
+            <div style="display:flex; flex-direction:column">
+              <sc-for list="{{ rows }}" as="row" hint-placeholder-count="6">
+                <div style="display:flex; align-items:center; gap:12px; padding:13px 4px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                  <span style="width:7px; height:7px; border-radius:50%; flex:none; background:{{ row.dot }}; box-shadow:0 0 7px {{ row.dot }}"></span>
+                  <div style="flex:1; min-width:0">
+                    <div style="font:500 13px/1.2 'JetBrains Mono',monospace; color:#E7E9EC; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ row.sym }}</div>
+                    <div style="font:400 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:4px">{{ row.type }}</div>
+                  </div>
+                  <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; padding:4px 9px; border-radius:999px; color:{{ row.impactColor }}; background:{{ row.impactBg }}">{{ row.impact }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+
+        <!-- chart + chain + events -->
+        <section style="display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); gap:18px">
+          <!-- impact over time -->
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px; display:flex; flex-direction:column">
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:6px">Impact Over Time</div>
+            <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-bottom:18px">blast radius per scan · last 12</div>
+            <svg viewBox="0 0 320 150" preserveAspectRatio="none" style="width:100%; height:150px; margin-top:auto">
+              <defs>
+                <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#FF7A1A" stop-opacity="0.35"></stop>
+                  <stop offset="1" stop-color="#FF7A1A" stop-opacity="0"></stop>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="112" x2="320" y2="112" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>
+              <line x1="0" y1="74" x2="320" y2="74" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>
+              <line x1="0" y1="36" x2="320" y2="36" stroke="rgba(255,255,255,0.05)" stroke-width="1"></line>
+              <path d="M0,120 L28,108 L56,114 L84,92 L112,98 L140,70 L168,80 L196,52 L224,58 L252,34 L280,30 L320,18 L320,150 L0,150 Z" fill="url(#areaFill)"></path>
+              <path d="M0,120 L28,108 L56,114 L84,92 L112,98 L140,70 L168,80 L196,52 L224,58 L252,34 L280,30 L320,18" fill="none" stroke="#FF7A1A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+              <circle cx="320" cy="18" r="4" fill="#FFC24D" stroke="#0a0b0e" stroke-width="2"></circle>
+            </svg>
+          </div>
+
+          <!-- dependency chain -->
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:18px">Dependency Chain</div>
+            <div style="display:flex; flex-direction:column">
+              <sc-for list="{{ chain }}" as="c" hint-placeholder-count="5">
+                <div style="display:flex; gap:13px">
+                  <div style="display:flex; flex-direction:column; align-items:center; flex:none">
+                    <span style="width:11px; height:11px; border-radius:50%; background:{{ c.dot }}; border:2px solid #131519; box-shadow:0 0 0 1px {{ c.dot }}"></span>
+                    <span style="width:1px; flex:1; background:{{ c.line }}; min-height:18px"></span>
+                  </div>
+                  <div style="padding-bottom:14px">
+                    <div style="font:500 13px/1.2 'JetBrains Mono',monospace; color:#E7E9EC">{{ c.sym }}</div>
+                    <div style="font:400 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:4px">{{ c.file }} · {{ c.type }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- recent events -->
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:18px">Recent Events</div>
+            <div style="display:flex; flex-direction:column; gap:16px">
+              <sc-for list="{{ events }}" as="e" hint-placeholder-count="4">
+                <div style="display:flex; gap:12px">
+                  <span style="width:7px; height:7px; border-radius:50%; flex:none; margin-top:5px; background:{{ e.dot }}; box-shadow:0 0 6px {{ e.dot }}"></span>
+                  <div>
+                    <div style="font:400 13px/1.45 'Inter',sans-serif; color:#C9CDD4">{{ e.text }}</div>
+                    <div style="font:400 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:5px">{{ e.t }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+        </sc-if>
+
+        <!-- ===== REVIEWER COCKPIT ===== -->
+        <sc-if value="{{ isCockpit }}" hint-placeholder-val="{{ false }}">
+        <section style="padding:6px 2px 4px">
+          <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Deep dive · blast-radius graph</div>
+          <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0 0 14px; color:#F6EFE6">Reviewer Cockpit</h1>
+          <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:7px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
+            <span style="color:#FF7A1A; font:600 12px/1 'JetBrains Mono',monospace">symbol</span>
+            <span style="font:500 13px/1 'JetBrains Mono',monospace; color:#C9CDD4">echo × option</span>
+          </div>
+        </section>
+        <section style="display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:18px">
+          <div style="position:relative; background:#0b0806; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px; overflow:hidden; min-height:600px">
+            <div style="display:flex; align-items:center; justify-content:space-between; position:relative; z-index:2">
+              <div>
+                <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">Blast Radius</div>
+                <div style="font:600 18px/1.2 'Space Grotesk',sans-serif; margin-top:8px; letter-spacing:-0.01em">echo <span style="color:#5F636D">×</span> option</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font:600 38px/1 'Space Grotesk',sans-serif; color:#FF6A3D; font-variant-numeric:tabular-nums">{{ affected }}</div>
+                <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:6px; letter-spacing:0.08em">AFFECTED</div>
+              </div>
+            </div>
+            <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center">
+              <div style="position:relative; width:min(560px,92%); aspect-ratio:1">
+                {{ graph }}
+                <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:3">
+                  <div style="position:relative; width:64px; height:64px; display:flex; align-items:center; justify-content:center">
+                    <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,122,26,0.5); animation:pulseRing 2.4s ease-out infinite"></div>
+                    <div style="position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,122,26,0.5); animation:pulseRing 2.4s ease-out 1.2s infinite"></div>
+                    <div style="width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:radial-gradient(circle at 30% 25%, #FFC24D, #F0480A); box-shadow:0 0 32px rgba(240,72,10,0.7)">
+                      <svg viewBox="0 0 48 48" style="width:30px; height:30px">
+                        <path d="M12 8 L36 8 L30 43 L18 43 Z" fill="#1c0d02"></path>
+                        <circle cx="24" cy="22" r="5" fill="#FFD27A"></circle>
+                        <path d="M21.6 24 L20.2 37 L27.8 37 L26.4 24 Z" fill="#FFD27A"></path>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="position:absolute; left:22px; bottom:18px; font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; z-index:2">showing 22 of 34 · direct dependents, grep-verifiable</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:18px">
+            <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+              <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:16px">Symbols in scope</div>
+              <div style="display:flex; flex-direction:column">
+                <sc-for list="{{ symbolList }}" as="s" hint-placeholder-count="5">
+                  <div style="display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <span style="width:7px; height:7px; border-radius:50%; flex:none; background:{{ s.hot }}"></span>
+                    <div style="flex:1; min-width:0">
+                      <div style="font:500 13px/1.2 'JetBrains Mono',monospace; color:#E7E9EC">{{ s.sym }}</div>
+                      <div style="font:400 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:4px">{{ s.file }} · {{ s.kind }}</div>
+                    </div>
+                    <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#A6ABB4; font-variant-numeric:tabular-nums">{{ s.dep }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+              <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Impact rings</div>
+              <div style="display:flex; flex-direction:column; gap:10px">
+                <sc-for list="{{ rings }}" as="rg" hint-placeholder-count="3">
+                  <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 13px; border-radius:9px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06)">
+                    <div style="display:flex; align-items:center; gap:10px">
+                      <span style="width:9px; height:9px; border-radius:50%; background:{{ rg.color }}; box-shadow:0 0 8px {{ rg.color }}"></span>
+                      <span style="font:400 13px/1 'Inter',sans-serif; color:#A6ABB4">{{ rg.label }}</span>
+                    </div>
+                    <span style="font:600 16px/1 'Space Grotesk',sans-serif; color:#F2F3F5; font-variant-numeric:tabular-nums">{{ rg.count }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+              <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Verdict</div>
+              <div style="display:flex; gap:6px; padding:5px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06)">
+                <sc-for list="{{ verdicts }}" as="v" hint-placeholder-count="3">
+                  <span style="flex:1; text-align:center; padding:9px 4px; border-radius:7px; font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:{{ v.color }}; background:{{ v.bg }}; border:1px solid {{ v.border }}">{{ v.label }}</span>
+                </sc-for>
+              </div>
+              <p style="font:400 13px/1.55 'Inter',sans-serif; color:#C9CDD4; margin:14px 0 0">Hold the merge: two pending MRs share <span style="color:#F5A623; font-weight:600">34</span> runtime dependents. Stack them into a single review before either lands.</p>
+            </div>
+          </div>
+        </section>
+        </sc-if>
+
+        <!-- ===== ENGINEERING HARNESS ===== -->
+        <sc-if value="{{ isHarness }}" hint-placeholder-val="{{ false }}">
+        <section style="padding:6px 2px 4px">
+          <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">AI agents · merge governance</div>
+          <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0 0 12px; color:#F6EFE6">Engineering Harness</h1>
+          <p style="font:400 16px/1.55 'Inter',sans-serif; color:#B59B86; margin:0; max-width:60ch">Coding agents can write patches. Keystone decides whether they are safe to merge — running every bot MR through the same blast-radius pipeline a human reviewer gets.</p>
+        </section>
+        <section style="display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:18px">
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:24px">
+            <div style="display:flex; align-items:center; gap:13px; padding-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.07); margin-bottom:20px">
+              <div style="width:42px; height:42px; flex:none; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(255,122,26,0.12); border:1px solid rgba(255,122,26,0.3)">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FFB14D" stroke-width="1.6"><rect x="4" y="7" width="16" height="12" rx="2"></rect><path d="M12 7V4M9 12h.01M15 12h.01M9 16h6"></path></svg>
+              </div>
+              <div style="flex:1; min-width:0">
+                <div style="font:600 15px/1.2 'JetBrains Mono',monospace; color:#F2F3F5">copilot-workspace</div>
+                <div style="font:400 12px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:5px">MR !482 · feat/refactor-echo-and-option</div>
+              </div>
+              <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:5px 10px; border-radius:999px; color:#FF8A66; background:rgba(255,106,61,0.14); border:1px solid rgba(255,106,61,0.3)">BOT MR</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0">
+              <sc-for list="{{ botPipeline }}" as="p" hint-placeholder-count="5">
+                <div style="display:flex; gap:14px; align-items:flex-start; padding:13px 0; border-bottom:1px solid rgba(255,255,255,0.05)">
+                  <span style="flex:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font:600 12px/1 'JetBrains Mono',monospace; color:{{ p.ok }}; background:{{ p.okBg }}; border:1px solid {{ p.okBorder }}">{{ p.mark }}</span>
+                  <div style="flex:1; min-width:0">
+                    <div style="font:600 13px/1.2 'JetBrains Mono',monospace; color:#E7E9EC">{{ p.name }}</div>
+                    <div style="font:400 12px/1.4 'Inter',sans-serif; color:#8B9099; margin-top:4px">{{ p.detail }}</div>
+                  </div>
+                  <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:{{ p.tagColor }}">{{ p.tag }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:18px">
+            <div style="position:relative; background:linear-gradient(180deg,rgba(255,106,61,0.1),rgba(20,16,11,0.5)); border:1px solid rgba(255,106,61,0.32); border-radius:14px; padding:26px; text-align:center; overflow:hidden">
+              <div style="position:absolute; inset:0; background:radial-gradient(70% 60% at 50% 0%, rgba(240,72,10,0.18), transparent 65%); pointer-events:none"></div>
+              <div style="position:relative">
+                <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#FF8A66; margin-bottom:14px">Overall verdict</div>
+                <div style="font:600 56px/1 'Space Grotesk',sans-serif; letter-spacing:-0.02em; color:#FF6A3D">BLOCK</div>
+                <p style="font:400 13px/1.5 'Inter',sans-serif; color:#C9CDD4; margin:14px 0 0">Auto-merge denied. The patch introduces a silent collision a reviewer must resolve first.</p>
+              </div>
+            </div>
+            <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+              <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Per-symbol result</div>
+              <div style="display:flex; flex-direction:column">
+                <sc-for list="{{ botSymbols }}" as="b" hint-placeholder-count="3">
+                  <div style="display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid rgba(255,255,255,0.05)">
+                    <div style="flex:1; min-width:0">
+                      <div style="font:500 13px/1.2 'JetBrains Mono',monospace; color:#E7E9EC">{{ b.sym }}</div>
+                      <div style="font:400 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-top:4px">{{ b.file }} · blast {{ b.blast }}</div>
+                    </div>
+                    <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; padding:4px 9px; border-radius:999px; color:{{ b.color }}; background:{{ b.bg }}">{{ b.res }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </section>
+        </sc-if>
+
+        <!-- ===== AUDIT LEDGER ===== -->
+        <sc-if value="{{ isLedger }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:20px; padding:6px 2px 4px">
+          <div>
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Tamper-evident decision log</div>
+            <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0; color:#F6EFE6">Audit Ledger</h1>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+            <span style="display:inline-flex; align-items:center; gap:8px; padding:8px 13px; border-radius:999px; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:{{ chainBadgeColor }}; background:{{ chainBadgeBg }}; border:1px solid {{ chainBadgeBorder }}">
+              <span style="width:8px; height:8px; border-radius:50%; background:{{ chainBadgeColor }}; box-shadow:0 0 8px {{ chainBadgeColor }}"></span>{{ chainBadgeText }}
+            </span>
+            <span style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:7px 11px; border-radius:999px; color:#D7B89A; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.25)">SAMPLE · PUBLIC KEY</span>
+            <button onClick="{{ toggleTamper }}" style="padding:9px 15px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:#F2F3F5; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14)" style-hover="border-color:#FF6A3D; color:#FF8A66">{{ tamperBtn }}</button>
+          </div>
+        </section>
+        <section style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:8px 8px 12px; overflow-x:auto">
+          <div style="display:grid; grid-template-columns:48px 92px 70px 70px 1fr 96px minmax(220px,1.4fr); gap:12px; padding:14px 14px; font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#8B9099; border-bottom:1px solid rgba(255,255,255,0.07); min-width:760px">
+            <span>#</span><span>Time</span><span>Change</span><span>Blast</span><span>Reviewer</span><span>Decision</span><span>Hash · prev → this</span>
+          </div>
+          <sc-for list="{{ ledgerRows }}" as="r" hint-placeholder-count="6">
+            <div style="display:grid; grid-template-columns:48px 92px 70px 70px 1fr 96px minmax(220px,1.4fr); gap:12px; padding:14px; align-items:center; border-bottom:1px solid rgba(255,255,255,0.04); background:{{ r.rowBg }}; min-width:760px">
+              <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#8B9099">{{ r.n }}</span>
+              <span style="font:400 12px/1 'JetBrains Mono',monospace; color:#A6ABB4">{{ r.time }}</span>
+              <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#FFB14D">{{ r.change }}</span>
+              <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#E7E9EC; font-variant-numeric:tabular-nums">{{ r.blast }}</span>
+              <span style="font:400 12px/1 'JetBrains Mono',monospace; color:#C9CDD4">{{ r.reviewer }}</span>
+              <span style="font:600 11px/1 'JetBrains Mono',monospace; color:{{ r.decColor }}; text-transform:uppercase">{{ r.decision }}</span>
+              <span style="font:400 11px/1 'JetBrains Mono',monospace; color:{{ r.hashColor }}">{{ r.prev }} <span style="color:#5F636D">→</span> {{ r.hash }}</span>
+            </div>
+          </sc-for>
+          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640">Each row is hash-chained to the one before it. This public sample signs with a shared demo key, so it is illustrative — not cryptographically tamper-proof.</div>
+        </section>
+        </sc-if>
+
+        <!-- ===== LIVE DEMO ===== -->
+        <sc-if value="{{ isDemo }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:20px; padding:6px 2px 4px">
+          <div>
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">Guided walkthrough · future-merge simulator</div>
+            <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0; color:#F6EFE6">Live Demo</h1>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px">
+            <button onClick="{{ demoToggle }}" style="display:inline-flex; align-items:center; gap:9px; padding:11px 18px; border-radius:7px; border:none; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:#150a02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)" style-hover="filter:brightness(1.08)">{{ demoBtn }}</button>
+            <button onClick="{{ demoRestart }}" style="padding:11px 16px; border-radius:7px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:#F2F3F5; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14)" style-hover="background:rgba(255,255,255,0.09)">Restart</button>
+          </div>
+        </section>
+        <section style="display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:18px">
+          <div style="position:relative; background:#0b0806; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:34px; min-height:340px; display:flex; flex-direction:column; overflow:hidden">
+            <div style="position:absolute; inset:0; background:radial-gradient(70% 80% at 18% 0%, rgba(240,72,10,0.12), transparent 60%); pointer-events:none"></div>
+            <div style="position:relative; display:flex; align-items:center; gap:14px; margin-bottom:24px">
+              <div style="font:600 70px/0.9 'Bodoni Moda',serif; color:#FF7A1A; font-variant-numeric:tabular-nums">{{ demoStepNum }}</div>
+              <div style="font:500 11px/1.4 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099">Step {{ demoStepNum }} of 5<br>future-merge simulator</div>
+            </div>
+            <div style="position:relative; margin-top:auto">
+              <div style="font:600 24px/1.2 'Space Grotesk',sans-serif; letter-spacing:-0.01em; color:#F6EFE6; margin-bottom:14px">{{ demoCur.title }}</div>
+              <p style="font:400 17px/1.6 'Inter',sans-serif; color:#C9CDD4; margin:0; max-width:52ch; text-wrap:pretty">{{ demoCur.text }}</p>
+            </div>
+            <div style="position:relative; margin-top:26px; height:4px; border-radius:999px; background:rgba(255,255,255,0.08); overflow:hidden">
+              <div style="height:100%; width:{{ demoProgress }}; background:linear-gradient(90deg,#FFC24D,#F0480A); border-radius:999px; transition:width 0.5s ease-out"></div>
+            </div>
+          </div>
+          <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:22px">
+            <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; text-transform:uppercase; color:#8B9099; margin-bottom:16px">Storyboard</div>
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <sc-for list="{{ demoSteps }}" as="s" hint-placeholder-count="5">
+                <div style="display:flex; gap:12px; align-items:center; padding:11px 12px; border-radius:9px; background:{{ s.rowBg }}; border:1px solid {{ s.rowBorder }}">
+                  <span style="flex:none; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font:600 11px/1 'JetBrains Mono',monospace; color:{{ s.numColor }}; background:{{ s.numBg }}; border:1px solid {{ s.numBorder }}">{{ s.n }}</span>
+                  <span style="font:500 13px/1.3 'Inter',sans-serif; color:{{ s.txtColor }}">{{ s.title }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+        </sc-if>
+
+        <div style="text-align:center; padding:20px 0 0">
+          <span style="font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.18em; text-transform:uppercase; color:#4a4e57">See Everything<span style="color:#FF7A1A"> · </span>Impact Nothing</span>
         </div>
       </div>
-      <div class="sim-step-content" id="sim-content-4" style="display:none;">
-        <div class="sim-status-badge danger">SILENT COLLISION: BLAST_OVERLAP (severity 6)</div>
-        <p class="sim-desc">Keystone joins the two blast radii and finds they overlap: both MRs ripple into the same <strong>5 dependents</strong>. The collision kind and fan-in severity are engine-computed in <code>core/collision.py</code> over the Orbit graph. Git and CODEOWNERS see two unrelated file edits and greenlight both.</p>
-        <div class="sim-visual-connection">
-          shared dependents: <code>approve</code> <code>get_json</code> <code>main</code> <code>post_json</code> <code>precedent</code>
-        </div>
-        <p class="sim-desc">Keystone classifies every cross-MR collision by how the two changes interact on the graph: <code>same_change</code> (both edit one symbol), <code>change_in_blast</code> (one edits inside the other's blast radius), or <code>blast_overlap</code> (their blast radii share dependents, like this one). The full scenario flags <strong>two</strong> collisions across the three open MRs.</p>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== CLI CONSENT MODAL ===================== -->
+  <sc-if value="{{ showConsent }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(6,7,9,0.7); backdrop-filter:blur(6px)">
+    <div style="width:100%; max-width:480px; background:#0d0f13; border:1px solid rgba(255,255,255,0.1); border-radius:13px; overflow:hidden; box-shadow:0 40px 90px -30px rgba(0,0,0,0.8)">
+      <div style="display:flex; align-items:center; gap:8px; padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.02)">
+        <span style="width:11px; height:11px; border-radius:50%; background:#FF6A3D"></span>
+        <span style="width:11px; height:11px; border-radius:50%; background:#F5A623"></span>
+        <span style="width:11px; height:11px; border-radius:50%; background:#34D399"></span>
+        <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#5F636D; margin-left:8px">keystone — auth</span>
       </div>
-      <div class="sim-step-content" id="sim-content-5" style="display:none;">
-        <div class="sim-status-badge danger">VERDICT: BLOCK (CROSS_TEAM)</div>
-        <p class="sim-desc">Keystone BLOCKs the merge at the CROSS_TEAM tier and returns the safe order from a Kahn topological sort over the collision graph. Merge in any other order and a shared dependent breaks at runtime.</p>
-        <div class="sim-safe-sequence">
-          <span class="seq-badge">1</span> <code>MR-204</code> &rarr; <span class="seq-badge">2</span> <code>MR-207</code> &rarr; <span class="seq-badge">3</span> <code>MR-211</code>
+      <div style="padding:24px 22px">
+        <div style="font:400 14px/1.6 'JetBrains Mono',monospace; color:#C9CDD4; margin-bottom:18px"><span style="color:#FF7A1A">$</span> keystone auth --connect github</div>
+        <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#8B9099; margin-bottom:13px">Read-only permissions requested</div>
+        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:22px">
+          <sc-for list="{{ perms }}" as="p" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:10px; font:400 13px/1.4 'JetBrains Mono',monospace; color:#A6ABB4">
+              <span style="color:#34D399">✓</span> {{ p }}
+            </div>
+          </sc-for>
         </div>
+        <div style="padding:11px 13px; border-radius:8px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.22); font:400 12px/1.5 'Inter',sans-serif; color:#D7B89A; margin-bottom:22px">The static demo connects <strong style="color:#F5A623">public</strong> repos in-browser. Private-repo access requires a deployed backend.</div>
+        <div style="display:flex; gap:11px">
+          <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)" style-hover="filter:brightness(1.08)">Allow</button>
+          <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#F2F3F5; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13)" style-hover="background:rgba(255,255,255,0.08)">Continue as demo</button>
+        </div>
+        <button onClick="{{ closeConsent }}" style="width:100%; margin-top:12px; padding:8px; background:none; border:none; cursor:pointer; font:500 12px/1 'Inter',sans-serif; color:#5F636D" style-hover="color:#8B9099">Cancel</button>
       </div>
     </div>
+  </div>
+  </sc-if>
 
-    <div class="sim-controls">
-      <button id="sim-prev" class="btn ghost" disabled>Back</button>
-      <button id="sim-next" class="btn primary">Next Step</button>
-    </div>
-  </div>
-</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;repo&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;pallets/click&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;emberDensity&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Calm&quot;, &quot;Default&quot;, &quot;Intense&quot;], &quot;default&quot;: &quot;Default&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;startView&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Landing&quot;, &quot;Dashboard&quot;], &quot;default&quot;: &quot;Landing&quot;, &quot;tsType&quot;: &quot;string&quot; }
+}">
+class Component extends DCLogic {
+  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false };
 
-<section id="orbit-diff-section" class="orbit-diff panel" data-reveal>
-  <div class="p-h">ORBIT DIFFERENCE MATRIX
-    <span class="hint">how Keystone compares to traditional review guardrails</span>
-  </div>
-  <div class="comparison-cards">
-    <div class="comp-card">
-      <div class="comp-card-title">Git / MR Diff</div>
-      <ul class="comp-card-list">
-        <li class="pro">Sees changed files and textual conflicts.</li>
-        <li class="con">Cannot see transitive dependency risk.</li>
-      </ul>
-    </div>
-    <div class="comp-card">
-      <div class="comp-card-title">CODEOWNERS</div>
-      <ul class="comp-card-list">
-        <li class="pro">Sees ownership rules.</li>
-        <li class="con">Cannot see runtime graph consequences.</li>
-      </ul>
-    </div>
-    <div class="comp-card highlight">
-      <div class="comp-card-title">GitLab Orbit <span class="comp-card-badge">Foundation</span></div>
-      <ul class="comp-card-list">
-        <li class="pro">Sees symbols, callers, dependents, and graph relationships.</li>
-        <li class="pro">Makes blast radius possible.</li>
-      </ul>
-    </div>
-    <div class="comp-card keystone-highlight">
-      <div class="comp-card-title">Keystone</div>
-      <ul class="comp-card-list">
-        <li class="pro">Uses Orbit to detect hidden collisions, compute blast radius, and gate decisions.</li>
-      </ul>
-    </div>
-  </div>
-</section>
+  componentDidMount() {
+    this._lastView = this.state.view;
+    if (this.props && this.props.startView === 'Dashboard' && this.state.view === 'landing') {
+      this.setState({ view: 'dashboard' });
+    }
+  }
 
-<!-- PRODUCT WALKTHROUGH (optional, owner-filled video; facade pattern, no autoplay) -->
-<section id="product-demo" class="panel demo-embed" data-reveal>
-  <div class="p-h">PRODUCT WALKTHROUGH <span class="hint">2-minute narrated tour, optional</span></div>
-  <div class="demo-frame" id="demo-frame" data-embed-src="">
-    <img class="demo-poster" src="live.png?v=1" alt="Keystone reviewer cockpit preview" loading="lazy" />
-    <button class="demo-play" type="button" id="demo-play" aria-label="Play product walkthrough">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-    </button>
-    <p class="demo-note" id="demo-note" hidden>Walkthrough video not yet published. The live demo above and the 60-second tour are the working proof.</p>
-  </div>
-  <div class="demo-cap">To be recorded against the live backend; every number on screen is computed from a real <code>orbit index</code> of this repo.</div>
-</section>
-<script>
-(function(){var b=document.getElementById('demo-play');if(!b)return;b.addEventListener('click',function(){var f=document.getElementById('demo-frame');var src=f.getAttribute('data-embed-src');if(src){var i=document.createElement('iframe');i.loading='lazy';i.allowFullscreen=true;i.setAttribute('allow','fullscreen; picture-in-picture');i.style.cssText='width:100%;height:100%;border:0';i.src=src;f.innerHTML='';f.appendChild(i);}else{var n=document.getElementById('demo-note');if(n)n.hidden=false;b.style.display='none';}});})();
+  componentDidUpdate() {
+    if (this._lastView !== 'dashboard' && this.state.view === 'dashboard') this.runCount();
+    this._lastView = this.state.view;
+  }
+
+  componentWillUnmount() { if (this._raf) cancelAnimationFrame(this._raf); if (this._demoTimer) clearInterval(this._demoTimer); }
+
+  setPanel(p) {
+    if (this._demoTimer) { clearInterval(this._demoTimer); this._demoTimer = null; }
+    this.setState({ panel: p, demoPlaying: p === 'demo', demoStep: p === 'demo' ? 0 : this.state.demoStep }, () => { if (p === 'demo') this.demoPlay(); });
+    try { window.scrollTo(0, 0); } catch (e) {}
+  }
+  demoPlay() {
+    if (this._demoTimer) clearInterval(this._demoTimer);
+    this.setState({ demoPlaying: true });
+    this._demoTimer = setInterval(() => {
+      this.setState(s => {
+        if (s.demoStep >= 4) { clearInterval(this._demoTimer); this._demoTimer = null; return { demoPlaying: false }; }
+        return { demoStep: s.demoStep + 1 };
+      });
+    }, 3400);
+  }
+  demoPause() { if (this._demoTimer) { clearInterval(this._demoTimer); this._demoTimer = null; } this.setState({ demoPlaying: false }); }
+  demoRestart() { if (this._demoTimer) clearInterval(this._demoTimer); this.setState({ demoStep: 0 }, () => this.demoPlay()); }
+  toggleTamper() { this.setState(s => ({ tampered: !s.tampered })); }
+
+  runCount() {
+    if (this._raf) cancelAnimationFrame(this._raf);
+    const target = 34, dur = 1100, start = performance.now();
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    const tick = now => {
+      const t = Math.min(1, (now - start) / dur);
+      this.setState({ affected: Math.round(ease(t) * target) });
+      if (t < 1) this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+  }
+
+  buildEmbers() {
+    if (this._embers) return this._embers;
+    const R = React.createElement;
+    const map = { Calm: 22, Default: 40, Intense: 64 };
+    const n = map[this.props.emberDensity] || 40;
+    const cols = ['#FF7A1A', '#FFC24D', '#F0480A', '#FF8C42'];
+    const arr = [];
+    for (let i = 0; i < n; i++) {
+      const left = Math.random() * 100;
+      const size = 2 + Math.floor(Math.random() * 4); // 2-5px, pixelated squares
+      const dur = 8 + Math.random() * 11;
+      const delay = -Math.random() * 20;
+      const drift = (Math.random() * 70 - 35);
+      const col = cols[i % cols.length];
+      arr.push(R('span', { key: i, style: {
+        position: 'absolute', bottom: '-12px', left: left + '%',
+        width: size + 'px', height: size + 'px', borderRadius: '0',
+        background: col, boxShadow: '0 0 ' + (size * 2) + 'px ' + col,
+        '--drift': drift + 'px', opacity: 0,
+        animation: 'emberRise ' + dur + 's linear ' + delay + 's infinite'
+      } }));
+    }
+    this._embers = R('div', { style: { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 } }, arr);
+    return this._embers;
+  }
+
+  buildGraph() {
+    if (this._graph) return this._graph;
+    const R = React.createElement;
+    const W = 540, H = 540, cx = 270, cy = 270;
+    const labels1 = ['Context.invoke', 'BaseCommand.main', 'secho', 'style', 'MultiCommand', 'Group.invoke', 'Command.main', 'make_context'];
+    const ring1 = 8, ring2 = 14, r1 = 122, r2 = 216;
+    const nodes = [];
+    for (let i = 0; i < ring1; i++) {
+      const a = (i / ring1) * Math.PI * 2 - Math.PI / 2;
+      nodes.push({ x: cx + Math.cos(a) * r1, y: cy + Math.sin(a) * r1, ring: 1, label: labels1[i] });
+    }
+    for (let i = 0; i < ring2; i++) {
+      const a = (i / ring2) * Math.PI * 2 - Math.PI / 2 + 0.22;
+      nodes.push({ x: cx + Math.cos(a) * r2, y: cy + Math.sin(a) * r2, ring: 2, label: null });
+    }
+    const inner = nodes.filter(n => n.ring === 1);
+    const edges = [];
+    inner.forEach(n => edges.push([cx, cy, n.x, n.y, 1]));
+    nodes.filter(n => n.ring === 2).forEach((n, i) => {
+      const p = inner[i % inner.length];
+      edges.push([p.x, p.y, n.x, n.y, 2]);
+    });
+
+    const svgKids = [];
+    [r1, r2].forEach((r, i) => svgKids.push(R('circle', { key: 'ring' + i, cx, cy, r, fill: 'none', stroke: 'rgba(255,255,255,0.05)', strokeWidth: 1 })));
+    edges.forEach((e, i) => svgKids.push(R('line', {
+      key: 'e' + i, x1: e[0], y1: e[1], x2: e[2], y2: e[3],
+      stroke: e[4] === 1 ? 'rgba(255,122,26,0.32)' : 'rgba(255,122,26,0.12)',
+      strokeWidth: e[4] === 1 ? 1.2 : 0.8,
+      style: { opacity: 0, animation: 'edgeIn 0.5s ease ' + (0.3 + i * 0.02) + 's forwards' }
+    })));
+    const svg = R('svg', { width: '100%', height: '100%', viewBox: '0 0 ' + W + ' ' + H, style: { position: 'absolute', inset: 0, zIndex: 1 } }, svgKids);
+
+    const nodeEls = nodes.map((n, i) => {
+      const isR1 = n.ring === 1;
+      const sz = isR1 ? 13 : 8;
+      const dot = R('span', { key: 'd', style: {
+        width: sz + 'px', height: sz + 'px', borderRadius: '50%', flex: 'none',
+        background: isR1 ? 'radial-gradient(circle at 35% 30%, #FFD27A, #FF6A3D)' : '#F5A623',
+        boxShadow: isR1 ? '0 0 12px rgba(255,106,61,0.75)' : '0 0 6px rgba(245,166,35,0.5)'
+      } });
+      const lbl = n.label ? R('span', { key: 'l', style: {
+        font: "500 11px/1 'JetBrains Mono', monospace", color: '#9aa0a9', whiteSpace: 'nowrap'
+      } }, n.label) : null;
+      const right = n.x >= cx;
+      return R('div', { key: 'n' + i, style: {
+        position: 'absolute', left: (n.x / W * 100) + '%', top: (n.y / H * 100) + '%',
+        transform: 'translate(-50%,-50%)', display: 'flex', alignItems: 'center', gap: '6px',
+        flexDirection: right ? 'row' : 'row-reverse', zIndex: 2,
+        opacity: 0, animation: 'nodeIn 0.5s cubic-bezier(0.22,0.61,0.36,1) ' + (0.45 + i * 0.04) + 's forwards'
+      } }, [dot, lbl]);
+    });
+
+    this._graph = R('div', { style: { position: 'absolute', inset: 0 } }, [svg].concat(nodeEls));
+    return this._graph;
+  }
+
+  buildPixelKeystone() {
+    if (this._pixel) return this._pixel;
+    const R = React.createElement;
+    const COLS = 18, ROWS = 22, U = 10;
+    const C = { edge: '#5a1604', dark: '#9c2c05', mid: '#E0420A', orange: '#FF7A1A', hot: '#FFC24D', pale: '#FFE9C2' };
+    const cx = (COLS - 1) / 2;
+    const cmid = Math.round(cx);
+    const rects = [];
+    for (let r = 0; r < ROWS; r++) {
+      const tWidth = 16, bWidth = 9;
+      const w = Math.round(tWidth - (tWidth - bWidth) * (r / (ROWS - 1)));
+      const half = w / 2;
+      const x0 = Math.round(cx - half + 0.5), x1 = Math.round(cx + half - 0.5);
+      const crackStart = 3, crackForkRow = ROWS - 7;
+      for (let c = x0; c <= x1; c++) {
+        let col;
+        if (r < 3) col = C.hot;
+        else if (r < 8) col = C.orange;
+        else if (r < 15) col = C.mid;
+        else col = '#C2380A';
+        if (c <= x0 + 1 && r >= 3) col = C.orange;
+        if (c >= x1) col = C.dark;
+        const crackMain = c === cmid && r >= crackStart && r < crackForkRow;
+        const off = r - crackForkRow;
+        const branchL = r >= crackForkRow && c === cmid - off;
+        const branchR = r >= crackForkRow && c === cmid + off;
+        if (crackMain || branchL || branchR) col = (r % 2 ? C.pale : C.hot);
+        if (c === x0 || c === x1 || r === ROWS - 1) col = C.edge;
+        rects.push(R('rect', { key: r + '_' + c, x: c * U, y: r * U, width: U + 0.6, height: U + 0.6, fill: col }));
+      }
+    }
+    const svg = R('svg', { viewBox: '0 0 ' + (COLS * U) + ' ' + (ROWS * U), width: '100%', height: '100%',
+      style: { shapeRendering: 'crispEdges', display: 'block', filter: 'drop-shadow(0 16px 44px rgba(240,72,10,0.6))', overflow: 'visible' } }, rects);
+    this._pixel = R('div', { style: { width: '100%', animation: 'floatY 6s ease-in-out infinite' } }, svg);
+    return this._pixel;
+  }
+
+  buildHeroArt() {
+    if (this._art) return this._art;
+    const R = React.createElement;
+    const W = 640, H = 640, cx = 320, cy = 320;
+
+    // ---- Layer 0: blurred volumetric back-rays for depth ----
+    const back = [];
+    const BN = 70;
+    for (let i = 0; i < BN; i++) {
+      const a = (i / BN) * Math.PI * 2 + (Math.random() - 0.5) * 0.08;
+      const inner = 50 + Math.random() * 30;
+      const len = 120 + Math.pow(Math.random(), 1.5) * 250;
+      const x1 = (cx + Math.cos(a) * inner).toFixed(1), y1 = (cy + Math.sin(a) * inner).toFixed(1);
+      const x2 = (cx + Math.cos(a) * (inner + len)).toFixed(1), y2 = (cy + Math.sin(a) * (inner + len)).toFixed(1);
+      back.push(R('line', { key: 'b' + i, x1, y1, x2, y2, stroke: '#F0480A', strokeWidth: 2 + Math.random() * 1.8, strokeOpacity: 0.2, style: { opacity: 0, animation: 'rayIn 1.4s ease ' + (0.2 + (i / BN) * 1.8).toFixed(2) + 's forwards' } }));
+    }
+    const backG = R('g', { key: 'back', style: { transformBox: 'fill-box', transformOrigin: 'center', filter: 'blur(4px)', animation: 'spinSlow 420s linear infinite reverse' } }, back);
+
+    // ---- Layer 1: fine radiating sunburst, fades at the tips, slow stagger over ~5s ----
+    const rays = [];
+    const RN = 360;
+    for (let i = 0; i < RN; i++) {
+      const a = (i / RN) * Math.PI * 2 + (Math.random() - 0.5) * 0.02;
+      const inner = 46 + Math.random() * 28;
+      const len = 76 + Math.pow(Math.random(), 1.8) * 252;
+      const x1 = (cx + Math.cos(a) * inner).toFixed(1), y1 = (cy + Math.sin(a) * inner).toFixed(1);
+      const x2 = (cx + Math.cos(a) * (inner + len)).toFixed(1), y2 = (cy + Math.sin(a) * (inner + len)).toFixed(1);
+      const op = (0.14 + (len / 330) * 0.52).toFixed(2);
+      const w = (0.4 + Math.random() * 0.9).toFixed(2);
+      const col = Math.random() < 0.14 ? '#FFC24D' : '#FF6A1A';
+      const delay = (0.2 + (i / RN) * 2.4 + Math.random() * 0.3).toFixed(2);
+      rays.push(R('line', { key: 'r' + i, x1, y1, x2, y2, stroke: col, strokeWidth: w, strokeOpacity: op, style: { opacity: 0, transformBox: 'fill-box', transformOrigin: cx + 'px ' + cy + 'px', animation: 'rayIn 1.1s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's both' } }));
+    }
+    const rayG = R('g', { key: 'rays', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'spinSlow 360s linear infinite, rayBreathe 7s ease-in-out infinite' } }, rays);
+
+    // ---- Layer 2: faint concentric rings ----
+    const circ = [70, 124, 182, 244, 300].map((r, i) => R('circle', { key: 'cc' + i, cx, cy, r, fill: 'none', stroke: 'rgba(255,120,40,0.06)', strokeWidth: 0.6, style: { opacity: 0, animation: 'rayIn 1.2s ease ' + (0.5 + i * 0.25) + 's forwards' } }));
+
+    // ---- Layer 2.5: precision instrument ring with tick marks (slow counter-rotation) ----
+    const ticks = [];
+    const TN = 72, tr = 268;
+    for (let i = 0; i < TN; i++) {
+      const a = (i / TN) * Math.PI * 2;
+      const major = i % 6 === 0;
+      const t1 = major ? tr - 10 : tr - 5;
+      ticks.push(R('line', { key: 't' + i, x1: (cx + Math.cos(a) * t1).toFixed(1), y1: (cy + Math.sin(a) * t1).toFixed(1), x2: (cx + Math.cos(a) * tr).toFixed(1), y2: (cy + Math.sin(a) * tr).toFixed(1), stroke: major ? 'rgba(255,180,90,0.4)' : 'rgba(255,140,60,0.18)', strokeWidth: major ? 1.1 : 0.6 }));
+    }
+    const tickG = R('g', { key: 'ticks', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'rayIn 1.6s ease 0.8s forwards, spinSlow 200s linear infinite reverse' } }, [R('circle', { key: 'tr', cx, cy, r: tr, fill: 'none', stroke: 'rgba(255,140,60,0.12)', strokeWidth: 0.6 }), ...ticks]);
+
+    // ---- Layer 3: molten branching bolts ----
+    const paths = [];
+    const branch = (x, y, ang, len, depth, t0) => {
+      if (depth <= 0 || len < 16) return;
+      const segs = Math.max(2, Math.round(len / 26));
+      let px = x, py = y, a = ang, d = 'M' + x.toFixed(1) + ' ' + y.toFixed(1);
+      const pts = [[x, y]];
+      for (let s = 0; s < segs; s++) { a += (Math.random() - 0.5) * 0.55; const st = len / segs; px += Math.cos(a) * st; py += Math.sin(a) * st; d += ' L' + px.toFixed(1) + ' ' + py.toFixed(1); pts.push([px, py]); }
+      paths.push({ d, t0, w: Math.max(1, depth) });
+      const nb = 1 + Math.floor(Math.random() * 2);
+      for (let b = 0; b < nb; b++) { const t = 0.4 + Math.random() * 0.5; const idx = Math.max(1, Math.floor(t * (pts.length - 1))); branch(pts[idx][0], pts[idx][1], a + (Math.random() - 0.5) * 1.6, len * 0.62, depth - 1, t0 + 0.55 + t * 0.4); }
+    };
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2 + Math.random() * 0.28; branch(cx, cy, a, 190 + Math.random() * 160, 3, 0.7 + Math.random() * 0.3); }
+    const crackKids = [];
+    paths.forEach((p, i) => {
+      const delay = p.t0.toFixed(2);
+      const common = { d: p.d, fill: 'none', pathLength: 1, strokeLinecap: 'round', strokeLinejoin: 'round' };
+      // soft outer glow, then molten body, then bright core — all draw on
+      crackKids.push(R('path', { key: 'cg' + i, ...common, stroke: '#F0480A', strokeWidth: p.w * 4.2, strokeOpacity: 0.32, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.3s ease-out ' + delay + 's forwards' } }));
+      crackKids.push(R('path', { key: 'cm' + i, ...common, stroke: '#FF8A1A', strokeWidth: p.w * 2, strokeOpacity: 0.95, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.3s ease-out ' + delay + 's forwards' } }));
+      crackKids.push(R('path', { key: 'ck' + i, ...common, stroke: '#FFF2D0', strokeWidth: Math.max(0.9, p.w * 0.7), style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.3s ease-out ' + delay + 's forwards' } }));
+      // traveling spark that runs along the bolt after it draws (continuous)
+      crackKids.push(R('path', { key: 'cs' + i, ...common, stroke: '#FFFBEC', strokeWidth: Math.max(1.2, p.w * 1.1), strokeOpacity: 1, style: { strokeDasharray: '0.05 0.95', strokeDashoffset: 1, animation: 'sparkTravel ' + (2.6 + (i % 5) * 0.5) + 's linear ' + (delay + 1.4) + 's infinite' } }));
+    });
+
+    // ---- Layer 4: drifting embers ----
+    const sparks = [];
+    for (let i = 0; i < 30; i++) {
+      const a = Math.random() * Math.PI * 2, rr = 60 + Math.random() * 240;
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+      const sz = 0.8 + Math.random() * 2;
+      sparks.push(R('circle', { key: 's' + i, cx: x.toFixed(1), cy: y.toFixed(1), r: sz.toFixed(1), fill: Math.random() < 0.4 ? '#FFD27A' : '#FF7A1A', style: { '--sdx': (Math.cos(a) * 36 + (Math.random() - 0.5) * 20).toFixed(0) + 'px', '--sdy': (-30 - Math.random() * 50).toFixed(0) + 'px', opacity: 0, animation: 'sparkFloat ' + (4 + Math.random() * 4) + 's ease-out ' + (1.5 + Math.random() * 4).toFixed(2) + 's infinite' } }));
+    }
+
+    // ---- Layer 4.5: ring of lava stones, illumination flows stone → stone ----
+    const SN = 10, ringR = 196, period = 5;
+    const stoneCenters = [];
+    const stoneG = [];
+    for (let i = 0; i < SN; i++) {
+      const a = (i / SN) * Math.PI * 2 - Math.PI / 2 + 0.1;
+      const sx = cx + Math.cos(a) * ringR, sy = cy + Math.sin(a) * ringR;
+      stoneCenters.push([sx, sy]);
+      const flowDelay = (1.6 + (i / SN) * period).toFixed(2);
+      const base = 23 + Math.random() * 10;
+      // irregular faceted rock polygon
+      const verts = 8; const vp = [];
+      let dp = '';
+      for (let v = 0; v < verts; v++) { const va = (v / verts) * Math.PI * 2; const rr = base * (0.7 + Math.random() * 0.55); const vx = sx + Math.cos(va) * rr, vy = sy + Math.sin(va) * rr * 0.9; vp.push([vx, vy]); dp += (v ? 'L' : 'M') + vx.toFixed(1) + ' ' + vy.toFixed(1) + ' '; }
+      dp += 'Z';
+      // glowing molten veins inside the stone
+      let veinD = '';
+      for (let k = 0; k < 3; k++) { const v0 = vp[(k * 3) % verts], v1 = vp[(k * 3 + 4) % verts]; veinD += 'M' + ((sx + v0[0]) / 2).toFixed(1) + ' ' + ((sy + v0[1]) / 2).toFixed(1) + ' Q' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' ' + ((sx + v1[0]) / 2).toFixed(1) + ' ' + ((sy + v1[1]) / 2).toFixed(1) + ' '; }
+      // rim highlight arc (top-left lit edge)
+      const rimD = 'M' + vp[5][0].toFixed(1) + ' ' + vp[5][1].toFixed(1) + ' L' + vp[6][0].toFixed(1) + ' ' + vp[6][1].toFixed(1) + ' L' + vp[7][0].toFixed(1) + ' ' + vp[7][1].toFixed(1);
+      const bob = (5 + (i % 4)).toFixed(1);
+      stoneG.push(R('g', { key: 'stg' + i, style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'stoneBob ' + bob + 's ease-in-out ' + (i * 0.3).toFixed(1) + 's infinite' } }, [
+        R('circle', { key: 'gl', cx: sx.toFixed(1), cy: sy.toFixed(1), r: base * 2.8, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'stoneFlow ' + period + 's ease-in-out ' + flowDelay + 's infinite' } }),
+        R('path', { key: 'bd', d: dp, fill: 'url(#stonefill)', stroke: 'rgba(120,60,28,0.6)', strokeWidth: 1, style: { opacity: 0, animation: 'rayIn 0.9s ease ' + (0.6 + i * 0.1).toFixed(2) + 's forwards' } }),
+        R('path', { key: 'vn', d: veinD, fill: 'none', stroke: '#FF8A1A', strokeWidth: 1.3, strokeLinecap: 'round', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'veinPulse ' + period + 's ease-in-out ' + flowDelay + 's infinite' } }),
+        R('path', { key: 'vc', d: veinD, fill: 'none', stroke: '#FFE9B0', strokeWidth: 0.5, strokeLinecap: 'round', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'veinPulse ' + period + 's ease-in-out ' + flowDelay + 's infinite' } }),
+        R('path', { key: 'rm', d: rimD, fill: 'none', stroke: 'rgba(255,200,130,0.55)', strokeWidth: 1.1, strokeLinecap: 'round', style: { opacity: 0, animation: 'rayIn 1s ease ' + (0.8 + i * 0.1).toFixed(2) + 's forwards' } }),
+        R('circle', { key: 'co', cx: sx.toFixed(1), cy: sy.toFixed(1), r: base * 0.32, fill: '#FFF2D0', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'stoneCore ' + period + 's ease-in-out ' + flowDelay + 's infinite' } })
+      ]));
+    }
+    // lava conduits linking adjacent stones — light travels around the ring
+    const linkG = [];
+    for (let i = 0; i < SN; i++) {
+      const [x1, y1] = stoneCenters[i], [x2, y2] = stoneCenters[(i + 1) % SN];
+      const mx = (x1 + x2) / 2 + (cx - (x1 + x2) / 2) * 0.16, my = (y1 + y2) / 2 + (cy - (y1 + y2) / 2) * 0.16;
+      const d = 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' Q' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + x2.toFixed(1) + ' ' + y2.toFixed(1);
+      const fd = (1.6 + (i / SN) * period).toFixed(2);
+      linkG.push(R('path', { key: 'lk' + i, d, fill: 'none', stroke: 'rgba(255,106,26,0.16)', strokeWidth: 1.4, style: { opacity: 0, animation: 'rayIn 1s ease ' + (0.8 + i * 0.12).toFixed(2) + 's forwards' } }));
+      linkG.push(R('path', { key: 'lf' + i, d, fill: 'none', pathLength: 1, stroke: '#FFD27A', strokeWidth: 2, strokeLinecap: 'round', style: { strokeDasharray: '0.18 0.82', strokeDashoffset: 1, animation: 'linkFlow ' + period + 's ease-in-out ' + fd + 's infinite' } }));
+    }
+
+    // ---- shockwave rings pulsing out from the keyhole ----
+    const shock = [0, 1.4, 2.8, 4.2].map((d, i) => R('circle', { key: 'sw' + i, cx, cy, r: 210, fill: 'none', stroke: 'rgba(255,150,50,0.7)', strokeWidth: 1.6, style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'shockwave 5.6s cubic-bezier(0.22,0.61,0.36,1) ' + (1.6 + d) + 's infinite' } }));
+
+    // ---- Layer 5: the keyhole core ----
+    const keyhole = [
+      R('circle', { key: 'kg2', cx, cy, r: 120, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'rayIn 1.4s ease 0.1s forwards, keyGlow 3.2s ease-in-out 1.4s infinite' } }),
+      R('circle', { key: 'kg1', cx, cy, r: 64, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 2.4s ease-in-out infinite' } }),
+      R('circle', { key: 'kc', cx, cy: cy - 13, r: 18, fill: 'url(#khot)' }),
+      R('path', { key: 'kw', d: 'M ' + (cx - 7.5) + ' ' + (cy - 2) + ' L ' + (cx - 14) + ' ' + (cy + 44) + ' L ' + (cx + 14) + ' ' + (cy + 44) + ' L ' + (cx + 7.5) + ' ' + (cy - 2) + ' Z', fill: 'url(#khot)' }),
+      R('circle', { key: 'kcore', cx, cy: cy - 13, r: 7, fill: '#FFF6D8', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 1.6s ease-in-out infinite' } })
+    ];
+
+    this._art = R('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet', style: { display: 'block', overflow: 'visible', filter: 'drop-shadow(0 0 18px rgba(240,72,10,0.5))' } }, [backG, rayG, ...circ, tickG, ...crackKids, ...linkG, ...stoneG, ...shock, ...sparks, ...keyhole]);
+    return this._art;
+  }
+
+  renderVals() {
+    const impactStyle = { High: ['#FF6A3D', 'rgba(255,106,61,0.14)'], Medium: ['#F5A623', 'rgba(245,166,35,0.14)'], Low: ['#8B9099', 'rgba(255,255,255,0.05)'] };
+    const rowsRaw = [
+      ['Context.invoke', 'method', 'High'],
+      ['BaseCommand.main', 'method', 'High'],
+      ['secho', 'function', 'Medium'],
+      ['style', 'function', 'Medium'],
+      ['MultiCommand.invoke', 'method', 'Medium'],
+      ['get_current_context', 'function', 'Low']
+    ];
+    const dotFor = { High: '#FF6A3D', Medium: '#F5A623', Low: '#5F636D' };
+    const led = [
+      ['07', '12:04:11', '!486', '34', 's.engel', 'reject', 'b1e4…0d8f', 'a3f9…7c21'],
+      ['06', '11:58:42', '!482', '211', 'keystone-bot', 'reject', 'a3f9…7c21', '77c2…aa10'],
+      ['05', '11:40:09', '!479', '12', 'm.okafor', 'approve', '77c2…aa10', '4d8a…91bc'],
+      ['04', '11:21:55', '!475', '5', 's.engel', 'approve', '4d8a…91bc', '2f10…cc77'],
+      ['03', '10:55:30', '!470', '48', 'l.park', 'approve', '2f10…cc77', '9ab3…12ef'],
+      ['02', '10:30:18', '!468', '3', 'm.okafor', 'approve', '9ab3…12ef', '0000…genesis']
+    ];
+    const tamperIdx = 3;
+    const demoSteps = [
+      { n: '1', title: 'Two MRs enter review', text: 'MR !486 changes echo() in utils.py. MR !482 changes option() in decorators.py. Different files — Git reports no conflict.' },
+      { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
+      { n: '3', title: 'Blast radii are compared', text: 'echo ripples into 211 dependents, option into 188. Keystone intersects the two dependent sets.' },
+      { n: '4', title: 'The silent collision surfaces', text: '34 functions call both echo and option. Merge both and those 34 break together — no file-diff tool would warn you.' },
+      { n: '5', title: 'Resolve before merge', text: 'Keystone holds the merge, suggests a single stacked review, and records the decision in the audit ledger.' }
+    ];
+
+    return {
+      isLanding: this.state.view === 'landing',
+      isDash: this.state.view === 'dashboard',
+      showConsent: this.state.showConsent,
+      affected: this.state.affected,
+      repo: this.props.repo ?? 'pallets/click',
+      embers: this.buildEmbers(),
+      graph: this.buildGraph(),
+      pixelArt: this.buildPixelKeystone(),
+      heroArt: this.buildHeroArt(),
+
+      openConsent: () => this.setState({ showConsent: true }),
+      closeConsent: () => this.setState({ showConsent: false }),
+      goDemo: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }),
+      goLanding: () => this.setState({ view: 'landing' }),
+      onArtMove: (e) => { const t = e.currentTarget; const r = t.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top; t.style.setProperty('--mx', (x / r.width - 0.5).toFixed(3)); t.style.setProperty('--my', (y / r.height - 0.5).toFixed(3)); t.style.setProperty('--px', x + 'px'); t.style.setProperty('--py', y + 'px'); t.style.setProperty('--torch', '1'); },
+      onArtLeave: (e) => { const t = e.currentTarget; t.style.setProperty('--mx', '0'); t.style.setProperty('--my', '0'); t.style.setProperty('--torch', '0'); },
+      scrollGraph: () => { const el = document.querySelector('[data-blast]'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 72; window.scrollTo({ top: y, behavior: 'smooth' }); } },
+
+      railIcons: [['overview', 'Dashboard', '▤'], ['cockpit', 'Reviewer Cockpit', '◎'], ['harness', 'Engineering Harness', '⌁'], ['ledger', 'Audit Ledger', '☰'], ['demo', 'Live Demo', '▶']].map(([k, label, glyph]) => { const on = this.state.panel === k; return { label, glyph, onClick: () => this.setPanel(k), color: on ? '#FFB14D' : '#8B9099', bg: on ? 'rgba(255,122,26,0.12)' : 'transparent', border: on ? 'rgba(255,122,26,0.3)' : 'transparent' }; }),
+      navTabs: [
+        { label: 'Dashboard', color: '#F2F3F5', bg: 'rgba(255,255,255,0.06)' },
+        { label: 'Inventory', color: '#8B9099', bg: 'transparent' },
+        { label: 'Analysis', color: '#8B9099', bg: 'transparent' },
+        { label: 'Reports', color: '#8B9099', bg: 'transparent' },
+        { label: 'Overview', color: '#8B9099', bg: 'transparent' }
+      ],
+      stats: [
+        { label: 'Definitions indexed', value: '2,847', sub: 'pallets/click', color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)' },
+        { label: 'Max blast radius', value: '412', sub: 'BaseCommand.main', color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)' },
+        { label: 'Silent-collision dependents', value: '34', sub: 'echo × option', color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)' }
+      ],
+      resolveSteps: [
+        { n: '1', text: 'Add an integration test that exercises both echo and option together.' },
+        { n: '2', text: 'Stack the two MRs into a single review so one reviewer sees the overlap.' },
+        { n: '3', text: 'Flag-gate the second change until the shared dependents are verified.' }
+      ],
+      verdicts: [
+        { label: 'ALLOW', color: '#5F636D', bg: 'transparent', border: 'transparent' },
+        { label: 'HOLD', color: '#1c0d02', bg: 'linear-gradient(135deg,#FFC24D,#F5A623)', border: 'rgba(245,166,35,0.5)' },
+        { label: 'BLOCK', color: '#5F636D', bg: 'transparent', border: 'transparent' }
+      ],
+      rings: [
+        { label: 'Direct dependents (ring 1)', count: '8', color: '#FF6A3D' },
+        { label: '1-hop dependents (ring 2)', count: '26', color: '#F5A623' },
+        { label: 'Total shared', count: '34', color: '#FFC24D' }
+      ],
+      rows: rowsRaw.map(r => ({
+        sym: r[0], type: r[1], impact: r[2],
+        impactColor: impactStyle[r[2]][0], impactBg: impactStyle[r[2]][1], dot: dotFor[r[2]]
+      })),
+      chain: [
+        { sym: 'option', file: 'decorators.py', type: 'decorator', dot: '#FF6A3D', line: 'rgba(255,106,61,0.4)' },
+        { sym: 'Command.params', file: 'core.py', type: 'attribute', dot: '#FF7A1A', line: 'rgba(255,122,26,0.3)' },
+        { sym: 'Command.invoke', file: 'core.py', type: 'method', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
+        { sym: 'Context.invoke', file: 'core.py', type: 'method', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
+        { sym: 'BaseCommand.main', file: 'core.py', type: 'method', dot: '#34D399', line: 'transparent' }
+      ],
+      events: [
+        { t: '12:04:11', text: 'Silent collision detected — echo × option', dot: '#FF6A3D' },
+        { t: '12:04:09', text: 'Blast radius computed for echo — 211 direct dependents', dot: '#FF7A1A' },
+        { t: '11:58:42', text: 'MR !482 (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
+        { t: '11:52:30', text: 'Indexed 2,847 definitions from pallets/click', dot: '#34D399' }
+      ],
+      perms: ['Read repository contents and metadata', 'Read merge requests and diffs', 'No write access · no secrets · no code execution'],
+
+      panel: this.state.panel,
+      isOverview: this.state.panel === 'overview',
+      isCockpit: this.state.panel === 'cockpit',
+      isHarness: this.state.panel === 'harness',
+      isLedger: this.state.panel === 'ledger',
+      isDemo: this.state.panel === 'demo',
+
+      symbolList: [['echo', 'utils.py', 'definition', '211', true], ['option', 'decorators.py', 'definition', '188', true], ['Context.invoke', 'core.py', 'shared dependent', '—', false], ['BaseCommand.main', 'core.py', 'shared dependent', '—', false], ['secho', 'utils.py', 'shared dependent', '—', false]].map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
+
+      botPipeline: [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'echo → 211 · option → 188 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core.py', true, 'PASS'], ['4', 'Collision Scan', '34 shared dependents overlap open MR !486', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']].map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
+      botSymbols: [
+        { sym: 'echo', file: 'utils.py', blast: '211', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
+        { sym: 'option', file: 'decorators.py', blast: '188', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
+        { sym: 'Context.invoke', file: 'core.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
+      ],
+
+      chainOk: !this.state.tampered,
+      chainBadgeText: this.state.tampered ? 'CHAIN BROKEN' : 'CHAIN VERIFIED',
+      chainBadgeColor: this.state.tampered ? '#FF6A3D' : '#34D399',
+      chainBadgeBg: this.state.tampered ? 'rgba(255,106,61,0.14)' : 'rgba(52,211,153,0.12)',
+      chainBadgeBorder: this.state.tampered ? 'rgba(255,106,61,0.35)' : 'rgba(52,211,153,0.3)',
+      tamperBtn: this.state.tampered ? 'Restore chain' : 'Simulate tamper',
+      toggleTamper: () => this.toggleTamper(),
+      ledgerRows: led.map((r, i) => { const broken = this.state.tampered && i >= tamperIdx; const isTamper = this.state.tampered && i === tamperIdx; return { n: r[0], time: r[1], change: r[2], blast: r[3], reviewer: r[4], decision: r[5], decColor: r[5] === 'approve' ? '#34D399' : '#FF6A3D', prev: r[7], hash: isTamper ? '⚠ MISMATCH' : r[6], hashColor: broken ? '#FF8A66' : '#8B9099', rowBg: isTamper ? 'rgba(255,106,61,0.12)' : (broken ? 'rgba(255,106,61,0.05)' : 'transparent') }; }),
+
+      demoSteps: demoSteps.map((s, i) => { const active = i === this.state.demoStep; const done = i < this.state.demoStep; return { n: s.n, title: s.title, rowBg: active ? 'rgba(255,122,26,0.1)' : 'transparent', rowBorder: active ? 'rgba(255,122,26,0.3)' : 'transparent', numColor: active ? '#150a02' : (done ? '#34D399' : '#8B9099'), numBg: active ? '#FF7A1A' : (done ? 'rgba(52,211,153,0.14)' : 'rgba(255,255,255,0.05)'), numBorder: active ? 'transparent' : (done ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'), txtColor: active ? '#F6EFE6' : (done ? '#A6ABB4' : '#8B9099') }; }),
+      demoCur: demoSteps[this.state.demoStep] || demoSteps[0],
+      demoStepNum: this.state.demoStep + 1,
+      demoProgress: ((this.state.demoStep) / (demoSteps.length - 1) * 100).toFixed(0) + '%',
+      demoPlaying: this.state.demoPlaying,
+      demoBtn: this.state.demoPlaying ? 'Pause' : 'Auto-play',
+      demoToggle: () => this.state.demoPlaying ? this.demoPause() : this.demoPlay(),
+      demoRestart: () => this.demoRestart()
+    };
+  }
+}
 </script>
-
-<!-- ENGINEERING HARNESS PIPELINE -->
-<section id="harness-pipeline" class="harness-section panel" data-reveal aria-labelledby="harness-h">
-  <div class="p-h" id="harness-h">ENGINEERING HARNESS
-    <span class="hint">deterministic governance pipeline for agent-authored code</span></div>
-  <p class="harness-pitch">Coding agents can write patches. Keystone decides if they are safe to merge.</p>
-
-  <!-- Agent Task Card -->
-  <div id="harness-task" class="harness-task-card">
-    <div class="harness-task-header">
-      <span class="harness-task-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="7" width="12" height="9" rx="2.5"/><path d="M10 4.6V7"/><circle cx="10" cy="3.6" r="1"/><circle cx="8" cy="11.2" r="0.7" fill="currentColor" stroke="none"/><circle cx="12" cy="11.2" r="0.7" fill="currentColor" stroke="none"/><path d="M8.6 14h2.8"/></svg></span>
-      <div class="harness-task-info">
-        <div class="harness-task-agent" id="harness-agent">copilot-workspace</div>
-        <div class="harness-task-mr" id="harness-mr">MR-204</div>
-      </div>
-      <span class="harness-task-kind" id="harness-kind">bot</span>
-    </div>
-    <div class="harness-task-symbols" id="harness-symbols">compute_blast_radius</div>
-  </div>
-
-  <!-- Pipeline Stages -->
-  <div class="harness-pipeline-flow" id="harness-stages">
-    <div class="harness-stage" data-stage="SYMBOL_RESOLVE">
-      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="8.5" cy="8.5" r="5"/><path d="M12.5 12.5L17 17"/></svg></div>
-      <div class="harness-stage-name">Symbol Resolve</div>
-      <div class="harness-stage-status">pending</div>
-    </div>
-    <div class="harness-connector"></div>
-    <div class="harness-stage" data-stage="BLAST_COMPUTE">
-      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="10" r="4"/><circle cx="10" cy="10" r="1.4" fill="currentColor" stroke="none"/></svg></div>
-      <div class="harness-stage-name">Blast Radius</div>
-      <div class="harness-stage-status">pending</div>
-    </div>
-    <div class="harness-connector"></div>
-    <div class="harness-stage" data-stage="POLICY_GATE">
-      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 2.5L4 5v4.2c0 3.6 2.5 6.6 6 7.8 3.5-1.2 6-4.2 6-7.8V5L10 2.5z"/><path d="M7.5 9.8l1.8 1.8 3.4-3.6"/></svg></div>
-      <div class="harness-stage-name">Policy Gate</div>
-      <div class="harness-stage-status">pending</div>
-    </div>
-    <div class="harness-connector"></div>
-    <div class="harness-stage" data-stage="COLLISION_SCAN">
-      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.6" cy="10" r="4.6"/><circle cx="12.4" cy="10" r="4.6"/></svg></div>
-      <div class="harness-stage-name">Collision Scan</div>
-      <div class="harness-stage-status">pending</div>
-    </div>
-    <div class="harness-connector"></div>
-    <div class="harness-stage" data-stage="VERDICT">
-      <div class="harness-stage-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.5"/><path d="M6.8 10.2l2.2 2.2 4.2-4.4"/></svg></div>
-      <div class="harness-stage-name">Verdict</div>
-      <div class="harness-stage-status">pending</div>
-    </div>
-  </div>
-
-  <!-- Per-Symbol Verdicts -->
-  <div class="harness-verdicts" id="harness-verdicts">
-    <div class="harness-verdict-header">Per-Symbol Gate Results</div>
-    <div class="harness-verdict-list" id="harness-verdict-list"></div>
-  </div>
-
-  <!-- Overall Verdict -->
-  <div class="harness-overall" id="harness-overall">
-    <div class="harness-overall-label">Overall Pipeline Verdict</div>
-    <div class="harness-overall-badge" id="harness-overall-badge">PENDING</div>
-  </div>
-</section>
-
-<!-- HAZARD X-RAY -->
-<section class="hazard panel" data-reveal aria-labelledby="hazard-h">
-  <div class="p-h" id="hazard-h">HAZARD X-RAY
-    <span class="hint">risk the Orbit graph sees that Git can't</span></div>
-  <div class="hazard-grid">
-    <div class="hz-col hz-collision">
-      <div class="hz-title">CROSS-MR BLAST COLLISION <span class="hz-sub">two MRs that silently break together. Add symbols below to build your own open MRs; the collision recomputes live in your browser, no backend.</span></div>
-      <div id="collision" class="hz-body" aria-live="polite"><div class="muted">loading open merge requests…</div></div>
-      <div class="hz-ctrl">
-        <input id="mr-add" class="ip" list="mr-symbols" placeholder="add any symbol + Enter — recomputes the collision live, in-browser" aria-label="add any symbol as an open MR; the collision recomputes live in your browser" maxlength="120" />
-        <datalist id="mr-symbols"></datalist>
-        <button id="mr-reset" class="btn ghost" type="button">reset</button>
-      </div>
-      <div id="mr-msg" class="hz-msg" role="status" aria-live="polite"></div>
-    </div>
-    <div class="hz-col hz-debt">
-      <div class="hz-title">REVIEW DEBT <span class="hz-sub">high blast, no test directly exercises it</span></div>
-      <div id="graph-audit" class="hz-body" aria-live="polite"><div class="muted">auditing the graph…</div></div>
-    </div>
-  </div>
-</section>
-
-<div id="reviewer-cockpit-intro" class="cockpit-intro">
-  <h2 class="cockpit-title">Reviewer Cockpit</h2>
-  <p class="cockpit-subtitle">Engine-computed from the Orbit graph. AI explains; the deterministic gate decides.</p>
-</div>
-
-<!-- 2-Panel Workspace -->
-<div class="workspace">
-
-  <!-- Primary Panel: Symbol Explorer + Blast Radius -->
-  <div class="primary-panel">
-    <section class="rail panel" data-reveal>
-      <div class="rail-h" id="symbols-h">SYMBOLS</div>
-      <input id="search" class="search" placeholder="filter symbols… (press / to focus)" autocomplete="off" aria-label="filter symbols" />
-      <div class="rail-filters">
-        <select id="filter-type" class="ip filter-select" aria-label="Filter by Type">
-          <option value="all">all types</option>
-          <option value="function">functions</option>
-          <option value="class">classes</option>
-          <option value="other">others</option>
-        </select>
-        <select id="filter-hazard" class="ip filter-select" aria-label="Filter by Hazard Severity">
-          <option value="all">all hazards</option>
-          <option value="block">BLOCK / contradiction</option>
-          <option value="hold">HOLD tier</option>
-          <option value="allow">ALLOW tier</option>
-          <option value="cross-team">CROSS_TEAM tier</option>
-          <option value="high-blast">high blast (&ge; 10)</option>
-          <option value="collision">collisions</option>
-          <option value="debt">review debt</option>
-        </select>
-      </div>
-      <div class="rail-hint">try <b>compute_blast_radius</b> (BLOCKed by precedent) or <b>append</b> (3-ring blast)</div>
-      <button id="show-all" type="button" class="rail-toggle" aria-pressed="false">show all</button>
-      <ul class="deflist" id="deflist" role="listbox" aria-labelledby="symbols-h"></ul>
-      <div class="rail-foot">
-        <div class="kv"><span>graph</span><b id="db-mode">...</b></div>
-        <div class="kv"><span>defs</span><b id="def-count">...</b></div>
-        <div class="kv"><span>db</span><b id="db-path" title="">...</b></div>
-        <div class="kv"><span>orbit cli</span><b id="orbit-cli" title="">-</b></div>
-      </div>
-    </section>
-
-    <section class="stage panel" data-reveal id="blast-radius" tabindex="-1">
-      <div class="stage-h">
-        <span>BLAST RADIUS</span>
-        <span class="epi" id="epi">select a symbol</span>
-      </div>
-      <div class="canvas-wrap">
-        <canvas id="g3d" aria-hidden="true"></canvas>
-        <svg id="bsvg" viewBox="0 0 600 420" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="bsvg-title"><title id="bsvg-title">Blast-radius graph; the exact rings and names are listed in the IMPACT panel.</title></svg>
-        <p class="visually-hidden">The blast radius is also listed as text in the IMPACT panel.</p>
-        <div class="counter"><span id="counter">0000</span><small>affected</small></div>
-      </div>
-      <div class="legend">
-        <span class="lg lg0">epicenter</span>
-        <span class="lg lg1">direct</span>
-        <span class="lg lg2">transitive</span>
-        <span class="lg lg3">at risk</span>
-        <span class="lg lgU">unaffected</span>
-      </div>
-    </section>
-  </div>
-
-  <!-- Detail Panel -->
-  <aside class="detail-panel">
-    <div class="panel impact">
-      <div class="p-h panel-header" data-collapse="rings-body">IMPACT <span class="chevron">▾</span></div>
-      <div id="rings" class="rings panel-body" aria-live="polite" role="group" aria-label="blast radius by severity ring, the text alternative to the graph"><div class="muted">No symbol selected.</div></div>
-    </div>
-
-    <div class="panel precedent">
-      <div class="p-h panel-header" data-collapse="prec-body">PRECEDENT <span class="hint">prior decisions on this symbol</span> <span class="chevron">▾</span></div>
-      <div id="precedent" class="prec panel-body" aria-live="polite"><div class="muted">-</div></div>
-    </div>
-
-    <div class="panel brief">
-      <div class="p-h panel-header" data-collapse="brief-body">REVIEW BRIEF <span class="hint" id="brief-src"></span> <span class="chevron">▾</span></div>
-      <div id="brief" class="prec panel-body" aria-live="polite"><div class="muted">select a symbol</div></div>
-    </div>
-
-    <div class="panel assistant">
-      <div class="p-h panel-header" data-collapse="assistant-body">AI ASSISTANT <span class="agentic-badge" id="assistant-src" title="a bounded agent that calls the deterministic engine tools, then recommends a next step - it proposes, it never decides">tool-using agent</span> <span class="chevron">▾</span></div>
-      <div id="assistant" class="assistant-body panel-body" aria-live="polite"><div class="muted">select a symbol - the agent will inspect it with engine tools</div></div>
-      <div class="assistant-ask">
-        <input id="assistant-q" class="ip" placeholder="ask the agent (e.g. who should review this?)" aria-label="ask the review assistant" maxlength="400" />
-        <button id="assistant-go" class="btn ghost" disabled>ASK</button>
-      </div>
-    </div>
-
-    <div class="panel gate" id="gate">
-      <div class="p-h panel-header" data-collapse="gate-body-inner">APPROVAL GATE <span class="chevron">▾</span></div>
-      <div class="gate-body panel-body" id="gate-body-inner">
-        <select id="authorkind" class="ip" aria-label="author kind">
-          <option value="human">human reviewer</option>
-          <option value="agent">AI agent (enforce scope)</option>
-        </select>
-        <input id="reviewer" class="ip" value="demo-reviewer" placeholder="reviewer / agent id" aria-label="reviewer or agent id" maxlength="120" />
-        <input id="changeauthor" class="ip" placeholder="change author (four-eyes, optional)" aria-label="change author" maxlength="120" />
-        <input id="reason" class="ip" placeholder="reason (required)" aria-label="decision reason" maxlength="2048" aria-describedby="reason-err" />
-        <div id="reason-err" class="gate-err" role="alert"></div>
-        <div class="gate-note id-note">in this browser demo the reviewer is self-asserted (the chain proves the text was not edited, not who typed it). On the GitLab CI gate path the actor IS bound: the runner injects an OIDC id_token and the recorded row carries its <code>sub</code> claim with <code>self_asserted=false</code> (core/identity.py, .gitlab-ci.yml). See README.</div>
-        <div class="gate-btns">
-          <button id="approve" class="btn approve" disabled>APPROVE</button>
-          <button id="reject" class="btn reject" disabled>REJECT</button>
-        </div>
-        <label id="override-row" class="gate-note" style="display:none"><input type="checkbox" id="override" /> override the policy BLOCK (recorded as an accountable override)</label>
-        <div id="gate-status" class="gate-note"></div>
-        <div class="gate-note">appends one HMAC-keyed hash-linked ledger row + mints a decision attestation. Nothing else changes.</div>
-        <button id="export-att" class="btn ghost" disabled>EXPORT ATTESTATION (in-toto / SLSA-VSA)</button>
-        <div id="sample-note" class="gate-note" style="opacity:0;color:var(--gold);transition:opacity .3s"></div>
-      </div>
-    </div>
-  </aside>
-
-</div><!-- /workspace -->
-
-</main>
-
-<!-- Audit Ledger -->
-<section class="ledger panel" data-reveal id="audit">
-  <div class="p-h">
-    AUDIT LEDGER
-    <span id="chain-verdict" class="verdict" role="status" aria-live="assertive">...</span>
-    <button id="verify" class="btn ghost">VERIFY CHAIN</button>
-    <button id="tamper" class="btn ghost danger-ghost" title="demo: prove tamper-evidence (in-memory only)">SIMULATE TAMPER</button>
-  </div>
-  <div id="tamper-note" class="tamper-note" role="status" aria-live="polite" hidden></div>
-  <div class="ltable-wrap">
-    <table class="ltable">
-      <caption class="visually-hidden">Append-only audit ledger: each row binds a decision to its blast radius and the previous row's hash.</caption>
-      <thead><tr><th scope="col">#</th><th scope="col">time</th><th scope="col">change</th><th scope="col">blast</th><th scope="col">reviewer</th><th scope="col">decision</th><th scope="col">hash (prev → this)</th></tr></thead>
-      <tbody id="lrows"></tbody>
-    </table>
-  </div>
-  <div id="trust-layer" class="trust-layer">
-    <div class="trust-title">Trust boundary:</div>
-    <ul class="trust-list">
-      <li><b>Static demo:</b> reviewer identity is self-asserted.</li>
-      <li><b>Live/CI path:</b> actor can be bound with GitLab OIDC.</li>
-      <li><b>AI assistant:</b> advisory only.</li>
-      <li><b>Gate decision:</b> deterministic.</li>
-      <li><b>Ledger:</b> HMAC hash-chained and tamper-evident.</li>
-    </ul>
-  </div>
-</section>
-
-<!-- ============ KILO-STYLE MARKETING SECTIONS (home view) ============ -->
-<section class="kilo-features" data-view="home" aria-labelledby="kf-h">
-  <div class="kilo-head">
-    <span class="kilo-eyebrow">What review can't see</span>
-    <h2 id="kf-h" class="kilo-h2">Consequence-aware review, on the call graph.</h2>
-    <p class="kilo-sub">Git and CODEOWNERS see files. Keystone sees what breaks — and records the decision.</p>
-  </div>
-  <div class="kilo-grid">
-    <article class="kilo-card">
-      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/></svg></div>
-      <h3>Silent collision detection</h3>
-      <p>Two merge requests that pass review, touch different files, and share a runtime dependent are flagged before they break production together.</p>
-    </article>
-    <article class="kilo-card">
-      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/></svg></div>
-      <h3>Deterministic blast radius</h3>
-      <p>Every change's true reach — direct callers, transitive dependents, owning files — computed from the graph and cross-checked by a real <code>orbit sql</code> query.</p>
-    </article>
-    <article class="kilo-card">
-      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8-7 9.5C8 19 5 15.4 5 11V6l7-3z"/><path d="M9 11.5l2 2 4-4.5"/></svg></div>
-      <h3>Tamper-evident decisions</h3>
-      <p>Every approve and reject is appended to a sha256 hash-chained ledger. Change one row and the whole chain visibly breaks.</p>
-    </article>
-    <article class="kilo-card">
-      <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h9"/><circle cx="6" cy="18" r="2.4"/><circle cx="6" cy="4" r="2"/><circle cx="18" cy="18" r="2.4"/></svg></div>
-      <h3>Point it at any repo</h3>
-      <p>Paste a public GitHub repo and Keystone builds its call graph in your browser — no backend, no signup, your code never leaves the page.</p>
-    </article>
-  </div>
-</section>
-
-<section class="kilo-how" data-view="home" aria-labelledby="kh-h">
-  <div class="kilo-head">
-    <span class="kilo-eyebrow">How it works</span>
-    <h2 id="kh-h" class="kilo-h2">Three steps, zero guesswork.</h2>
-  </div>
-  <ol class="kilo-steps">
-    <li class="kilo-step"><span class="kilo-step-n">1</span><div class="kilo-step-b"><h3>Point at a repo</h3><p>Paste any public GitHub repo. Keystone fetches it and builds the call graph in your browser.</p></div></li>
-    <li class="kilo-step"><span class="kilo-step-n">2</span><div class="kilo-step-b"><h3>See the blast radius</h3><p>Pick a symbol, or stage two merge requests. The hidden collisions and dependents light up on the graph.</p></div></li>
-    <li class="kilo-step"><span class="kilo-step-n">3</span><div class="kilo-step-b"><h3>Govern the merge</h3><p>The deterministic gate decides; you record an accountable, tamper-evident decision. Precedent surfaces if someone already said no.</p></div></li>
-  </ol>
-</section>
-
-<section class="kilo-faq" data-view="home" aria-labelledby="faq-h">
-  <div class="kilo-head">
-    <span class="kilo-eyebrow">FAQ</span>
-    <h2 id="faq-h" class="kilo-h2">Questions, answered honestly.</h2>
-  </div>
-  <div class="faq-list">
-    <details class="faq-item"><summary>Is this a real tool or a mockup?</summary><p>Real. Paste any public Python repo at the top and the call graph + blast radius is computed live in your browser. The demo scenario runs on a real Orbit index of this repo — 262 definitions, 120 cross-verified by <code>orbit sql</code>.</p></details>
-    <details class="faq-item"><summary>Does my code leave my machine?</summary><p>No. The analyzer fetches public files from GitHub and parses them entirely client-side. Nothing is uploaded — there is no backend in the static demo.</p></details>
-    <details class="faq-item"><summary>How accurate is the call graph?</summary><p>The in-browser analyzer is a static, regex-based approximation — Python dynamic dispatch is under-approximated, the same honest limit the engine concedes (it cross-verifies 120 of 262 symbols). The full Orbit backend produces the exact graph.</p></details>
-    <details class="faq-item"><summary>What exactly is a "silent collision"?</summary><p>Two merge requests that each pass review with no file conflict, but whose blast radii overlap on shared runtime dependents — so merged together they break, and no single reviewer can see it.</p></details>
-    <details class="faq-item"><summary>Is the audit ledger really tamper-evident?</summary><p>Each row is sha256 hash-chained to the previous. The public demo uses a published shared-secret HMAC key, so it proves no accidental corruption, not insider resistance (that needs an asymmetric signature — on the roadmap). Hit SIMULATE TAMPER to watch a chain break and heal.</p></details>
-    <details class="faq-item"><summary>What does it cost?</summary><p>Nothing. It's open source (MIT), runs entirely in your browser on the static deploy, and uses no paid services.</p></details>
-  </div>
-</section>
-
-<section class="kilo-cta" data-view="home">
-  <h2 class="kilo-cta-h">See what your merges hide.</h2>
-  <p class="kilo-cta-sub">Paste your repo. No backend, no signup — the analysis runs in your browser.</p>
-  <div class="kilo-cta-btns">
-    <button class="btn primary" type="button" onclick="(function(){var i=document.getElementById('repo-input');if(typeof showView==='function')showView('home');window.scrollTo({top:0,behavior:'smooth'});if(i)setTimeout(function(){i.focus();},420);})()">Analyze my repo</button>
-    <button class="btn secondary" type="button" onclick="goToEl('simulation-section')">Watch the demo</button>
-  </div>
-</section>
-
-<section id="attestation" class="visually-hidden" aria-label="attestation anchor"></section>
-
-<footer class="kilo-footer">
-  <div class="kilo-footer-grid">
-    <div class="kilo-footer-brand">
-      <div class="kilo-footer-logo"><img class="kf-logo-mark" src="keystone-k.svg?v=1" alt="Keystone" width="26" height="26" /> KEYSTONE</div>
-      <p>Consequence-aware code review on the GitLab Orbit graph. Every number is computed from the graph, never invented.</p>
-      <p id="foot-src" class="foot-src"></p>
-    </div>
-    <nav class="kilo-footer-col" aria-label="Product">
-      <h4>Product</h4>
-      <button type="button" onclick="showView('demo')">Live demo</button>
-      <button type="button" onclick="showView('cockpit')">Reviewer cockpit</button>
-      <button type="button" onclick="showView('harness')">Agent harness</button>
-      <button type="button" onclick="showView('ledger')">Audit ledger</button>
-    </nav>
-    <nav class="kilo-footer-col" aria-label="Open source">
-      <h4>Open source</h4>
-      <a href="https://github.com/vaibhav4046/keystone" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/vaibhav4046/keystone/blob/main/README.md" target="_blank" rel="noopener">README</a>
-      <a href="https://github.com/vaibhav4046/keystone/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
-    </nav>
-    <nav class="kilo-footer-col" aria-label="Built on">
-      <h4>Built on</h4>
-      <a href="https://about.gitlab.com/" target="_blank" rel="noopener">GitLab Orbit</a>
-      <button type="button" onclick="showView('home')">How it works</button>
-    </nav>
-  </div>
-  <div class="kilo-footer-base">Keystone · open source (MIT) · the ledger proves its own integrity.</div>
-</footer>
-
-</div><!-- /app-shell -->
-
-<!-- Onboarding Walkthrough Wizard Modal -->
-<div class="onboarding-overlay" id="onboarding-modal" role="dialog" aria-modal="true" aria-labelledby="onboard-title" hidden>
-  <div class="onboarding-card">
-    <div class="onboarding-header">
-      <h2 id="onboard-title" class="onboard-title">Welcome to Keystone</h2>
-      <button class="onboard-close" id="onboard-close" aria-label="Close onboarding">&times;</button>
-    </div>
-    <div class="onboard-progress"><div class="onboard-progress-bar" id="onboard-progress" style="width: 25%"></div></div>
-    <div class="onboarding-body" id="onboard-body"></div>
-    <div class="onboarding-footer">
-      <button class="btn ghost btn-sm" id="onboard-prev">Back</button>
-      <div class="onboard-dots" id="onboard-dots"></div>
-      <button class="btn approve btn-sm" id="onboard-next">Next</button>
-    </div>
-  </div>
-</div>
-
-<!-- Connection Settings Modal -->
-<div class="onboarding-overlay" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
-  <div class="onboarding-card" style="width: min(400px, 100%);">
-    <div class="onboarding-header">
-      <h2 id="settings-title" class="onboard-title">Connection Settings</h2>
-      <button class="onboard-close" id="settings-close" aria-label="Close settings">&times;</button>
-    </div>
-    <div class="onboarding-body" style="padding: var(--sp-4) var(--sp-5);">
-      <div style="display: flex; flex-direction: column; gap: var(--sp-3);">
-        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px;">
-          <input type="radio" name="api-mode" value="static" id="mode-static" style="accent-color: var(--orange);" />
-          <span>Static Snapshot Mode (data.json)</span>
-        </label>
-        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px;">
-          <input type="radio" name="api-mode" value="live" id="mode-live" style="accent-color: var(--orange);" />
-          <span>Live Backend Mode (FastAPI)</span>
-        </label>
-        <div id="api-url-group" style="display: flex; flex-direction: column; gap: 6px; margin-left: 24px;">
-          <span style="font-size: 11px; color: var(--text-secondary);">Backend API URL:</span>
-          <input id="api-url" class="ip" placeholder="http://127.0.0.1:8787" style="height: 36px; min-height: 36px; padding: 6px 10px;" aria-label="Backend API URL" />
-        </div>
-      </div>
-    </div>
-    <div class="onboarding-footer">
-      <button class="btn ghost btn-sm" id="settings-cancel">Cancel</button>
-      <button class="btn approve btn-sm" id="settings-save">Save Settings</button>
-    </div>
-  </div>
-</div>
-
-<div class="remember-overlay" id="remember-overlay" role="dialog" aria-modal="true" aria-labelledby="remember-title" hidden>
-  <div class="remember-card">
-    <img class="remember-ic" src="keystone-k.svg?v=1" width="44" height="44" alt="" />
-    <h3 class="remember-title" id="remember-title">Remember this repo?</h3>
-    <p class="remember-text">Keystone can remember <b id="remember-name"></b> and resume it next time you visit. Stored only in this browser — nothing leaves your machine.</p>
-    <div class="remember-btns">
-      <button class="btn ghost" id="remember-no" type="button">Not now</button>
-      <button class="btn primary" id="remember-yes" type="button">Remember it</button>
-    </div>
-  </div>
-</div>
-<div class="gh-consent-overlay" id="gh-consent" role="dialog" aria-modal="true" aria-labelledby="ghc-title" hidden>
-  <div class="gh-term">
-    <div class="gh-term-bar"><span class="gh-tdot r"></span><span class="gh-tdot y"></span><span class="gh-tdot g"></span><span class="gh-term-title">keystone — github connect</span></div>
-    <div class="gh-term-body">
-      <p class="gh-line"><span class="gh-prompt">$</span> keystone auth --connect github</p>
-      <p class="gh-out" id="ghc-title">Keystone requests <b>read-only</b> access to map your repository call graph.</p>
-      <ul class="gh-perms">
-        <li><span class="gh-ok">✓</span> Reads repository structure to find silent collisions before you merge</li>
-        <li><span class="gh-ok">✓</span> Runs in your browser — no password seen, nothing stored on a server</li>
-        <li><span class="gh-muted">›</span> Private-repo sign-in activates when the Keystone backend is deployed</li>
-      </ul>
-      <div class="gh-connect-row">
-        <span class="gh-prompt">$</span>
-        <input id="gh-handle-input" class="gh-handle-input" type="text" placeholder="github username  (public repos)" autocomplete="off" spellcheck="false" aria-label="GitHub username" />
-      </div>
-      <div class="gh-consent-btns">
-        <button class="btn ghost btn-sm" id="ghc-demo" type="button">Explore demo mode</button>
-        <button class="btn primary btn-sm" id="ghc-allow" type="button">Allow &amp; connect →</button>
-      </div>
-    </div>
-  </div>
-</div>
 <script>
 (function () {
-  try {
-    if (matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    var box = document.createElement('div'); box.className = 'embers'; box.setAttribute('aria-hidden', 'true');
-    for (var i = 0; i < 18; i++) {
-      var e = document.createElement('span'); e.className = 'ember';
-      var dur = 7 + (i % 6) * 1.6, delay = -(i * 0.9), left = (i * 53 + 17) % 100, drift = ((i % 2) ? 1 : -1) * (14 + (i % 4) * 10), sz = 2 + (i % 3);
-      e.style.left = left + '%'; e.style.width = sz + 'px'; e.style.height = sz + 'px';
-      e.style.setProperty('--drift', drift + 'px'); e.style.animationDuration = dur + 's'; e.style.animationDelay = delay + 's';
-      box.appendChild(e);
+  function go(url) { return function (e) { e.preventDefault(); e.stopPropagation(); location.href = url; }; }
+  function wire() {
+    var nodes = document.querySelectorAll('div,span,button,a');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i]; if (el.__wired) continue;
+      var t = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+      if (el.childElementCount <= 3 && (t === 'TRY A LIVE DEMO →' || t === 'TRY A LIVE DEMO' || t === 'TRY A LIVE DEMO ->')) {
+        el.__wired = 1; el.style.cursor = 'pointer'; el.addEventListener('click', go('app.html?demo=1'), true);
+      } else if (el.childElementCount <= 3 && t.indexOf('SIGN IN WITH GITHUB') >= 0) {
+        el.__wired = 1; el.style.cursor = 'pointer'; el.addEventListener('click', go('app.html'), true);
+      }
     }
-    document.body.appendChild(box);
-  } catch (e) {}
+  }
+  window.addEventListener('load', function () { setTimeout(wire, 600); setTimeout(wire, 1500); setTimeout(wire, 3000); });
 })();
 </script>
-<script src="repo-analyzer.js?v=6"></script>
-<script src="app.js?v=5.5"></script>
-<script src="motion.js?v=1.1"></script>
 </body>
 </html>

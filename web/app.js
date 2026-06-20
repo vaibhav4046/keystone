@@ -2183,7 +2183,11 @@ function initLanding() {
   var signedIn = false, entered = false;
   try { signedIn = !!localStorage.getItem("ks-gh-user"); } catch (e) {}
   try { entered = sessionStorage.getItem("ks-entered") === "1"; } catch (e) {}
-  if (signedIn || entered) { el.hidden = true; return; }
+  // The dc front door (index.html) is the landing + sign-in gate now, so the in-app landing stays hidden.
+  el.hidden = true; return;
+  /* eslint-disable no-unreachable */
+  var fromDemo = /[?&]demo\b/.test(location.search || "");
+  if (signedIn || entered || fromDemo) { if (fromDemo) { try { sessionStorage.setItem("ks-entered", "1"); } catch (e) {} } el.hidden = true; return; }
   el.hidden = false;
   var si = document.getElementById("landing-signin"); if (si) si.onclick = function () { if (typeof ghSignIn === "function") ghSignIn(); };
   var dm = document.getElementById("landing-demo"); if (dm) dm.onclick = function () { hideLanding(); };
