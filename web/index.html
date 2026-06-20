@@ -1145,9 +1145,8 @@ class Component extends DCLogic {
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i]; if (el.__wired) continue;
       var t = (el.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
-      if (el.childElementCount <= 3 && (t === 'TRY A LIVE DEMO →' || t === 'TRY A LIVE DEMO' || t === 'TRY A LIVE DEMO ->')) {
-        el.__wired = 1; el.style.cursor = 'pointer'; el.addEventListener('click', go('app.html?demo=1'), true);
-      } else if (el.childElementCount <= 3 && t.indexOf('SIGN IN WITH GITHUB') >= 0) {
+      // Route "Sign in" to the real working analyzer; leave "Try a live demo" + all nav native so the full dc prototype stays explorable.
+      if (el.childElementCount <= 3 && /\bSIGN IN\b/.test(t) && t.length < 30) {
         el.__wired = 1; el.style.cursor = 'pointer'; el.addEventListener('click', go('app.html'), true);
       }
     }
