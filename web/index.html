@@ -306,7 +306,11 @@
                 <span style="flex:1; text-align:center; padding:9px 4px; border-radius:7px; font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:{{ v.color }}; background:{{ v.bg }}; border:1px solid {{ v.border }}">{{ v.label }}</span>
               </sc-for>
             </div>
-            <p style="font:400 14px/1.55 'Inter',sans-serif; color:#C9CDD4; margin:0 0 20px">Two pending MRs share <span style="color:#F5A623; font-weight:600">34 runtime dependents</span>. Resolve the overlap before either merges.</p>
+            <p style="font:400 14px/1.55 'Inter',sans-serif; color:#C9CDD4; margin:0 0 14px">Two pending MRs share <span style="color:#F5A623; font-weight:600">{{ findShared }} runtime dependents</span>. Resolve the overlap before either merges.</p>
+            <div style="display:flex; gap:11px; align-items:flex-start; padding:12px 14px; border-radius:10px; background:rgba(255,122,26,0.06); border:1px solid rgba(255,122,26,0.22); margin:0 0 18px">
+              <span style="font:600 11px/1.4 'JetBrains Mono',monospace; letter-spacing:0.08em; color:#FF7A1A; white-space:nowrap">{{ colCount }}× COLLISION</span>
+              <div style="font:400 12px/1.55 'Inter',sans-serif; color:#A6ABB4">Keystone scanned every pair of high-risk changes, not just one. <b style="color:#E7E9EC">Safe merge order →</b> <span style="font:600 12px/1.5 'JetBrains Mono',monospace; color:#FFC24D">{{ safeOrderStr }}</span></div>
+            </div>
             <div style="display:flex; flex-direction:column; gap:12px; margin-top:auto">
               <sc-for list="{{ rings }}" as="rg" hint-placeholder-count="3">
                 <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-radius:9px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06)">
@@ -1090,6 +1094,8 @@ class Component extends DCLogic {
         { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)' }
       ],
       findA: _SC ? _SC.a : 'echo', findB: _SC ? _SC.b : 'option', findShared: _statShared,
+      colCount: _SC ? String(_SC.collisions) : '3', hasMulti: _SC ? (_SC.collisions >= 1) : true,
+      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 4).join('  →  ') : 'option  →  echo  →  secho  →  style',
       resolveSteps: [
         { n: '1', text: 'Add an integration test that exercises both echo and option together.' },
         { n: '2', text: 'Stack the two MRs into a single review so one reviewer sees the overlap.' },
@@ -1225,7 +1231,21 @@ class Component extends DCLogic {
     var top = ranked.slice(0, 6).map(function (r) { return { sym: r.n, file: fileOf(r.n), kind: kindOf(r.n), blast: r.t, level: lvl(r.t) }; });
     var chain = [];
     if (A) { var nm = A.names || {}; chain = (A.affected_ids || []).slice(0, 5).map(function (idx) { return { sym: nm[idx] || ("#" + idx), file: fileOf(nm[idx]) || "core.py" }; }); }
+    // N-way: cross-change collision matrix among the top changed symbols + a safe merge order
+    var topN = ranked.slice(0, 6).map(function (r) { return r.n; });
+    var aff = {}; topN.forEach(function (n) { var o = {}; ((imp[n] || {}).affected_ids || []).forEach(function (x) { o[x] = 1; }); aff[n] = o; });
+    var collisions = 0, overlapOf = {};
+    topN.forEach(function (n) { overlapOf[n] = 0; });
+    for (var ci = 0; ci < topN.length; ci++) for (var cj = ci + 1; cj < topN.length; cj++) {
+      var ni = topN[ci], nj = topN[cj], fi = fileOf(ni), fj = fileOf(nj);
+      if (!fi || !fj || fi === fj) continue;
+      var sh2 = 0, ao = aff[ni], bo = aff[nj];
+      for (var k in ao) { if (bo[k]) sh2++; }
+      if (sh2 > 2) { collisions++; overlapOf[ni] += sh2; overlapOf[nj] += sh2; }
+    }
+    var safeOrder = topN.slice().sort(function (a, b) { return overlapOf[a] - overlapOf[b]; });
     return {
+      collisions: collisions, safeOrder: safeOrder,
       repo: slug, defs: fmt(Object.keys(det).length),
       maxBlast: ranked.length ? ranked[0].t : 0, maxSym: ranked.length ? ranked[0].n : "-",
       a: pair ? pair.a : ((ranked[0] && ranked[0].n) || "echo"), b: pair ? pair.b : ((ranked[1] && ranked[1].n) || "option"),
