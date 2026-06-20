@@ -385,10 +385,82 @@ def _review_mr(argv):
     return 0
 
 
+def _memory_gate(argv):
+    """Orbit Memory Gate: an AI agent proposes a decision; Keystone consults the GitLab Orbit graph
+    and the precedent ledger and OVERRIDES the agent when its proposal contradicts recorded
+    precedent. Fully deterministic (no model/API call). Exits non-zero when Keystone blocks an
+    agent's approval, so it works as a CI gate.
+
+      run_review.py memory-gate <symbol> [--agent NAME] [--proposes approve|reject]
+                                         [--fixture] [--out PATH]
+    """
+    import os
+    ap = argparse.ArgumentParser(
+        prog="run_review.py memory-gate",
+        description="Orbit Memory Gate: override an AI agent's proposal when it contradicts precedent")
+    ap.add_argument("symbol")
+    ap.add_argument("--agent", default="copilot-agent")
+    ap.add_argument("--proposes", choices=["approve", "reject"], default="approve")
+    ap.add_argument("--fixture", action="store_true",
+                    help="use the deterministic committed fixture graph")
+    ap.add_argument("--out", default=None, help="write the decision packet markdown to this path")
+    a = ap.parse_args(argv)
+
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    self_graph = os.path.join(root, "data", "keystone_self_graph.duckdb")
+    graph_path = None if a.fixture else (self_graph if os.path.exists(self_graph) else None)
+    get_json, _post, gate_check, _ci = _local_callables(prefer_live=not a.fixture, graph_path=graph_path)
+
+    imp = get_json(f"/api/impact/{parse.quote(a.symbol)}")
+    if not imp or "counts" not in imp:
+        print(f"ERROR: symbol '{a.symbol}' not found in the Orbit graph.")
+        return 1
+    prec = get_json(f"/api/precedent/{parse.quote(a.symbol)}")
+    gate = gate_check(a.symbol)
+    blocked = not gate.get("ok", False)
+    verdict = "BLOCK" if blocked else "ALLOW"
+    overrode_agent = (a.proposes == "approve") and blocked
+    c = imp["counts"]
+    cc = prec.get("contradiction") if prec.get("contradiction_same_signature") else None
+
+    lines = ["# Keystone - Orbit Memory Gate decision packet", "",
+             f"- Symbol: `{a.symbol}` (`{imp.get('epicenter', {}).get('file', '?')}`)",
+             f"- AI agent proposed: **{a.proposes.upper()}** (by `{a.agent}`)",
+             f"- Orbit blast radius: **{c.get('total_affected', 0)}** dependents (ring-1 {c.get('ring_1', 0)})",
+             f"- Blast signature: `{(imp.get('signature') or '')[:16]}`"]
+    if cc:
+        lines.append(f"- Precedent: identical blast signature already **REJECTED** by `{cc.get('actor', '?')}` "
+                     f"in `{cc.get('change_id', '?')}` - \"{cc.get('rationale', '')}\" (ledger row #{cc.get('seq', '?')})")
+    else:
+        lines.append(f"- Precedent: {prec.get('rejected', 0)} prior rejections, {prec.get('approved', 0)} "
+                     f"approvals, no identical-signature contradiction")
+    lines.append(f"- Keystone verdict: **{verdict}**"
+                 + (f" - OVERRIDES the agent's {a.proposes.upper()}" if overrode_agent else ""))
+    if blocked:
+        lines.append(f"- Reason code: `{gate.get('error', 'GOVERNANCE_BLOCK')}`")
+    lines.append("- Every figure above is computed from the GitLab Orbit graph; no model is on this path.")
+    lines += ["", "_The model proposes. Keystone decides. The ledger remembers._"]
+    packet = "\n".join(lines)
+    print("\n" + packet + "\n")
+
+    out = a.out or os.path.join(root, "SUBMISSION", "generated", "memory-gate-packet.md")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(packet + "\n")
+    print(f"(wrote {out})")
+    if overrode_agent:
+        print(f"\nMEMORY GATE: BLOCKED {a.agent}'s {a.proposes.upper()} of {a.symbol} - "
+              f"contradicts recorded precedent. CI exit non-zero.")
+        return 2
+    return 0
+
+
 def main(argv=None):
     # Dispatch the MR Guardian subcommand without breaking the legacy
     # `run_review.py <symbol>` positional form.
     raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] == "memory-gate":
+        return _memory_gate(raw[1:])
     if raw and raw[0] in ("review-mr", "review"):
         return _review_mr(raw[1:])
     if raw and raw[0] == "harness":

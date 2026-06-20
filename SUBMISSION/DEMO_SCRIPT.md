@@ -26,11 +26,13 @@ as a skill, running for real."
 
 ## 0:30–1:35 — The real skill, producing a real result (THE core)
 
-Type and run, on camera:
+Type and run, on camera — THE moment, an AI agent's approval overruled by Orbit precedent:
 ```
-python skills/keystone/run_review.py compute_blast_radius --local
+python skills/keystone/run_review.py memory-gate compute_blast_radius
 ```
 Point at the actual output as it prints:
+- `AI agent proposed: APPROVE` — "An agent wants to merge this."
+- `Keystone verdict: BLOCK - OVERRIDES the agent's APPROVE` — "Keystone overrules it."
 - `blast radius : ring1=12 ... affected=12` — "Twelve definitions depend on this symbol. Computed
   from the real Orbit graph, not estimated."
 - `precedent : 3 matches approved=1 rejected=2`
