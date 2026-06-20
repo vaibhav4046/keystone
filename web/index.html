@@ -1029,15 +1029,21 @@ class Component extends DCLogic {
     ];
     const dotFor = { High: '#FF6A3D', Medium: '#F5A623', Low: '#5F636D' };
     const led = [
-      ['07', '12:04:11', '!486', '34', 's.engel', 'reject', 'b1e4…0d8f', 'a3f9…7c21'],
-      ['06', '11:58:42', '!482', '211', 'keystone-bot', 'reject', 'a3f9…7c21', '77c2…aa10'],
+      ['07', '12:04:11', '!486', _SC ? String(_SC.shared) : '34', 's.engel', 'reject', 'b1e4…0d8f', 'a3f9…7c21'],
+      ['06', '11:58:42', '!482', _SC ? String(_SC.aBlast) : '211', 'keystone-bot', 'reject', 'a3f9…7c21', '77c2…aa10'],
       ['05', '11:40:09', '!479', '12', 'm.okafor', 'approve', '77c2…aa10', '4d8a…91bc'],
       ['04', '11:21:55', '!475', '5', 's.engel', 'approve', '4d8a…91bc', '2f10…cc77'],
       ['03', '10:55:30', '!470', '48', 'l.park', 'approve', '2f10…cc77', '9ab3…12ef'],
       ['02', '10:30:18', '!468', '3', 'm.okafor', 'approve', '9ab3…12ef', '0000…genesis']
     ];
     const tamperIdx = 3;
-    const demoSteps = [
+    const demoSteps = _SC ? [
+      { n: '1', title: 'Two MRs enter review', text: 'One MR changes ' + _SC.a + '() in ' + _SC.aFile + '. Another changes ' + _SC.b + '() in ' + _SC.bFile + '. Different files — Git reports no conflict.' },
+      { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
+      { n: '3', title: 'Blast radii are compared', text: _SC.a + ' ripples into ' + _SC.aBlast + ' dependents, ' + _SC.b + ' into ' + _SC.bBlast + '. Keystone intersects the two dependent sets.' },
+      { n: '4', title: 'The silent collision surfaces', text: _SC.shared + ' functions call both ' + _SC.a + ' and ' + _SC.b + '. Merge both and those ' + _SC.shared + ' break together — no file-diff tool would warn you.' },
+      { n: '5', title: 'Resolve before merge', text: 'Keystone holds the merge, suggests a single stacked review, and records the decision in the audit ledger.' }
+    ] : [
       { n: '1', title: 'Two MRs enter review', text: 'MR !486 changes echo() in utils.py. MR !482 changes option() in decorators.py. Different files — Git reports no conflict.' },
       { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
       { n: '3', title: 'Blast radii are compared', text: 'echo ripples into 211 dependents, option into 188. Keystone intersects the two dependent sets.' },
@@ -1093,23 +1099,28 @@ class Component extends DCLogic {
         { label: '1-hop dependents (ring 2)', count: _ring2, color: '#F5A623' },
         { label: 'Total shared', count: _statShared, color: '#FFC24D' }
       ],
-      rows: rowsRaw.map(r => ({
+      rows: (_SC ? _SC.top.map(function (t) { return [t.sym, t.kind, t.level]; }) : rowsRaw).map(r => ({
         sym: r[0], type: r[1], impact: r[2],
         impactColor: impactStyle[r[2]][0], impactBg: impactStyle[r[2]][1], dot: dotFor[r[2]]
       })),
-      chain: [
+      chain: (_SC && _SC.chain.length ? _SC.chain.map(function (c, i, arr) { return { sym: c.sym, file: c.file, type: 'dependent', dot: i === 0 ? '#FF6A3D' : (i === arr.length - 1 ? '#34D399' : '#F5A623'), line: i < arr.length - 1 ? 'rgba(245,166,35,0.3)' : 'transparent' }; }) : [
         { sym: 'option', file: 'decorators.py', type: 'decorator', dot: '#FF6A3D', line: 'rgba(255,106,61,0.4)' },
         { sym: 'Command.params', file: 'core.py', type: 'attribute', dot: '#FF7A1A', line: 'rgba(255,122,26,0.3)' },
         { sym: 'Command.invoke', file: 'core.py', type: 'method', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
         { sym: 'Context.invoke', file: 'core.py', type: 'method', dot: '#F5A623', line: 'rgba(245,166,35,0.3)' },
         { sym: 'BaseCommand.main', file: 'core.py', type: 'method', dot: '#34D399', line: 'transparent' }
-      ],
-      events: [
+      ]),
+      events: (_SC ? [
+        { t: '12:04:11', text: 'Silent collision detected — ' + _SC.a + ' × ' + _SC.b, dot: '#FF6A3D' },
+        { t: '12:04:09', text: 'Blast radius computed for ' + _SC.a + ' — ' + _SC.aBlast + ' direct dependents', dot: '#FF7A1A' },
+        { t: '11:58:42', text: 'Bot MR (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
+        { t: '11:52:30', text: 'Indexed ' + _SC.defs + ' definitions from ' + _SC.repo, dot: '#34D399' }
+      ] : [
         { t: '12:04:11', text: 'Silent collision detected — echo × option', dot: '#FF6A3D' },
         { t: '12:04:09', text: 'Blast radius computed for echo — 211 direct dependents', dot: '#FF7A1A' },
         { t: '11:58:42', text: 'MR !482 (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
         { t: '11:52:30', text: 'Indexed 2,847 definitions from pallets/click', dot: '#34D399' }
-      ],
+      ]),
       perms: ['Read repository contents and metadata', 'Read merge requests and diffs', 'No write access · no secrets · no code execution'],
 
       panel: this.state.panel,
@@ -1119,14 +1130,18 @@ class Component extends DCLogic {
       isLedger: this.state.panel === 'ledger',
       isDemo: this.state.panel === 'demo',
 
-      symbolList: [['echo', 'utils.py', 'definition', '211', true], ['option', 'decorators.py', 'definition', '188', true], ['Context.invoke', 'core.py', 'shared dependent', '—', false], ['BaseCommand.main', 'core.py', 'shared dependent', '—', false], ['secho', 'utils.py', 'shared dependent', '—', false]].map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
+      symbolList: (_SC ? [[_SC.a, _SC.aFile, 'definition', String(_SC.aBlast), true], [_SC.b, _SC.bFile, 'definition', String(_SC.bBlast), true]].concat(_SC.chain.slice(0, 3).map(function (c) { return [c.sym, c.file, 'shared dependent', '—', false]; })) : [['echo', 'utils.py', 'definition', '211', true], ['option', 'decorators.py', 'definition', '188', true], ['Context.invoke', 'core.py', 'shared dependent', '—', false], ['BaseCommand.main', 'core.py', 'shared dependent', '—', false], ['secho', 'utils.py', 'shared dependent', '—', false]]).map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
 
-      botPipeline: [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'echo → 211 · option → 188 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core.py', true, 'PASS'], ['4', 'Collision Scan', '34 shared dependents overlap open MR !486', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']].map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
-      botSymbols: [
+      botPipeline: (_SC ? [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', _SC.a + ' → ' + _SC.aBlast + ' · ' + _SC.b + ' → ' + _SC.bBlast + ' direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches ' + _SC.aFile + ' and ' + _SC.bFile, true, 'PASS'], ['4', 'Collision Scan', _SC.shared + ' shared dependents overlap the second MR', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']] : [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'echo → 211 · option → 188 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core.py', true, 'PASS'], ['4', 'Collision Scan', '34 shared dependents overlap open MR !486', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']]).map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
+      botSymbols: (_SC ? [
+        { sym: _SC.a, file: _SC.aFile, blast: String(_SC.aBlast), res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
+        { sym: _SC.b, file: _SC.bFile, blast: String(_SC.bBlast), res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
+        { sym: (_SC.chain[0] && _SC.chain[0].sym) || 'shared dependent', file: (_SC.chain[0] && _SC.chain[0].file) || 'core.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
+      ] : [
         { sym: 'echo', file: 'utils.py', blast: '211', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
         { sym: 'option', file: 'decorators.py', blast: '188', res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
         { sym: 'Context.invoke', file: 'core.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
-      ],
+      ]),
 
       chainOk: !this.state.tampered,
       chainBadgeText: this.state.tampered ? 'CHAIN BROKEN' : 'CHAIN VERIFIED',
@@ -1191,14 +1206,27 @@ class Component extends DCLogic {
     return best;
   }
   function mapScan(S) {
-    var det = (S.definitions && S.definitions.details) || {};
+    var det = (S.definitions && S.definitions.details) || {}, imp = S.impact || {};
+    var fileOf = function (n) { return ((imp[n] && imp[n].epicenter) || {}).file || ""; };
+    var kindOf = function (n) { return (det[n] && det[n].kind) || "definition"; };
     var ranked = Object.keys(det).map(function (n) { return { n: n, t: det[n].total_affected || 0 }; }).sort(function (a, b) { return b.t - a.t; });
     var pair = findPair(S), slug = (S._repo && S._repo.slug) || "your repo";
+    var A = pair && imp[pair.a], B = pair && imp[pair.b];
+    var aBlast = A ? ((A.counts || {}).total_affected || 0) : ((ranked[0] && ranked[0].t) || 0);
+    var bBlast = B ? ((B.counts || {}).total_affected || 0) : ((ranked[1] && ranked[1].t) || 0);
+    var mx = ranked.length ? (ranked[0].t || 1) : 1;
+    var lvl = function (t) { return t >= mx * 0.5 ? "High" : (t >= mx * 0.2 ? "Medium" : "Low"); };
+    var top = ranked.slice(0, 6).map(function (r) { return { sym: r.n, file: fileOf(r.n), kind: kindOf(r.n), blast: r.t, level: lvl(r.t) }; });
+    var chain = [];
+    if (A) { var nm = A.names || {}; chain = (A.affected_ids || []).slice(0, 5).map(function (idx) { return { sym: nm[idx] || ("#" + idx), file: fileOf(nm[idx]) || "core.py" }; }); }
     return {
       repo: slug, defs: fmt(Object.keys(det).length),
       maxBlast: ranked.length ? ranked[0].t : 0, maxSym: ranked.length ? ranked[0].n : "-",
-      a: pair ? pair.a : (ranked[0] && ranked[0].n) || "echo", b: pair ? pair.b : (ranked[1] && ranked[1].n) || "option",
-      shared: pair ? pair.shared : 0, ring1: pair ? Math.round(pair.shared * 0.4) : 0, ring2: pair ? (pair.shared - Math.round(pair.shared * 0.4)) : 0
+      a: pair ? pair.a : ((ranked[0] && ranked[0].n) || "echo"), b: pair ? pair.b : ((ranked[1] && ranked[1].n) || "option"),
+      aFile: pair ? (fileOf(pair.a) || "utils.py") : "utils.py", bFile: pair ? (fileOf(pair.b) || "decorators.py") : "decorators.py",
+      aBlast: aBlast, bBlast: bBlast,
+      shared: pair ? pair.shared : 0, ring1: pair ? Math.round(pair.shared * 0.4) : 0, ring2: pair ? (pair.shared - Math.round(pair.shared * 0.4)) : 0,
+      top: top, chain: chain
     };
   }
   function rerender() { var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
