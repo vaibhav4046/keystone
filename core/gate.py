@@ -63,7 +63,8 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
                 "detail": {"error": "NOT_FOUND", "message": f"definition not found: {name}"}}
     out = imp.to_dict()
     fqns = [imp.epicenter_fqn] if imp.epicenter_fqn else None
-    prec = ledger.precedent(target_symbols=[name], signature=imp.signature, target_fqns=fqns)
+    prec = ledger.precedent(target_symbols=[name], signature=imp.signature, target_fqns=fqns,
+                            signature_fqn=imp.signature_fqn)
     pol = policy_mod.evaluate(out, prec, policy)
     out["policy"] = pol
     out["orbit_snapshot_sha256"] = attest_mod.orbit_snapshot_sha256(out)
@@ -160,8 +161,8 @@ def evaluate(graph, ledger, *, name: str, decision: str, reviewer: str,
         "quorum": {"required": required, "confirmed": len(confirmed), "status": quorum_status,
                    "closed": quorum_status == "APPROVED",   # 200 != closed; check this flag
                    "approvers": confirmed, "change_id": cid},
-        "sig": imp.signature, "change_id": cid, "target_fqns": fqns,
-        "blast_set": imp.affected_ids, "row_extra": row_extra,
+        "sig": imp.signature, "signature_fqn": imp.signature_fqn, "change_id": cid,
+        "target_fqns": fqns, "blast_set": imp.affected_ids, "row_extra": row_extra,
     }
 
 
