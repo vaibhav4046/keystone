@@ -652,7 +652,7 @@
               <span style="font:400 11px/1 'JetBrains Mono',monospace; color:{{ r.hashColor }}">{{ r.prev }} <span style="color:#5F636D">→</span> {{ r.hash }}</span>
             </div>
           </sc-for>
-          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640"><span title="Hash-chained: each ledger row stores a hash of the row before it, so altering any past decision changes every hash after it — tampering is detectable." style="border-bottom:1px dotted rgba(201,169,143,0.5); cursor:help">Each row is hash-chained</span> to the one before it. This public sample signs with a shared demo key, so it is illustrative — not cryptographically tamper-proof.</div>
+          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640"><span title="Hash-chained: each ledger row stores a hash of the row before it, so altering any past decision changes every hash after it — tampering is detectable." style="border-bottom:1px dotted rgba(201,169,143,0.5); cursor:help">Each row is hash-chained</span> to the one before it. These hashes are computed live in your browser, so Simulate Tamper genuinely recomputes the chain and every hash after the edited row changes. The demo uses a fast FNV-1a hash to show the mechanism; the production ledger uses keyed HMAC-SHA256 (see core/audit.py).</div>
         </section>
         </sc-if>
 
@@ -1084,6 +1084,16 @@ class Component extends DCLogic {
       ['02', '10:30:18', '!468', '3', 'm.okafor', 'approve', '9ab3…12ef', '0000…genesis']
     ];
     const tamperIdx = 3;
+    // Real, live hash chain (FNV-1a) over the ledger rows: editing any row recomputes every
+    // hash after it, which is how tampering is detected. Production uses keyed HMAC-SHA256
+    // (core/audit.py); this in-browser demo uses a fast non-cryptographic hash to show the mechanism.
+    const _fnv = (s) => { let x = 0x811c9dc5 >>> 0; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; } return ('0000000' + x.toString(16)).slice(-8); };
+    const _canon = (r) => r[0] + '|' + r[1] + '|' + r[2] + '|' + r[3] + '|' + r[4] + '|' + r[5];
+    const _chainOf = (rows) => { const h = new Array(rows.length); let prev = 'genesis'; for (let i = rows.length - 1; i >= 0; i--) { const hh = _fnv(prev + '|' + _canon(rows[i])); h[i] = { prev, hash: hh }; prev = hh; } return h; };
+    const _cleanChain = _chainOf(led);
+    const _tamperedLed = led.map((r, i) => i === tamperIdx ? [r[0], r[1], r[2], r[3], r[4], (r[5] === 'approve' ? 'reject' : 'approve')] : r);
+    const _tamperedChain = _chainOf(_tamperedLed);
+    const _shortHash = (h) => h === 'genesis' ? '0000…gen' : h.slice(0, 4) + '…' + h.slice(-4);
     const demoSteps = _SC ? [
       { n: '1', title: 'Two MRs enter review', text: 'One MR changes ' + _SC.a + '() in ' + _SC.aFile + '. Another changes ' + _SC.b + '() in ' + _SC.bFile + '. Different files — Git reports no conflict.' },
       { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
@@ -1199,14 +1209,14 @@ class Component extends DCLogic {
         { sym: 'Context.invoke', file: 'core.py', blast: 'shared', res: 'BLOCK', color: '#FF6A3D', bg: 'rgba(255,106,61,0.14)' }
       ]),
 
-      chainOk: !this.state.tampered,
+      chainOk: _cleanChain.every((c, i) => (this.state.tampered ? _tamperedChain : _cleanChain)[i].hash === c.hash),
       chainBadgeText: this.state.tampered ? 'CHAIN BROKEN' : 'CHAIN VERIFIED',
       chainBadgeColor: this.state.tampered ? '#FF6A3D' : '#34D399',
       chainBadgeBg: this.state.tampered ? 'rgba(255,106,61,0.14)' : 'rgba(52,211,153,0.12)',
       chainBadgeBorder: this.state.tampered ? 'rgba(255,106,61,0.35)' : 'rgba(52,211,153,0.3)',
       tamperBtn: this.state.tampered ? 'Restore chain' : 'Simulate tamper',
       toggleTamper: () => this.toggleTamper(),
-      ledgerRows: led.map((r, i) => { const broken = this.state.tampered && i >= tamperIdx; const isTamper = this.state.tampered && i === tamperIdx; return { n: r[0], time: r[1], change: r[2], blast: r[3], reviewer: r[4], decision: r[5], decColor: r[5] === 'approve' ? '#34D399' : '#FF6A3D', prev: r[7], hash: isTamper ? '⚠ MISMATCH' : r[6], hashColor: broken ? '#FF8A66' : '#8B9099', rowBg: isTamper ? 'rgba(255,106,61,0.12)' : (broken ? 'rgba(255,106,61,0.05)' : 'transparent') }; }),
+      ledgerRows: led.map((r, i) => { const t = this.state.tampered; const active = t ? _tamperedChain : _cleanChain; const broken = t && active[i].hash !== _cleanChain[i].hash; const isTamper = t && i === tamperIdx; const dec = isTamper ? (r[5] === 'approve' ? 'reject' : 'approve') : r[5]; return { n: r[0], time: r[1], change: r[2], blast: r[3], reviewer: r[4], decision: dec, decColor: dec === 'approve' ? '#34D399' : '#FF6A3D', prev: _shortHash(active[i].prev), hash: broken ? '⚠ ' + _shortHash(active[i].hash) + ' ≠ ' + _shortHash(_cleanChain[i].hash) : _shortHash(active[i].hash), hashColor: broken ? '#FF8A66' : '#8B9099', rowBg: isTamper ? 'rgba(255,106,61,0.12)' : (broken ? 'rgba(255,106,61,0.05)' : 'transparent') }; }),
 
       demoSteps: demoSteps.map((s, i) => { const active = i === this.state.demoStep; const done = i < this.state.demoStep; return { n: s.n, title: s.title, rowBg: active ? 'rgba(255,122,26,0.1)' : 'transparent', rowBorder: active ? 'rgba(255,122,26,0.3)' : 'transparent', numColor: active ? '#150a02' : (done ? '#34D399' : '#8B9099'), numBg: active ? '#FF7A1A' : (done ? 'rgba(52,211,153,0.14)' : 'rgba(255,255,255,0.05)'), numBorder: active ? 'transparent' : (done ? 'rgba(52,211,153,0.3)' : 'rgba(255,255,255,0.1)'), txtColor: active ? '#F6EFE6' : (done ? '#A6ABB4' : '#8B9099') }; }),
       demoCur: demoSteps[this.state.demoStep] || demoSteps[0],

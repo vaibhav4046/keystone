@@ -4,7 +4,7 @@
 
 ## Quick start (for judges)
 
-Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Run the hidden-collision demo**, step through the five-step simulator, then **Verify Chain** and **Simulate Tamper** on the audit ledger at the bottom.
+Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Try a live demo** to load Keystone's real GitLab Orbit self-index (262 definitions), read the silent-collision finding and the **All silent collisions** table, then use the left rail to walk the **Reviewer Cockpit**, the **Engineering Harness** (a bot MR run to a BLOCK verdict), and the **Audit Ledger**, where **Simulate Tamper** breaks the hash chain and **Verify Chain** re-validates it.
 
 Run the same governed review in your own terminal (Python 3.13):
 
@@ -28,14 +28,14 @@ Live demo: https://vaibhav4046.github.io/keystone/ - status SNAPSHOT: a committe
 
 ## 3-Minute Demo Script (For Judges)
 
-Evaluate Keystone's core capabilities in 180 seconds flat:
+Evaluate Keystone's core capabilities in 180 seconds flat, following the live site exactly:
 
-1. **0:00 - The Hook (Core Thesis)**: Look at the Hero Banner at the top of the page. Read the headline: *"Stop safe-looking merge requests from breaking production."* Note the three-card comparison: Git Diff sees files; Orbit sees relationships; Keystone sees structural, graph-wide consequences.
-2. **0:30 - The Simulator**: Run the step-by-step **Future Merge Simulator**. Click "Next Step" to trace how `MR-204` and `MR-211` edit separate files (no Git conflict), yet collide on the Orbit call graph because their blast radii overlap on five shared dependents (kind `blast_overlap`, severity 6). Click through to see Keystone intercept and BLOCK the unsafe merge, then return the safe order `MR-204 -> MR-207 -> MR-211`.
-3. **1:00 - The Difference Matrix**: Scroll down to the **Orbit Difference Matrix**. Observe how Keystone compares to Git Diff, CODEOWNERS, and standard GitLab Orbit. Keystone is the only solution that deterministically flags cross-MR collisions and enforces cryptographic, ledger-backed governance gates.
-4. **1:20 - Blast Radius & Precedent**: Pick the symbol `compute_blast_radius` from the explorer. Watch the 3D blast radius graph spin, exposing its 12 dependent definitions. Scroll to the **Precedent** panel on the right. See the prior identical-signature rejection by a reviewer on record—Keystone has recalled this past decision and issued a hard BLOCK.
-5. **2:00 - Bounded AI Review Advisory**: Scroll to the **AI Assistant** panel on the right. The bounded assistant can use configured LLM providers when keys are available, and falls back to deterministic static plans. The model explains; the engine decides.
-6. **2:30 - Cryptographic Ledger Verification**: Scroll to the bottom **Audit Ledger**. Click **Simulate Tamper** to edit a row in memory. Watch the chain status instantly turn red (BROKEN). Click **Verify Chain** to re-validate, proving that no platform administrator can quietly alter prior approvals or rejections without detection.
+1. **0:00 - The Hook**: Read the hero headline *"Merge requests that break together"* and the **What Git can't see** card: two MRs change `compute_blast_radius()` in `core/impact.py` and `verify()` in `core/audit.py` - different files, zero Git conflict, both pass review - yet five functions depend on both.
+2. **0:20 - Load real Orbit data**: Click **Try a live demo**. Keystone fetches its committed real `orbit index` self-graph (262 definitions); the dashboard shows a **REAL GitLab Orbit graph - gl_definition/gl_edge** provenance badge, so every figure below is observed, not asserted.
+3. **0:40 - The finding**: On the Command Center, read **SILENT COLLISION FOUND** (`compute_blast_radius` x `verify`, 5 shared dependents) and the **Merge verdict** (ALLOW / HOLD / BLOCK). Scroll to **All silent collisions - 16 found**: every colliding pair with its shared-dependent count, plus the full **safe merge order** - the headline number is inspectable, not a marquee.
+4. **1:20 - Reviewer Cockpit**: Use the left rail. The blast-radius graph renders the real dependent rings (5 calling both, 12 the combined blast), with the symbols-in-scope and impact-rings panels agreeing on the same numbers.
+5. **1:50 - Engineering Harness**: Open the harness. A bot MR (`copilot-workspace`) is walked through the five-stage pipeline (Symbol Resolve, Blast Radius, Policy Gate, Collision Scan, Verdict) and lands on a **BLOCK** - the AI-agent gate in action.
+6. **2:20 - Audit Ledger**: Scroll to the **Audit Ledger**. Click **Simulate Tamper** to alter a row; the chain status turns BROKEN. Click **Verify Chain** to re-validate, showing no one can quietly edit a prior approval or rejection without detection.
 
 ## Who it is for, and what breaks today
 
