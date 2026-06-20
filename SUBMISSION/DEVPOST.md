@@ -13,7 +13,7 @@ Video (public, under 3 min): <PASTE YOUTUBE OR VIMEO URL>
 
 ## Elevator pitch (one line)
 
-Keystone turns the GitLab Orbit code graph into a deterministic engineering harness and merge safety controller for agent-authored code changes.
+Keystone is an Orbit Memory Gate: when an AI agent proposes a merge, Keystone reads the GitLab Orbit code graph and the precedent ledger and OVERRULES the agent's approval if it repeats a dependency-risk decision a human already rejected. The model proposes; the engine decides; the ledger remembers.
 
 ## Inspiration
 
