@@ -737,7 +737,7 @@ class Component extends DCLogic {
 
   runCount() {
     if (this._raf) cancelAnimationFrame(this._raf);
-    const target = 34, dur = 1100, start = performance.now();
+    const target = (typeof window !== 'undefined' && window.__ksScan && window.__ksScan.shared) || 34, dur = 1100, start = performance.now();
     const ease = t => 1 - Math.pow(1 - t, 3);
     const tick = now => {
       const t = Math.min(1, (now - start) / dur);
@@ -1055,8 +1055,8 @@ class Component extends DCLogic {
       isLanding: this.state.view === 'landing',
       isDash: this.state.view === 'dashboard',
       showConsent: this.state.showConsent,
-      affected: this.state.affected,
-      repo: this.props.repo ?? 'pallets/click',
+      affected: _SC ? _SC.shared : this.state.affected,
+      repo: _SC ? _SC.repo : (this.props.repo ?? 'pallets/click'),
       embers: this.buildEmbers(),
       graph: this.buildGraph(),
       pixelArt: this.buildPixelKeystone(),
