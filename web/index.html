@@ -1398,6 +1398,7 @@ class Component extends DCLogic {
     }
   }
   window.addEventListener("load", function () { [900, 2000, 4000].forEach(function (ms) { setTimeout(wireTips, ms); }); });
+  document.addEventListener("click", function () { setTimeout(wireTips, 350); setTimeout(wireTips, 900); }, true);
 })();
 </script>
 </body>
