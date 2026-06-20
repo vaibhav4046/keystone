@@ -11,7 +11,7 @@ A perfect Stage-2 score is worthless if any [P0] is open.
 | 2 | Working skill/agent that does real automation (not chat) | DONE — `run_review.py --local` verified producing report + BLOCK | — |
 | 3 | Meaningfully uses GitLab Orbit | DONE — reads `gl_definition`/`gl_edge`, drives `glab orbit local sql`; real index of this repo + pallets/click | — |
 | 4 | Duo Agent Platform agent definition exists | DONE — `.gitlab/agents/keystone/agent.yml` (schema match to Catalog = UNVERIFIED, validate on publish) | — |
-| 5 | GitLab repo public + current (99 commits behind) | OPEN | YOU (needs token) |
+| 5 | GitLab repo public + current | DONE — https://gitlab.com/lalwanivaibhav079/keystone synced to 8069f64, public | — |
 | 6 | Published to the AI Catalog | OPEN | YOU (GitLab account/UI) |
 | 7 | Public demo video < 3 min | OPEN | YOU (record from DEMO_SCRIPT.md) |
 | 8 | Devpost links GitLab repo + Catalog + video | OPEN (placeholders set) | YOU (paste links) |
@@ -39,7 +39,7 @@ git remote set-url gitlab https://gitlab.com/<YOUR_USERNAME>/keystone.git
 
 ## Links YOU must paste into Devpost (and into DEVPOST.md header)
 
-- GitLab repo: `https://gitlab.com/<YOUR_USERNAME>/keystone`
+- GitLab repo: `https://gitlab.com/lalwanivaibhav079/keystone` (already synced + public)
 - AI Catalog artifact: `<from step 2>`
 - Video: `<from step 3>`
 - Live demo: `https://vaibhav4046.github.io/keystone/`
