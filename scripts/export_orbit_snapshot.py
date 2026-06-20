@@ -8,7 +8,8 @@ gl_edge CALLS traversal) instead of the in-browser GitHub-API stand-in. Re-run w
 Every displayed number is computed from the graph here; nothing is a cosmetic
 fraction. Headline symbols are scoped to real core Python source (no test files,
 build scripts, or web JS) and to valid identifiers, so the demo never shows junk
-symbols like "$" or "_parse_rows" in the blast radius or safe merge order.
+symbols like "$" or "_parse_rows" in the blast radius or safe merge order. The safe
+merge order is restricted to symbols that actually take part in a collision pair.
 """
 import collections
 import json
@@ -66,6 +67,7 @@ def main() -> None:
 
     cand = [i for i in ranked_ok if blast[i] > 2][:16]
     best, collisions, overlap, pairs = None, 0, collections.defaultdict(int), []
+    colliding: set = set()
     for x in range(len(cand)):
         for y in range(x + 1, len(cand)):
             a, b = cand[x], cand[y]
@@ -76,11 +78,14 @@ def main() -> None:
                 collisions += 1
                 overlap[a] += sh
                 overlap[b] += sh
+                colliding.add(a)
+                colliding.add(b)
                 pairs.append({"a": nm(a), "b": nm(b), "aFile": fo(a),
                               "bFile": fo(b), "shared": sh})
                 if best is None or sh > best["sh"]:
                     best = {"a": a, "b": b, "sh": sh}
-    safe = sorted(cand, key=lambda i: overlap[i])[:6]
+    # Safe merge order: only symbols that actually collide, least-entangled first.
+    safe = sorted([i for i in cand if i in colliding], key=lambda i: overlap[i])[:6]
     collision_list = sorted(pairs, key=lambda p: -p["shared"])[:24]
 
     head = ranked_ok if ranked_ok else ranked
@@ -106,6 +111,7 @@ def main() -> None:
         sh = ring1 = ring2 = 0
 
     snap = {
+        # ASCII-escaped middot so the repo string is encoding-safe in any environment.
         "repo": "GitLab Orbit · keystone self-index",
         "orbit": True,
         "defs": f"{len(defs):,}",
@@ -124,7 +130,7 @@ def main() -> None:
         "top": top, "chain": chain,
     }
     with open(OUT, "w", encoding="utf-8") as f:
-        json.dump(snap, f)
+        json.dump(snap, f, ensure_ascii=True)
     print("SNAP", snap["defs"], "defs", collisions, "collisions",
           snap["a"], "x", snap["b"], "shared", sh,
           "ring1", ring1, "ring2", ring2, "spof", snap["spofPct"])

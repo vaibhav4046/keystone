@@ -124,7 +124,7 @@
       </div>
       <nav style="display:flex; align-items:center; gap:30px; justify-content:flex-end">
         <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">PORTAL</span>
-        <button onClick="{{ openConsent }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#F6EFE6; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">SIGN IN →</button>
+        <button onClick="{{ openConsent }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#F6EFE6; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">CONNECT →</button>
       </nav>
     </header>
 
@@ -148,7 +148,7 @@
         <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:32px">
           <button onClick="{{ openConsent }}" style="display:inline-flex; align-items:center; gap:11px; padding:15px 24px; border-radius:3px; border:none; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 12px 36px -12px rgba(240,72,10,0.7)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
             <svg viewBox="0 0 24 24" width="17" height="17" fill="#150a02"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
-            Sign in with GitHub
+            Connect a repository
           </button>
           <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.4)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">Try a live demo →</button>
         </div>
@@ -372,7 +372,7 @@
               </div>
               <div style="text-align:right">
                 <div style="font:600 38px/1 'Space Grotesk',sans-serif; color:#FF6A3D; font-variant-numeric:tabular-nums">{{ affected }}</div>
-                <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:6px; letter-spacing:0.08em">AFFECTED</div>
+                <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:6px; letter-spacing:0.08em">BREAK TOGETHER</div>
               </div>
             </div>
             <!-- graph stage -->
@@ -497,7 +497,7 @@
               </div>
               <div style="text-align:right">
                 <div style="font:600 38px/1 'Space Grotesk',sans-serif; color:#FF6A3D; font-variant-numeric:tabular-nums">{{ affected }}</div>
-                <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:6px; letter-spacing:0.08em">AFFECTED</div>
+                <div style="font:500 11px/1 'JetBrains Mono',monospace; color:#8B9099; margin-top:6px; letter-spacing:0.08em">BREAK TOGETHER</div>
               </div>
             </div>
             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center">
@@ -1144,7 +1144,7 @@ class Component extends DCLogic {
       ],
       findA: _SC ? _SC.a : 'echo', findB: _SC ? _SC.b : 'option', findShared: _statShared,
       colCount: _SC ? String(_SC.collisions) : '3', hasMulti: _SC ? (_SC.collisions >= 1) : true,
-      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join('  →  ') : 'option  →  echo  →  secho  →  style',
+      safeOrderStr: (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join('  →  ') : 'verify  →  append  →  compute_blast_radius',
       collisionRows: ((_SC && _SC.collisionList && _SC.collisionList.length) ? _SC.collisionList : [
         { a: 'echo', b: 'option', aFile: 'utils.py', bFile: 'decorators.py', shared: 34 },
         { a: 'echo', b: 'secho', aFile: 'utils.py', bFile: 'utils.py', shared: 18 },
@@ -1242,7 +1242,7 @@ class Component extends DCLogic {
       var el = nodes[i]; if (el.__wired) continue;
       var t = (el.textContent || "").replace(/s+/g, " ").trim().toUpperCase();
       if (el.childElementCount <= 3 && /SIGN IN/.test(t) && t.length < 30) {
-        el.__wired = 1; el.style.cursor = "pointer"; el.addEventListener("click", go("app.html"), true);
+        el.__wired = 1; /* removed: do not silently hijack Sign-in to app.html; the markup onClick (openConsent) routes to the honest consent modal */
       }
     }
   }
