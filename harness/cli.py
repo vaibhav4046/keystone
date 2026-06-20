@@ -11,7 +11,6 @@ and outputs structured results. No server needed.
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import sys
 import tempfile
@@ -22,7 +21,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from harness.models import HarnessTask, HarnessMode, AgentKind
-from harness.pipeline import run_harness, run_sample_harness, SAMPLE_MRS
+from harness.pipeline import run_harness, run_sample_harness
 from harness import report as report_mod
 from core import graph as graph_mod, impact as impact_mod, seed as seed_mod
 from core.audit import Ledger
@@ -123,7 +122,7 @@ def _print_summary(result):
     d = result.to_dict()
     task = d.get("task") or {}
     print(f"\n{'='*60}")
-    print(f"KEYSTONE ENGINEERING HARNESS")
+    print("KEYSTONE ENGINEERING HARNESS")
     print(f"{'='*60}")
     print(f"  Mode      : {d.get('mode', '?')}")
     print(f"  Agent     : {task.get('agent_id', '?')} ({task.get('agent_kind', '?')})")

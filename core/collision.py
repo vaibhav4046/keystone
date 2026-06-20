@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from . import impact as impact_mod, graph as graph_mod
+from . import impact as impact_mod
 
 _KIND_WEIGHT = {"same_change": 5, "change_in_blast": 3, "blast_overlap": 1}
 

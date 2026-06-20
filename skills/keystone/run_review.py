@@ -342,7 +342,8 @@ def _review_mr(argv):
     prec = get_json(f"/api/precedent/{_parse.quote(symbol)}")
 
     # Evaluate the same policy the API/CI gate uses (deterministic).
-    import os, sys
+    import os
+    import sys
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
     from core import policy as policy_mod
     pol = policy_mod.evaluate(imp, prec)
@@ -379,7 +380,7 @@ def _review_mr(argv):
         print(f"  precedent     : {prec.get('rejected', 0)} rejected, "
               f"{prec.get('approved', 0)} approved")
     print(f"  ledger        : {'VERIFIED' if chain.get('ok') else 'BROKEN'}")
-    print(f"  comment       : use --format markdown to generate the GitLab MR review comment")
+    print("  comment       : use --format markdown to generate the GitLab MR review comment")
     print()
     return 0
 
