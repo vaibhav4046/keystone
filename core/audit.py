@@ -117,7 +117,8 @@ class Ledger:
 
     def append(self, *, actor: str, change_id: str, target_symbols, blast_radius_set,
                signature: str, decision: str, rationale: str, ts: Optional[str] = None,
-               target_fqns=None, extra: Optional[dict] = None) -> dict:
+               target_fqns=None, signature_fqn: Optional[str] = None,
+               extra: Optional[dict] = None) -> dict:
         if decision not in ("approve", "reject"):
             raise ValueError("decision must be approve or reject")
         with _APPEND_LOCK:
@@ -141,6 +142,11 @@ class Ledger:
             # when provided, so older rows are unaffected.
             if target_fqns:
                 payload["target_fqns"] = [f for f in target_fqns if f]
+            # Content-addressed blast signature (epicenter FQN + sorted affected FQNs). Stored
+            # only when provided, so older rows and their chain hashes are unaffected. This is the
+            # re-index-stable precedent key; the id-based `signature` stays for backward compat.
+            if signature_fqn:
+                payload["signature_fqn"] = signature_fqn
             # governance context (tier, policy hash, orbit snapshot, author kind) is
             # part of the signed payload, so the decision and the policy that judged
             # it are bound together and tamper-evident as one row.
@@ -167,11 +173,15 @@ class Ledger:
             prev = stored
         return {"ok": True, "count": len(rows), "broken_index": None}
 
-    def precedent(self, *, target_symbols=None, signature: str = None, target_fqns=None) -> dict:
-        """Deterministic recall: prior rows matching the current change by exact
-        fully-qualified name, exact short symbol overlap, OR same blast-radius
-        signature. Counts approvals/rejections, returns the most recent matching
-        rationale, and flags a contradiction (a prior REJECT on a match)."""
+    def precedent(self, *, target_symbols=None, signature: str = None, target_fqns=None,
+                  signature_fqn: str = None) -> dict:
+        """Deterministic recall: prior rows matching the current change by content-addressed
+        blast signature (epicenter FQN + affected FQN set), exact fully-qualified name, same
+        id-based blast signature, OR exact short symbol overlap. Counts approvals/rejections,
+        returns the most recent matching rationale, and flags a contradiction (a prior REJECT
+        on a match). The content-addressed `signature_fqn` is preferred because it survives a
+        re-index (volatile row ids change; FQNs do not) and a rename of the epicenter is still
+        caught by the FQN-overlap match since the dependent set is unchanged."""
         target_symbols = set(target_symbols or [])
         target_fqns = set(target_fqns or [])
         rows = self._read_raw()
@@ -179,7 +189,9 @@ class Ledger:
         for row in rows:
             row_fqns = set(row.get("target_fqns", []))
             matched_by = None
-            if signature and row.get("signature") == signature:
+            if signature_fqn and row.get("signature_fqn") == signature_fqn:
+                matched_by = "signature_fqn"
+            elif signature and row.get("signature") == signature:
                 matched_by = "signature"
             elif target_fqns and row_fqns and target_fqns & row_fqns:
                 matched_by = "fqn"
@@ -206,7 +218,8 @@ class Ledger:
         # a BLOCK to a weak advisory). Prefer the most recent identical-signature rejection; fall
         # back to the most recent rejection of any matching kind.
         identical_rej = next((r for r in reversed(rejections)
-                              if signature and r.get("signature") == signature), None)
+                              if (signature and r.get("signature") == signature)
+                              or (signature_fqn and r.get("signature_fqn") == signature_fqn)), None)
         contradiction = identical_rej or (rejections[-1] if rejections else None)
         contradiction_same_signature = identical_rej is not None
         # Strength: an identical blast signature is the strong "you are about to
@@ -220,7 +233,7 @@ class Ledger:
             contradiction_strength = "identical"
         else:
             contradiction_strength = "symbol"
-        by_match = {"signature": 0, "fqn": 0, "name": 0}
+        by_match = {"signature_fqn": 0, "signature": 0, "fqn": 0, "name": 0}
         for m in matches:
             by_match[m.get("_matched_by", "name")] = by_match.get(m.get("_matched_by", "name"), 0) + 1
         return {

@@ -168,6 +168,7 @@ def _local_callables(prefer_live=True, graph_path=None, ledger_path=None, seed=T
             sig = impact_mod.blast_radius_signature(row["blast_radius_set"], row.get("epicenter_id"))
             led.append(actor=row["actor"], change_id=row["change_id"], target_symbols=row["target_symbols"],
                        blast_radius_set=row["blast_radius_set"], signature=sig,
+                       signature_fqn=row.get("signature_fqn"), target_fqns=row.get("target_fqns"),
                        decision=row["decision"], rationale=row["rationale"])
 
     def get_json(path):
@@ -198,6 +199,7 @@ def _local_callables(prefer_live=True, graph_path=None, ledger_path=None, seed=T
             return {"blocked": res["error"], "detail": res.get("detail")}
         row = led.append(actor=body["reviewer"], change_id=res["change_id"], target_symbols=[body["name"]],
                          target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"], signature=res["sig"],
+                         signature_fqn=res.get("signature_fqn"),
                          decision=body["decision"], rationale=body["rationale"], extra=res["row_extra"])
         return {"row": row, "verify": led.verify(), "self_asserted": res.get("self_asserted", True),
                 "ci_identity": res.get("ci_identity"),
