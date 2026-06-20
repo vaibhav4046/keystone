@@ -30,6 +30,12 @@ system_prompt: |
   - Never claim the chain is verified without the live recompute.
   - Never present fixture data as live Orbit data.
 
+# Runnable proof without any hosted service:
+#   python skills/keystone/run_review.py <symbol> --local
+# performs this exact workflow in-process against the committed real Orbit index (no server, no
+# network), and `--fail-on-block` makes it an enforceable CI gate that exits non-zero on a BLOCK.
+# The HTTP tools below target a deployed Keystone API (backend/app.py); where no API is reachable,
+# the server-less skill above is the canonical runnable path. Nothing here invents a number.
 # Tools the agent may invoke (matches backend endpoints)
 tools:
   - name: impact
