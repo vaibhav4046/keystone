@@ -4,7 +4,7 @@
 
 ## Quick start (for judges)
 
-Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Try a live demo** to load Keystone's real GitLab Orbit self-index (262 definitions), read the silent-collision finding and the **All silent collisions** table, then use the left rail to walk the **Reviewer Cockpit**, the **Engineering Harness** (a bot MR run to a BLOCK verdict), and the **Audit Ledger**, where **Simulate Tamper** breaks the hash chain and **Verify Chain** re-validates it.
+Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Try a live demo** to load Keystone's real GitLab Orbit self-index (262 definitions), read the silent-collision finding and the **All silent collisions** table, then use the left rail to walk the **Reviewer Cockpit**, the **Engineering Harness** (a bot MR run to a BLOCK verdict), and the **Audit Ledger**, where **Simulate tamper** breaks the live hash chain and **Restore chain** re-validates it.
 
 Run the same governed review in your own terminal (Python 3.13):
 
@@ -35,7 +35,7 @@ Evaluate Keystone's core capabilities in 180 seconds flat, following the live si
 3. **0:40 - The finding**: On the Command Center, read **SILENT COLLISION FOUND** (`compute_blast_radius` x `verify`, 5 shared dependents) and the **Merge verdict** (ALLOW / HOLD / BLOCK). Scroll to **All silent collisions - 16 found**: every colliding pair with its shared-dependent count, plus the full **safe merge order** - the headline number is inspectable, not a marquee.
 4. **1:20 - Reviewer Cockpit**: Use the left rail. The blast-radius graph renders the real dependent rings (5 calling both, 12 the combined blast), with the symbols-in-scope and impact-rings panels agreeing on the same numbers.
 5. **1:50 - Engineering Harness**: Open the harness. A bot MR (`copilot-workspace`) is walked through the five-stage pipeline (Symbol Resolve, Blast Radius, Policy Gate, Collision Scan, Verdict) and lands on a **BLOCK** - the AI-agent gate in action.
-6. **2:20 - Audit Ledger**: Scroll to the **Audit Ledger**. Click **Simulate Tamper** to alter a row; the chain status turns BROKEN. Click **Verify Chain** to re-validate, showing no one can quietly edit a prior approval or rejection without detection.
+6. **2:20 - Audit Ledger**: Scroll to the **Audit Ledger**. Click **Simulate tamper** to flip a past decision; the hashes recompute live and the chain status turns BROKEN. Click **Restore chain** to re-validate, showing no one can quietly edit a prior approval or rejection without detection.
 
 ## Who it is for, and what breaks today
 
