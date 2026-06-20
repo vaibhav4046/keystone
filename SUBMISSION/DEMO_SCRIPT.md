@@ -26,13 +26,20 @@ as a skill, running for real."
 
 ## 0:30–1:35 — The real skill, producing a real result (THE core)
 
-Type and run, on camera — THE moment, an AI agent's approval overruled by Orbit precedent:
+Type and run, on camera — THE hook: two MRs Git says are fine, that actually collide:
+```
+python skills/keystone/run_review.py shadow-merge
+```
+Point at the output:
+- `Git text conflict : NONE` — "Git compares lines; different files, so Git says fine."
+- `Orbit collision : DETECTED (5 shared dependents)` — "Orbit sees the relationship Git can't."
+- `VERDICT : HOLD` (CI exit 2) — "Keystone gates the merge before it ships."
+
+Second act — the AI override:
 ```
 python skills/keystone/run_review.py memory-gate compute_blast_radius
 ```
-Point at the actual output as it prints:
-- `AI agent proposed: APPROVE` — "An agent wants to merge this."
-- `Keystone verdict: BLOCK - OVERRIDES the agent's APPROVE` — "Keystone overrules it."
+- `AI agent proposed: APPROVE` → `BLOCK - OVERRIDES the agent` — "An agent's approval, overruled by precedent."
 - `blast radius : ring1=12 ... affected=12` — "Twelve definitions depend on this symbol. Computed
   from the real Orbit graph, not estimated."
 - `precedent : 3 matches approved=1 rejected=2`

@@ -385,6 +385,164 @@ def _review_mr(argv):
     return 0
 
 
+def _shadow_merge(argv):
+    """Shadow Merge Firewall: two merge requests touch DIFFERENT files (so Git reports no text
+    conflict) yet COLLIDE on the GitLab Orbit graph through a shared dependency. Fully deterministic
+    (no model). Exits non-zero on HOLD/BLOCK so it gates CI; exits 0 on a safe (ALLOW) pair.
+
+      run_review.py shadow-merge [--a SYMBOL --b SYMBOL | --safe] [--fixture] [--json] [--out PATH]
+    """
+    import json as _json
+    import os
+    ap = argparse.ArgumentParser(
+        prog="run_review.py shadow-merge",
+        description="Detect a hidden cross-MR collision Git cannot see (an Orbit relationship conflict)")
+    ap.add_argument("--a", help="symbol changed by MR A")
+    ap.add_argument("--b", help="symbol changed by MR B")
+    ap.add_argument("--a-id", default=None)
+    ap.add_argument("--b-id", default=None)
+    ap.add_argument("--safe", action="store_true", help="run a verified non-colliding pair (ALLOW, exit 0)")
+    ap.add_argument("--fixture", action="store_true", help="use the committed fixture graph")
+    ap.add_argument("--json", action="store_true", help="also print the machine-readable packet")
+    ap.add_argument("--out", default=None, help="markdown packet path")
+    ap.add_argument("--fail-on-block", action="store_true", help="(default) non-zero on HOLD/BLOCK")
+    a = ap.parse_args(argv)
+
+    if a.safe:
+        sym_a, sym_b = a.a or "clear_transcript", a.b or "precedent"
+        ida, idb = a.a_id or "MR-301", a.b_id or "MR-302"
+    else:
+        sym_a, sym_b = a.a or "compute_blast_radius", a.b or "append"
+        ida, idb = a.a_id or "MR-204", a.b_id or "MR-211"
+
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    sys.path.insert(0, root)
+    self_graph = os.path.join(root, "data", "keystone_self_graph.duckdb")
+    graph_path = None if a.fixture else (self_graph if os.path.exists(self_graph) else None)
+    from core import collision as collision_mod, graph as graph_mod, impact as impact_mod
+    g = graph_mod.Graph(prefer_live=not a.fixture, path=graph_path)
+
+    impa = impact_mod.compute_blast_radius(g, sym_a)
+    impb = impact_mod.compute_blast_radius(g, sym_b)
+    if impa is None or impb is None:
+        print(f"ERROR: symbol not found in Orbit graph: {sym_a if impa is None else sym_b}")
+        return 1
+    da, db = impa.to_dict(), impb.to_dict()
+    file_a = (da.get("epicenter") or {}).get("file", "?")
+    file_b = (db.get("epicenter") or {}).get("file", "?")
+    git_conflict = "NONE" if file_a != file_b else "TEXT-OVERLAP"
+    ablast = da["counts"]["total_affected"]
+    bblast = db["counts"]["total_affected"]
+
+    res = collision_mod.detect_collisions(
+        g, [{"id": ida, "symbols": [sym_a]}, {"id": idb, "symbols": [sym_b]}])
+    cols = (res or {}).get("collisions") or []
+    collided = bool(cols)
+    kind = cols[0]["kind"] if collided else None
+    shared = cols[0]["shared"] if collided else []
+    if not collided:
+        verdict, exit_code = "ALLOW", 0
+    elif kind in ("same_change", "change_in_blast"):
+        verdict, exit_code = "BLOCK", 2
+    else:
+        verdict, exit_code = "HOLD", 2
+
+    cmd = (f"python skills/keystone/run_review.py shadow-merge"
+           + ("" if not a.safe else " --safe")
+           + (f" --a {sym_a} --b {sym_b}" if (a.a or a.b) else ""))
+    shared_str = ", ".join(shared[:8]) if shared else "(none)"
+
+    # ---- terminal summary (the demo's first 20 seconds) ----
+    print(f"\nKEYSTONE Shadow Merge Firewall : {ida} vs {idb}")
+    print(f"  {ida}: changes {sym_a}() in {file_a}  (blast {ablast})")
+    print(f"  {idb}: changes {sym_b}() in {file_b}  (blast {bblast})")
+    print(f"  Git text conflict : {git_conflict}   <- Git compares lines; different files = 'no conflict'")
+    print(f"  Orbit collision   : {'DETECTED' if collided else 'none'}"
+          + (f"  ({kind}, {len(shared)} shared dependents)" if collided else ""))
+    if collided:
+        print(f"  shared dependency : {shared_str}")
+    print(f"  VERDICT           : {verdict}")
+    print()
+
+    # ---- decision packet (markdown) ----
+    lines = [
+        "# Keystone - Shadow Merge Firewall decision packet", "",
+        f"**Verdict: {verdict}**  (Git text conflict: {git_conflict} | Orbit collision: "
+        f"{'DETECTED' if collided else 'none'})", "",
+        "## Executive summary",
+        (f"`{ida}` and `{idb}` touch different files, so Git reports no conflict and both pass review "
+         f"independently. On the GitLab Orbit graph their blast radii collide on a shared dependency, "
+         f"so merging both can break code neither reviewer changed." if collided else
+         f"`{ida}` and `{idb}` touch different files and their Orbit blast radii do not overlap. "
+         f"No hidden relationship conflict - safe to merge in any order."),
+        "",
+        "## The two changes",
+        f"- **{ida}** changes `{sym_a}()` in `{file_a}` (Orbit blast radius: {ablast} dependents)",
+        f"- **{idb}** changes `{sym_b}()` in `{file_b}` (Orbit blast radius: {bblast} dependents)",
+        "",
+        f"## Git result: {git_conflict}",
+        "Git's merge-conflict detection is textual: it only flags overlapping line edits. These MRs "
+        "edit different files, so Git is blind to the relationship between them.",
+        "",
+        "## Orbit evidence (the relationship Git cannot see)",
+        (f"- Collision kind: `{kind}`" if collided else "- No blast-radius overlap detected."),
+    ]
+    if collided:
+        lines += [
+            f"- Shared dependents ({len(shared)}): {shared_str}",
+            "- These definitions transitively depend on BOTH changed symbols, so a change to either "
+            "ripples into them; changing both at once compounds the risk with no text conflict to warn you.",
+            "",
+            "## Recommended developer action",
+            ("Do not merge both blindly. Stack the two MRs into one coordinated review, add an "
+             "integration test exercising the shared dependents, and merge in the order Keystone's "
+             "safe-merge-order computes." if verdict in ("HOLD", "BLOCK") else ""),
+        ]
+    lines += [
+        "",
+        f"## CI result: exit {exit_code} ({'fails the pipeline' if exit_code else 'passes'})",
+        f"## Reproduce", f"```", cmd, "```",
+        "",
+        "## Paste-ready GitLab MR comment",
+        "```markdown",
+        f"### Keystone Shadow Merge Firewall: {verdict}",
+        f"{ida} (`{sym_a}`, {file_a}) and {idb} (`{sym_b}`, {file_b}) have **no Git text conflict** "
+        + (f"but **collide on the Orbit graph** via {len(shared)} shared dependents "
+           f"({shared_str}). Coordinate these before merge." if collided
+           else "and **no Orbit blast-radius overlap** - safe to merge."),
+        "```",
+        "",
+        "## Honest limitations",
+        "- Computed from a committed real `orbit index` of this repo (deterministic snapshot), not a "
+        "live MR webhook. Every figure is reproducible with the command above; no model is on this path.",
+        "", "_Git sees files. Orbit sees relationships. Keystone turns relationships into a merge gate._",
+    ]
+    packet = "\n".join(lines)
+    out = a.out or os.path.join(root, "SUBMISSION", "generated", "shadow-merge-packet.md")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(packet + "\n")
+
+    packet_json = {
+        "verdict": verdict, "conflict_type": kind, "git_conflict": git_conflict,
+        "orbit_collision": collided, "shared_dependency": shared,
+        "affected_count": {ida: ablast, idb: bblast}, "risk": (res or {}).get("counts", {}),
+        "mr_a": {"id": ida, "symbol": sym_a, "file": file_a},
+        "mr_b": {"id": idb, "symbol": sym_b, "file": file_b},
+        "command": cmd, "exit_code": exit_code,
+    }
+    json_out = os.path.splitext(out)[0] + ".json"
+    with open(json_out, "w", encoding="utf-8") as f:
+        _json.dump(packet_json, f, indent=2)
+    print(f"(wrote {out} and {json_out})")
+    if a.json:
+        print(_json.dumps(packet_json, indent=2))
+    if exit_code:
+        print(f"\nSHADOW MERGE: {verdict} - {ida} and {idb} collide on the Orbit graph with no Git "
+              f"conflict. CI exit {exit_code}.")
+    return exit_code
+
+
 def _memory_gate(argv):
     """Orbit Memory Gate: an AI agent proposes a decision; Keystone consults the GitLab Orbit graph
     and the precedent ledger and OVERRIDES the agent when its proposal contradicts recorded
@@ -459,6 +617,8 @@ def main(argv=None):
     # Dispatch the MR Guardian subcommand without breaking the legacy
     # `run_review.py <symbol>` positional form.
     raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] == "shadow-merge":
+        return _shadow_merge(raw[1:])
     if raw and raw[0] == "memory-gate":
         return _memory_gate(raw[1:])
     if raw and raw[0] in ("review-mr", "review"):
