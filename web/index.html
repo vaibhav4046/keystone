@@ -162,7 +162,7 @@
         <p style="font:400 12px/1.5 'Inter',sans-serif; color:#6f5640; margin:16px 0 0; max-width:46ch">No account needed for the demo — Keystone analyzes real public repos in your browser.</p>
         <div style="margin:26px 0 0; padding:14px 17px; border-radius:9px; background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.2); max-width:500px">
           <div style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF7A1A; text-transform:uppercase; margin-bottom:9px">What Git can't see</div>
-          <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#A6907B">On Click, two MRs change <b style="color:#F6EFE6">echo()</b> in utils.py and <b style="color:#F6EFE6">option()</b> in decorators.py — different files, zero Git conflict, both pass review and CODEOWNERS. Yet they ripple into <b style="color:#FFC24D">dozens of shared runtime dependents</b>. Merge both and those break together. Keystone holds the merge and hands you the safe order — live, in this demo.</div>
+          <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#A6907B">In Keystone's own Orbit index, two MRs change <b style="color:#F6EFE6">compute_blast_radius()</b> in core/impact.py and <b style="color:#F6EFE6">verify()</b> in core/audit.py — different files, zero Git conflict, both pass review and CODEOWNERS. Yet <b style="color:#FFC24D">5 functions depend on both</b>. Merge both and those 5 break together. Keystone holds the merge and hands you the safe order — exactly the demo below.</div>
         </div>
         <p style="font:400 11px/1.5 'Inter',sans-serif; color:#5f4836; margin:13px 0 0; max-width:50ch">This in-browser demo parses the call graph client-side (Python today). The production engine reads the live <b style="color:#8a6c52">GitLab Orbit</b> graph (gl_definition / gl_edge) and drives <b style="color:#8a6c52">glab orbit local</b>. The blast-radius logic is <b style="color:#8a6c52">language-agnostic</b> — it runs on Orbit's symbol graph, not on any one language's syntax, so it covers every language Orbit indexes. See the repo + demo video.</p>
         <div style="margin:22px 0 0; max-width:52ch; background:#0c0805; border:1px solid rgba(255,122,26,0.18); border-radius:11px; padding:16px 18px">
@@ -240,11 +240,7 @@
             <span style="font:500 14px/1 'Inter',sans-serif; padding:8px 12px; border-radius:7px; color:{{ t.color }}; background:{{ t.bg }}; cursor:pointer" style-hover="color:#F2F3F5">{{ t.label }}</span>
           </sc-for>
         </nav>
-        <div style="flex:1; max-width:340px; margin-left:auto; display:flex; align-items:center; gap:9px; padding:8px 13px; border-radius:8px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08)">
-          <span style="color:#FF7A1A; font:600 13px/1 'JetBrains Mono',monospace">⌕</span>
-          <span style="font:400 13px/1 'JetBrains Mono',monospace; color:#5F636D">search symbols, MRs…</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:14px">
+        <div style="display:flex; align-items:center; gap:14px; margin-left:auto">
           <div style="position:relative; cursor:pointer">
             <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#8B9099" stroke-width="1.6"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg>
             <span style="position:absolute; top:-3px; right:-3px; width:7px; height:7px; border-radius:50%; background:#FF6A3D; box-shadow:0 0 6px #FF6A3D"></span>
@@ -729,9 +725,9 @@
             </div>
           </sc-for>
         </div>
-        <div style="padding:11px 13px; border-radius:8px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.22); font:400 12px/1.5 'Inter',sans-serif; color:#D7B89A; margin-bottom:22px">The static demo connects <strong style="color:#F5A623">public</strong> repos in-browser. Private-repo access requires a deployed backend.</div>
+        <div style="padding:11px 13px; border-radius:8px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.22); font:400 12px/1.5 'Inter',sans-serif; color:#D7B89A; margin-bottom:22px">This static demo does <strong style="color:#F5A623">no real GitHub sign-in</strong> — it previews the read-only scopes the production GitHub App would request, then opens the in-browser command center on public-repo data. Private-repo access requires a deployed backend.</div>
         <div style="display:flex; gap:11px">
-          <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)" style-hover="filter:brightness(1.08)">Allow</button>
+          <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)" style-hover="filter:brightness(1.08)">Open the command center</button>
           <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#F2F3F5; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13)" style-hover="background:rgba(255,255,255,0.08)">Continue as demo</button>
         </div>
         <button onClick="{{ closeConsent }}" style="width:100%; margin-top:12px; padding:8px; background:none; border:none; cursor:pointer; font:500 12px/1 'Inter',sans-serif; color:#5F636D" style-hover="color:#8B9099">Cancel</button>
@@ -829,7 +825,7 @@ class Component extends DCLogic {
     const W = 540, H = 540, cx = 270, cy = 270;
     var _ls = _gsc ? [_gsc.a, _gsc.b].concat((_gsc.chain || []).map(function (c) { return c.sym; })).concat((_gsc.top || []).map(function (t) { return t.sym; })).filter(Boolean) : [];
     const labels1 = _gsc && _ls.length ? _ls.slice(0, 8) : ['Context.invoke', 'BaseCommand.main', 'secho', 'style', 'MultiCommand', 'Group.invoke', 'Command.main', 'make_context'];
-    const ring1 = 8, ring2 = 14, r1 = 122, r2 = 216;
+    const ring1 = _gsc ? Math.max(1, Math.min(8, _gsc.ring1 | 0)) : 8, ring2 = _gsc ? Math.max(1, Math.min(18, _gsc.ring2 | 0)) : 14, r1 = 122, r2 = 216;
     const nodes = [];
     for (let i = 0; i < ring1; i++) {
       const a = (i / ring1) * Math.PI * 2 - Math.PI / 2;
@@ -1282,24 +1278,25 @@ class Component extends DCLogic {
     // N-way: cross-change collision matrix among the top changed symbols + a safe merge order
     var topN = ranked.slice(0, 6).map(function (r) { return r.n; });
     var aff = {}; topN.forEach(function (n) { var o = {}; ((imp[n] || {}).affected_ids || []).forEach(function (x) { o[x] = 1; }); aff[n] = o; });
-    var collisions = 0, overlapOf = {};
+    var collisions = 0, overlapOf = {}, cpairs = [];
     topN.forEach(function (n) { overlapOf[n] = 0; });
     for (var ci = 0; ci < topN.length; ci++) for (var cj = ci + 1; cj < topN.length; cj++) {
       var ni = topN[ci], nj = topN[cj], fi = fileOf(ni), fj = fileOf(nj);
       if (!fi || !fj || fi === fj) continue;
       var sh2 = 0, ao = aff[ni], bo = aff[nj];
       for (var k in ao) { if (bo[k]) sh2++; }
-      if (sh2 > 2) { collisions++; overlapOf[ni] += sh2; overlapOf[nj] += sh2; }
+      if (sh2 > 2) { collisions++; overlapOf[ni] += sh2; overlapOf[nj] += sh2; cpairs.push({ a: ni, b: nj, aFile: fi, bFile: fj, shared: sh2 }); }
     }
     var safeOrder = topN.slice().sort(function (a, b) { return overlapOf[a] - overlapOf[b]; });
+    var collisionList = cpairs.sort(function (a, b) { return b.shared - a.shared; });
     return {
-      collisions: collisions, safeOrder: safeOrder,
+      collisions: collisions, collisionList: collisionList, safeOrder: safeOrder,
       repo: slug, defs: fmt(Object.keys(det).length),
       maxBlast: ranked.length ? ranked[0].t : 0, maxSym: ranked.length ? ranked[0].n : "-",
       a: pair ? pair.a : ((ranked[0] && ranked[0].n) || "echo"), b: pair ? pair.b : ((ranked[1] && ranked[1].n) || "option"),
       aFile: pair ? (fileOf(pair.a) || "utils.py") : "utils.py", bFile: pair ? (fileOf(pair.b) || "decorators.py") : "decorators.py",
       aBlast: aBlast, bBlast: bBlast,
-      shared: pair ? pair.shared : 0, ring1: pair ? Math.round(pair.shared * 0.4) : 0, ring2: pair ? (pair.shared - Math.round(pair.shared * 0.4)) : 0,
+      shared: pair ? pair.shared : 0, ring1: pair ? pair.shared : 0, ring2: pair ? Math.max(0, aBlast + bBlast - 2 * pair.shared) : 0,
       spofPct: Object.keys(det).length ? Math.round(((ranked[0] ? ranked[0].t : 0) / Object.keys(det).length) * 100) : 0,
       top: top, chain: chain
     };

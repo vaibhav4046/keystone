@@ -81,7 +81,7 @@ def main() -> None:
                 if best is None or sh > best["sh"]:
                     best = {"a": a, "b": b, "sh": sh}
     safe = sorted(cand, key=lambda i: overlap[i])[:6]
-    collision_list = sorted(pairs, key=lambda p: -p["shared"])[:8]
+    collision_list = sorted(pairs, key=lambda p: -p["shared"])[:24]
 
     head = ranked_ok if ranked_ok else ranked
     mx = blast[head[0]] if head else 1
