@@ -2,6 +2,8 @@
 
 [![ci](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml)
 
+> **Git sees files. Orbit sees relationships.** Keystone uses the GitLab Orbit code graph to catch hidden merge-request collisions — two MRs that touch different files, pass review, and still break together through a shared dependency — and gates them before they ship. Second act: when an AI agent proposes the merge, Keystone overrules an approval that contradicts recorded precedent. The model proposes; the engine decides; the ledger remembers.
+
 ## Quick start (for judges)
 
 Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Try a live demo** to load Keystone's real GitLab Orbit self-index (262 definitions), read the silent-collision finding and the **All silent collisions** table, then use the left rail to walk the **Reviewer Cockpit**, the **Engineering Harness** (a bot MR run to a BLOCK verdict), and the **Audit Ledger**, where **Simulate tamper** breaks the live hash chain and **Restore chain** re-validates it.
