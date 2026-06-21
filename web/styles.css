@@ -1555,3 +1555,20 @@ body.light-theme .theme-toggle .moon-icon {
     min-width: 80px;
   }
 }
+
+/* Mobile/touch polish (priority H): raise the important interactive targets to >=44px so
+   they are comfortably tappable; secondary chips/links to a safe >=32px. No layout regression
+   on desktop (scoped to <=640px). */
+@media (max-width: 640px) {
+  .hubnav-tab { min-height: 44px; }
+  .gh-btn, #gh-signin, #gh-signout { min-height: 44px; display: inline-flex; align-items: center; }
+  .sidebar-item { min-height: 44px; }
+  .topbar-search { min-height: 44px; }
+  #theme-toggle, .sidebar-toggle { min-height: 44px; min-width: 44px; }
+  .btn, .repo-go, #repo-go { min-height: 44px; }
+  .repo-ex { min-height: 36px; padding: 8px 12px; display: inline-flex; align-items: center; }
+  .kilo-footer-col a, .kilo-footer-col button { min-height: 40px; display: inline-flex; align-items: center; }
+  .faq-item summary { min-height: 44px; display: flex; align-items: center; }
+  .onboarding-footer .btn, .onboarding-footer .btn-sm { min-height: 44px; }
+  .onboard-close, .settings-close, [class$="-close"] { min-height: 40px; min-width: 40px; }
+}
