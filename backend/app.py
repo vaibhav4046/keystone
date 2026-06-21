@@ -19,7 +19,7 @@ from typing import Literal, Optional
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from fastapi import FastAPI, HTTPException, Header, Path, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -579,6 +579,108 @@ def attestation(name: str = Path(max_length=256)):
     att = attest_mod.build_attestation(impact_dict=out, policy_eval=out["policy"],
                                        row=rows[0], source_mode=_graph.source.mode)
     return {"attestation": att, "verify": attest_mod.verify_attestation(att, _ledger)}
+
+
+# --- GitHub OAuth (optional) -------------------------------------------------
+# Server-side authorization-code flow: the client SECRET never reaches the browser.
+# Unconfigured (no client id/secret) -> /login returns a clear 503 so the static demo
+# keeps working; set KEYSTONE_GH_CLIENT_ID + KEYSTONE_GH_CLIENT_SECRET on the deployment
+# to light it up (see SUBMISSION/GITHUB_OAUTH_SETUP.md). Sessions are in-memory: the
+# free tier is single-process, and only a random session id (never the token) is handed
+# to the frontend.
+import secrets as _secrets
+import json as _json
+import urllib.parse as _uparse
+import urllib.request as _urequest
+
+_GH_CLIENT_ID = os.environ.get("KEYSTONE_GH_CLIENT_ID", "")
+_GH_CLIENT_SECRET = os.environ.get("KEYSTONE_GH_CLIENT_SECRET", "")
+_FRONTEND_URL = os.environ.get("KEYSTONE_FRONTEND_URL", "https://vaibhav4046.github.io/keystone/")
+_OAUTH_CALLBACK = os.environ.get("KEYSTONE_OAUTH_CALLBACK",
+                                 "https://keystone-zt6c.onrender.com/api/auth/github/callback")
+_gh_sessions: dict = {}     # sid -> {login, name, avatar, token}
+_gh_states: set = set()     # one-shot CSRF state tokens
+
+
+def _gh_configured() -> bool:
+    return bool(_GH_CLIENT_ID and _GH_CLIENT_SECRET)
+
+
+def _gh_get(url: str, token: Optional[str] = None):
+    req = _urequest.Request(url, headers={"Accept": "application/vnd.github+json",
+                                          "User-Agent": "keystone"})
+    if token:
+        req.add_header("Authorization", "Bearer " + token)
+    with _urequest.urlopen(req, timeout=10) as r:        # nosec - fixed GitHub hosts only
+        return _json.loads(r.read().decode("utf-8"))
+
+
+@app.get("/api/auth/status")
+def auth_status():
+    """Lets the frontend decide whether to offer real sign-in or fall back to the
+    public (no-auth) scanner, so the button is never broken."""
+    return {"configured": _gh_configured(), "login_url": "/api/auth/github/login"}
+
+
+@app.get("/api/auth/github/login")
+def gh_login():
+    if not _gh_configured():
+        raise HTTPException(status_code=503, detail={"error": "OAUTH_NOT_CONFIGURED",
+                            "hint": "Set KEYSTONE_GH_CLIENT_ID and KEYSTONE_GH_CLIENT_SECRET; see SUBMISSION/GITHUB_OAUTH_SETUP.md"})
+    state = _secrets.token_urlsafe(16)
+    _gh_states.add(state)
+    if len(_gh_states) > 512:                            # bound the set; drop oldest-ish
+        _gh_states.pop()
+    params = _uparse.urlencode({"client_id": _GH_CLIENT_ID, "redirect_uri": _OAUTH_CALLBACK,
+                                "scope": "read:user public_repo", "state": state, "allow_signup": "true"})
+    return RedirectResponse("https://github.com/login/oauth/authorize?" + params)
+
+
+@app.get("/api/auth/github/callback")
+def gh_callback(code: str = Query(default=""), state: str = Query(default="")):
+    if not _gh_configured():
+        raise HTTPException(status_code=503, detail={"error": "OAUTH_NOT_CONFIGURED"})
+    if not code or state not in _gh_states:
+        return RedirectResponse(_FRONTEND_URL + "#ks_auth=error")
+    _gh_states.discard(state)
+    body = _uparse.urlencode({"client_id": _GH_CLIENT_ID, "client_secret": _GH_CLIENT_SECRET,
+                              "code": code, "redirect_uri": _OAUTH_CALLBACK}).encode()
+    req = _urequest.Request("https://github.com/login/oauth/access_token", data=body,
+                            headers={"Accept": "application/json", "User-Agent": "keystone"})
+    try:
+        with _urequest.urlopen(req, timeout=10) as r:    # nosec - fixed GitHub host
+            tok = _json.loads(r.read().decode("utf-8")).get("access_token")
+        if not tok:
+            return RedirectResponse(_FRONTEND_URL + "#ks_auth=error")
+        me = _gh_get("https://api.github.com/user", tok)
+    except Exception:
+        return RedirectResponse(_FRONTEND_URL + "#ks_auth=error")
+    sid = _secrets.token_urlsafe(18)
+    _gh_sessions[sid] = {"login": me.get("login"), "name": me.get("name"),
+                         "avatar": me.get("avatar_url"), "token": tok}
+    return RedirectResponse(_FRONTEND_URL + "#ks_session=" + sid)
+
+
+@app.get("/api/me")
+def gh_me(sid: str = Query(default="")):
+    s = _gh_sessions.get(sid)
+    if not s:
+        raise HTTPException(status_code=401, detail={"error": "NOT_SIGNED_IN"})
+    try:
+        repos = _gh_get("https://api.github.com/user/repos?sort=updated&per_page=50&affiliation=owner",
+                        s["token"])
+        rl = [{"full_name": r.get("full_name"), "language": r.get("language"),
+               "private": bool(r.get("private")), "stars": r.get("stargazers_count", 0)}
+              for r in repos if r.get("language") == "Python"][:20]
+    except Exception:
+        rl = []
+    return {"login": s["login"], "name": s.get("name"), "avatar": s.get("avatar"), "repos": rl}
+
+
+@app.post("/api/auth/logout")
+def gh_logout(sid: str = Query(default="")):
+    _gh_sessions.pop(sid, None)
+    return {"ok": True}
 
 
 # static web hero (mounted last so /api/* wins)

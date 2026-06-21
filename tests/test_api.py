@@ -51,6 +51,20 @@ def test_proof_endpoint_is_self_describing_and_live():
     assert p["timestamp"].endswith("Z")                    # real ISO-8601 UTC
 
 
+def test_github_oauth_degrades_safely_when_unconfigured():
+    # no client id/secret in the test env -> the flow advertises itself as unconfigured
+    # and refuses cleanly (503) instead of half-working or leaking, so the static demo
+    # keeps running and the frontend can fall back to the public scanner.
+    st = client.get("/api/auth/status").json()
+    assert st["configured"] is False and st["login_url"] == "/api/auth/github/login"
+    assert client.get("/api/auth/github/login").status_code == 503
+    assert client.get("/api/auth/github/callback?code=x&state=y").status_code == 503
+    # /api/me requires a real session; a forged/absent sid is rejected, never served
+    r = client.get("/api/me?sid=not-a-real-session")
+    assert r.status_code == 401 and r.json()["detail"]["error"] == "NOT_SIGNED_IN"
+    assert client.post("/api/auth/logout?sid=whatever").json()["ok"] is True
+
+
 def test_status_repo_label_does_not_leak_abspath():
     from backend.app import _clean_repo
     # an absolute index-time path is reduced to its basename, never surfaced raw
