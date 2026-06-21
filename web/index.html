@@ -133,7 +133,7 @@
       </div>
       <nav style="display:flex; align-items:center; gap:30px; justify-content:flex-end">
         <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">PORTAL</span>
-        <button onClick="{{ openConsent }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#F6EFE6; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">CONNECT →</button>
+        <button onClick="{{ goDemo }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">LIVE DEMO →</button>
       </nav>
     </header>
 
@@ -149,39 +149,59 @@
 
         <h1 style="font:600 clamp(42px,5.4vw,80px)/0.96 'Bodoni Moda',serif; letter-spacing:0; text-transform:uppercase; margin:0 0 24px; color:#F6EFE6">Merge requests<br>that break<br><span style="color:#FF7A1A; font-style:italic">together</span></h1>
 
-        <p style="font:400 clamp(15px,1.4vw,18px)/1.65 'Inter',sans-serif; color:#B59B86; margin:0 0 36px; max-width:50ch; text-wrap:pretty">Two merge requests pass review, touch different files, have no Git conflict — and still break production together. Keystone reads the call graph and <span style="color:#F6EFE6; font-weight:600">vetoes a merge two humans already approved</span>, then locks that decision in a tamper-evident ledger.</p>
+        <p style="font:400 clamp(16px,1.5vw,19px)/1.6 'Inter',sans-serif; color:#D8C8B8; margin:0 0 18px; max-width:48ch; text-wrap:pretty">Two safe-looking merge requests. Different files. No Git conflict. They still break production together — because one changes a function the other depends on.</p>
 
-        <p style="font:400 13.5px/1.6 'Inter',sans-serif; color:#8a6c52; margin:0 0 34px; max-width:52ch; text-wrap:pretty">AI coding agents now open merge requests faster than humans can hold the context between them — more parallel changes, more silent collisions. Keystone gates every agent and human MR <b style="color:#FFB14D">ALLOW / HOLD / BLOCK</b> on the call graph. On its own 262-symbol index it flags <b style="color:#FFC24D">16 silent collisions</b> that Git and review would wave through.</p>
+        <p style="font:400 clamp(15px,1.4vw,18px)/1.6 'Inter',sans-serif; color:#B59B86; margin:0 0 34px; max-width:50ch; text-wrap:pretty">Git sees files. Orbit sees the call graph. <span style="color:#F6EFE6; font-weight:600">Keystone vetoes the merge before it breaks — and logs the decision in a tamper-evident ledger.</span></p>
 
-        <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:13px">See it in 10 seconds — no signup</div>
-        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:16px">
-          <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:10px; padding:17px 30px; min-height:48px; border-radius:3px; border:none; cursor:pointer; font:700 14px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 12px 36px -12px rgba(240,72,10,0.7)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="#150a02"><path d="M8 5v14l11-7z"></path></svg>
+        <!-- ONE dominant CTA. Secondary actions are small text links below it. -->
+        <div style="margin-bottom:12px">
+          <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:11px; padding:18px 34px; min-height:52px; border-radius:4px; border:none; cursor:pointer; font:700 15px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 14px 40px -12px rgba(240,72,10,0.75)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#150a02"><path d="M8 5v14l11-7z"></path></svg>
             Try the live demo
           </button>
-          <button onClick="{{ goDemo }}" title="Load a real GitLab Orbit index of pallets/click (a well-known public Python library) and inspect its real blast radius and shared-dependency hotspots — proof the engine works on code Keystone did not write." style="display:inline-flex; align-items:center; gap:9px; padding:15px 22px; min-height:48px; border-radius:3px; cursor:pointer; font:600 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.4)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">Demo on pallets/click →</button>
         </div>
-        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:32px; font:500 12px/1 'JetBrains Mono',monospace">
-          <button onClick="{{ openConsent }}" style="display:inline-flex; align-items:center; gap:9px; min-height:44px; padding:8px 4px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.06em" style-hover="color:#FFB14D">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="#A6907B"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
-            Connect a repository
-          </button>
-          <span style="color:#5f4836" aria-hidden="true">·</span>
-          <span style="color:#6f5640">read-only · private repos need the deployed backend</span>
+        <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:28px; font:600 12.5px/1 'JetBrains Mono',monospace">
+          <button onClick="{{ goDemoClick }}" title="Same engine on a real GitLab Orbit index of pallets/click (1,841 defs) — a library Keystone did not write." style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">or see it on pallets/click →</button>
+          <button onClick="{{ goLedger }}" style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">verify it yourself →</button>
+          <span style="color:#7a5e48; font-weight:400">no signup · runs in your browser</span>
         </div>
 
         <!-- Proof badges: the five things that make this real, scannable in one second. -->
-        <div style="display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; max-width:560px">
-          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#34D399; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.28); border-radius:999px; padding:6px 11px">● Real Orbit graph</span>
-          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#FFB14D; background:rgba(255,122,26,0.07); border:1px solid rgba(255,122,26,0.28); border-radius:999px; padding:6px 11px">● Deterministic gate</span>
-          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#FFB14D; background:rgba(255,122,26,0.07); border:1px solid rgba(255,122,26,0.28); border-radius:999px; padding:6px 11px">● No LLM on the verdict</span>
-          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#34D399; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.28); border-radius:999px; padding:6px 11px">● 115 tests green</span>
-          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#34D399; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.28); border-radius:999px; padding:6px 11px">● Proven on pallets/click</span>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; max-width:580px">
+          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● Real Orbit graph</span>
+          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#FFC24D; background:rgba(255,122,26,0.09); border:1px solid rgba(255,122,26,0.32); border-radius:999px; padding:7px 12px">● Deterministic gate</span>
+          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#FFC24D; background:rgba(255,122,26,0.09); border:1px solid rgba(255,122,26,0.32); border-radius:999px; padding:7px 12px">● No LLM on the verdict</span>
+          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● 115 tests green</span>
+          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● Proven on pallets/click</span>
         </div>
-        <!-- Winner demo path: tells a 90-second judge exactly what to click and in what order. -->
-        <div style="margin:0 0 30px; padding:12px 15px; border-radius:9px; background:rgba(255,194,77,0.06); border:1px solid rgba(255,194,77,0.22); max-width:560px">
-          <div style="font:700 10px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FFC24D; text-transform:uppercase; margin-bottom:7px">Judges — watch this first (90 seconds)</div>
-          <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#C9A98F"><b style="color:#F6EFE6">Try the live demo</b> → read the silent collision → open <b style="color:#F6EFE6">Reviewer Cockpit</b> for the blast graph → open <b style="color:#F6EFE6">Audit Ledger</b> and hit <b style="color:#F6EFE6">Simulate tamper</b> to watch the hash chain break. Every number is computed from a real <code style="color:#FFB14D">orbit index</code>, cross-checked by <code style="color:#FFB14D">orbit sql</code> — no model decides anything.</div>
+
+        <!-- JUDGE DEMO: numbered 90-second path; steps 3-4 are clickable. -->
+        <div style="margin:0 0 14px; padding:15px 17px; border-radius:10px; background:rgba(255,194,77,0.07); border:1px solid rgba(255,194,77,0.26); max-width:580px">
+          <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FFC24D; text-transform:uppercase; margin-bottom:11px">First 90 seconds — judge demo</div>
+          <ol style="margin:0; padding-left:20px; font:400 13.5px/1.85 'Inter',sans-serif; color:#D8C8B8">
+            <li>Click <b style="color:#FFC24D">Try the live demo</b> (button above).</li>
+            <li>Read the <b style="color:#F6EFE6">silent collision</b>: <code style="color:#FFB14D">compute_blast_radius × verify</code>, 5 shared dependents.</li>
+            <li>Open <button onClick="{{ goCockpit }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Reviewer Cockpit →</button> for the blast-radius graph.</li>
+            <li>Open <button onClick="{{ goLedger }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Audit Ledger →</button> and hit <b style="color:#F6EFE6">Simulate tamper</b> — watch the hash chain break.</li>
+            <li>Optional: <button onClick="{{ goDemoClick }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">pallets/click →</button> — same engine, a repo we didn't write.</li>
+          </ol>
+        </div>
+
+        <!-- VERIFY THIS IS REAL: proof links + plain-language how-to. -->
+        <div style="margin:0 0 30px; padding:15px 17px; border-radius:10px; background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.24); max-width:580px">
+          <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#4AD6A0; text-transform:uppercase; margin-bottom:10px">Verify this is real</div>
+          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9CDD4; margin-bottom:12px">No trust required. The verdict is a deterministic graph computation — <b style="color:#E7E9EC">no model decides anything</b>. Every number is computed from a real <code style="color:#9DEFC4">orbit index</code> and cross-checked by Orbit's own <code style="color:#9DEFC4">orbit sql</code> (120/120 match). 115 tests pass.</div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px">
+            <button onClick="{{ goLedger }}" style="min-height:44px; padding:10px 16px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; color:#0c1410; background:#4AD6A0; border:none; letter-spacing:0.04em" style-hover="filter:brightness(1.08)">Audit ledger + tamper proof →</button>
+            <button onClick="{{ goDemoClick }}" style="min-height:44px; padding:10px 16px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; color:#A6F0CC; background:transparent; border:1px solid rgba(52,211,153,0.4); letter-spacing:0.04em" style-hover="background:rgba(52,211,153,0.1)">External-repo proof (pallets/click) →</button>
+            <a href="https://github.com/vaibhav4046/keystone#how-to-verify-this-is-real-for-a-skeptical-judge" target="_blank" rel="noopener" style="display:inline-flex; align-items:center; min-height:44px; padding:10px 16px; border-radius:7px; font:600 12px/1 'JetBrains Mono',monospace; color:#A6F0CC; background:transparent; border:1px solid rgba(52,211,153,0.4); text-decoration:none; letter-spacing:0.04em">Test + cross-check evidence →</a>
+          </div>
+        </div>
+
+        <!-- External-repo story: what is indexed on pallets/click and why it matters. -->
+        <div style="margin:0 0 30px; padding:15px 17px; border-radius:10px; background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.2); max-width:580px">
+          <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF8A2B; text-transform:uppercase; margin-bottom:9px">Not tuned to our own repo</div>
+          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9A98F">We indexed <b style="color:#F6EFE6">pallets/click</b> with GitLab Orbit — <b style="color:#FFC24D">1,841 definitions, 6,305 call edges</b>, a library we did not write. The same engine finds real cross-MR collisions there: <code style="color:#FFB14D">Context × echo</code> share 14 runtime dependents (HOLD), and <code style="color:#FFB14D">echo × make_context</code> is a directional BLOCK. <button onClick="{{ goDemoClick }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Open the pallets/click demo →</button></div>
         </div>
 
         <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:11px">Run in your terminal</div>
@@ -1178,6 +1198,9 @@ class Component extends DCLogic {
       openConsent: () => this.setState({ showConsent: true }),
       closeConsent: () => this.setState({ showConsent: false }),
       goDemo: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }),
+      goCockpit: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'cockpit' }),
+      goLedger: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'ledger' }),
+      goDemoClick: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksLoadOrbit) setTimeout(function () { window.__ksLoadOrbit('orbit_snapshot_click.json'); }, 60); },
       goLanding: () => this.setState({ view: 'landing' }),
       onArtMove: (e) => { const t = e.currentTarget; const r = t.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top; t.style.setProperty('--mx', (x / r.width - 0.5).toFixed(3)); t.style.setProperty('--my', (y / r.height - 0.5).toFixed(3)); t.style.setProperty('--px', x + 'px'); t.style.setProperty('--py', y + 'px'); t.style.setProperty('--torch', '1'); },
       onArtLeave: (e) => { const t = e.currentTarget; t.style.setProperty('--mx', '0'); t.style.setProperty('--my', '0'); t.style.setProperty('--torch', '0'); },
