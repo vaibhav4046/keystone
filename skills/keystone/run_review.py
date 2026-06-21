@@ -409,6 +409,9 @@ def _shadow_merge(argv):
     ap.add_argument("--b-id", default=None)
     ap.add_argument("--safe", action="store_true", help="run a verified non-colliding pair (ALLOW, exit 0)")
     ap.add_argument("--fixture", action="store_true", help="use the committed fixture graph")
+    ap.add_argument("--graph", default=None,
+                    help="path to a specific Orbit .duckdb (e.g. data/click_graph.duckdb) to prove a "
+                         "collision on an EXTERNAL repo Keystone did not write")
     ap.add_argument("--json", action="store_true", help="also print the machine-readable packet")
     ap.add_argument("--out", default=None, help="markdown packet path")
     ap.add_argument("--fail-on-block", action="store_true", help="(default) non-zero on HOLD/BLOCK")
@@ -428,7 +431,12 @@ def _shadow_merge(argv):
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     sys.path.insert(0, root)
     self_graph = os.path.join(root, "data", "keystone_self_graph.duckdb")
-    graph_path = None if a.fixture else (self_graph if os.path.exists(self_graph) else None)
+    if a.graph:
+        graph_path = a.graph if os.path.isabs(a.graph) else os.path.join(root, a.graph)
+    elif a.fixture:
+        graph_path = None
+    else:
+        graph_path = self_graph if os.path.exists(self_graph) else None
     from core import collision as collision_mod, graph as graph_mod, impact as impact_mod
     g = graph_mod.Graph(prefer_live=not a.fixture, path=graph_path)
 
