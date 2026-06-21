@@ -3,23 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; base-uri 'self'; object-src 'none'">
 <title>Keystone - presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{ --bg:#0a0706; --ink:#F6EFE6; --dim:#B59B86; --orange:#FF7A1A; --amber:#FFC24D; --green:#34D399; --panel:#14100b; }
+  :root{ --bg:#000; --ink:#F6EFE6; --dim:#B59B86; --orange:#FF7A1A; --amber:#FFC24D; --green:#34D399; --panel:#14100b; }
   *{box-sizing:border-box; margin:0; padding:0}
   html,body{height:100%}
   body{background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif; overflow:hidden; -webkit-font-smoothing:antialiased}
-  .grain{position:fixed; inset:0; background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px); background-size:34px 34px; -webkit-mask-image:linear-gradient(to bottom,transparent,#000 30%,#000 70%,transparent); mask-image:linear-gradient(to bottom,transparent,#000 30%,#000 70%,transparent); pointer-events:none; z-index:0}
+  .grain{position:fixed; inset:0; background-image:repeating-linear-gradient(90deg,rgba(255,255,255,0.05) 0,rgba(255,255,255,0.05) 1px,transparent 1px,transparent 84px); -webkit-mask-image:linear-gradient(to bottom,transparent,#000 14%,#000 86%,transparent); mask-image:linear-gradient(to bottom,transparent,#000 14%,#000 86%,transparent); pointer-events:none; z-index:0}
   .glow{position:fixed; left:0; right:0; bottom:0; height:60vh; background:radial-gradient(130% 100% at 50% 100%,rgba(240,72,10,0.22),rgba(255,122,26,0.06) 38%,transparent 70%); pointer-events:none; z-index:0}
   .stage{position:relative; z-index:1; height:100%; display:flex; align-items:center; justify-content:center; padding:6vh 7vw}
   .slide{position:absolute; inset:0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding:7vh 8vw; opacity:0; transform:translateY(24px); transition:opacity .5s cubic-bezier(.16,1,.3,1), transform .5s cubic-bezier(.16,1,.3,1); pointer-events:none}
   .slide.on{opacity:1; transform:none; pointer-events:auto}
   .eyebrow{font:600 13px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.24em; text-transform:uppercase; color:#C9A98F; margin-bottom:26px; display:flex; align-items:center; gap:12px}
   .dot{width:8px; height:8px; background:var(--orange); box-shadow:0 0 12px var(--orange)}
-  h1{font:700 clamp(40px,7vw,104px)/0.98 'Bodoni Moda',Georgia,serif; letter-spacing:-0.01em; text-transform:uppercase}
-  h1 .it{color:var(--orange); font-style:italic}
-  h2{font:700 clamp(30px,4.6vw,62px)/1.04 'Bodoni Moda',Georgia,serif; text-transform:uppercase; letter-spacing:.005em}
+  h1{font:600 clamp(36px,6vw,86px)/1.0 'Pixelify Sans','Space Grotesk',sans-serif; letter-spacing:0.01em; text-transform:uppercase; overflow-wrap:break-word}
+  h1 .it{color:var(--orange)}
+  h2{font:600 clamp(28px,4.4vw,58px)/1.06 'Pixelify Sans','Space Grotesk',sans-serif; text-transform:uppercase; letter-spacing:.01em; overflow-wrap:break-word}
   .lead{font:400 clamp(18px,2.1vw,30px)/1.5 'Inter',sans-serif; color:#D8C8B8; max-width:24ch; margin-top:26px; text-wrap:balance}
   .lead b{color:var(--ink); font-weight:600}
   .sub{font:400 clamp(15px,1.5vw,20px)/1.6 'Inter',sans-serif; color:var(--dim); max-width:46ch; margin-top:20px}
