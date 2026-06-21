@@ -864,20 +864,23 @@ class ScanCollisionReq(BaseModel):
 
 
 @app.post("/api/scan-collision")
-def scan_collision(r: ScanCollisionReq):
-    """The hero flow: scan ANY public repo live, find its single highest-severity REAL
-    cross-MR blast collision on the call graph, and draft the deterministic guard PR.
-    No LLM, no auth, zero pre-indexing - the 'it just did that on a real repo' moment."""
+def scan_collision(r: ScanCollisionReq, ks_sid: str = Cookie(default=""), x_keystone_session: str = Header(default="")):
+    """Scan a real repo, find its single highest-severity REAL cross-MR blast collision on
+    the call graph, and draft the deterministic guard PR. When the caller is signed in, the
+    scan uses THEIR GitHub token (5000 req/hr) so it works on their own repos for real - not
+    a canned demo. No LLM, zero pre-indexing."""
     import re as _re
     from core import repo_scan as _rs, collision as _coll
     repo = r.repo.strip().strip("/")
     if not _re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
         raise HTTPException(status_code=400, detail={"error": "BAD_REPO", "hint": "Use owner/repo."})
     cached = _hero_cache().get(repo.lower())
-    if cached:                                   # precomputed real collision for demo repos: instant, never rate-limited
+    if cached:                                   # precomputed REAL collision for the well-known libraries: instant
         return cached
+    _s = _gh_sessions.get(ks_sid or x_keystone_session)
+    _token = _s["token"] if (_s and _s.get("token")) else None   # real, un-rate-limited scan of the user's own repos
     try:
-        g, stats = _rs.scan_repo(repo)
+        g, stats = _rs.scan_repo(repo, token=_token)
     except Exception as e:
         print("scan_collision error:", repr(e))
         raise HTTPException(status_code=502, detail={"error": "SCAN_FAILED",

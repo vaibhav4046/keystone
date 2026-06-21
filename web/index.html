@@ -1762,7 +1762,10 @@ class Component extends DCLogic {
       if (!repo || repo.indexOf('/') < 0) { log('Enter a public repo as owner/repo.', 'err'); return; }
       goBtn.disabled = true; goBtn.textContent = 'Scanning...'; resEl.style.display = 'none'; diffEl.style.display = 'none'; prBtn.style.display = 'none'; logEl.innerHTML = '';
       log('POST /api/scan-collision  -  ' + repo, '');
-      fetch(KS + '/api/scan-collision', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: repo }) })
+      var _sid = (function () { try { return sessionStorage.getItem('ks_sid') || ''; } catch (e) { return ''; } })();
+      var _h = { 'Content-Type': 'application/json' };
+      if (_sid) _h['X-Keystone-Session'] = _sid;   // signed-in -> the scan uses YOUR token (real repos, no rate limit)
+      fetch(KS + '/api/scan-collision', { method: 'POST', credentials: 'include', headers: _h, body: JSON.stringify({ repo: repo }) })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
           var d = res.d || {};
