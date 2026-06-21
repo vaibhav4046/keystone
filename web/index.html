@@ -807,6 +807,7 @@
             <h3 style="font:600 18px/1.1 'Space Grotesk',sans-serif; color:#F6EFE6; margin:0">Agent fix plan</h3>
             <span title="These remediation steps are generated deterministically from the collision packet, not by a model. The merge verdict itself is a deterministic graph computation; no LLM decides it. The plan is advisory; the gate is binding." style="font:600 9px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:5px 9px; border-radius:999px; color:#D7B89A; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.28); cursor:help">ADVISORY · GATE IS DETERMINISTIC</span>
             <button onClick="{{ copyFixPlan }}" title="Copy the fix plan to your clipboard" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#FFB14D; background:rgba(255,122,26,0.1); border:1px solid rgba(255,122,26,0.32)" style-hover="background:rgba(255,122,26,0.18); color:#FFC24D">Copy fix plan</button>
+            <button onClick="{{ agentFixPR }}" title="The agent opens a REAL pull request that adds a deterministic co-change guard - transparently, and only after you approve" style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; cursor:pointer; font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#150a02; background:linear-gradient(135deg,#FFC24D,#FF7A1A); border:none" style-hover="filter:brightness(1.08)">⚡ Agent: open fix PR</button>
           </div>
           <p style="font:400 14.5px/1.55 'Inter',sans-serif; color:#D8C8B8; margin:0 0 20px; max-width:74ch"><b style="color:#FF8A66">Blocked because</b> {{ fixPlanWhy }}</p>
           <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px">
@@ -1559,6 +1560,7 @@ class Component extends DCLogic {
       ],
       fixPlanStatus: 'copilot-workspace auto-merge stays overruled until these checks pass. Keystone proposes the plan; a human decides; the ledger records it.',
       copyFixPlan: (e) => { var btn = e && e.currentTarget; var orig = btn ? btn.textContent : ''; try { if (navigator.clipboard && navigator.clipboard.writeText) { var pr = navigator.clipboard.writeText(_fixPlanText); if (pr && pr.catch) pr.catch(function () {}); } } catch (err) {} if (btn) { btn.textContent = 'Copied'; setTimeout(function () { try { btn.textContent = orig; } catch (e2) {} }, 1600); } },
+      agentFixPR: () => { if (typeof window === 'undefined' || !window.__ksAgentFix) return; var sc = window.__ksScan || {}; window.__ksAgentFix({ repo: sc.repo || '', symbolA: sc.symbolA || sc.a || 'compute_blast_radius', symbolB: sc.symbolB || sc.b || 'verify', fileA: sc.fileA || 'core/impact.py', fileB: sc.fileB || 'core/audit.py', dependents: sc.shared || sc.dependents || 5, verdict: 'BLOCK' }); },
 
       panel: this.state.panel,
       isOverview: this.state.panel === 'overview',
@@ -1709,6 +1711,103 @@ class Component extends DCLogic {
   }
   window.__ksLoadOrbit = loadOrbit;
   window.__ksAskRepo = function () { askRepo(); };   // prominent, React-callable entry to the live GitHub repo scanner
+
+  // Agent fix: transparent, approval-gated PR opener. Plans the deterministic co-change
+  // guard (no LLM), streams every step like a cloud agent, and opens a REAL pull request
+  // via the backend only after the user approves. Writes use the signed-in user's token.
+  window.__ksAgentFix = function (finding) {
+    finding = finding || {};
+    var KS = (typeof KS_BACKEND !== 'undefined') ? KS_BACKEND : 'https://keystone-zt6c.onrender.com';
+    var repo0 = finding.repo || (window.__ksScan && window.__ksScan.repo) ||
+      (window.__ksUser && window.__ksUser.repos && window.__ksUser.repos[0] && window.__ksUser.repos[0].full_name) || '';
+    var body = {
+      repo: repo0, symbolA: finding.symbolA || 'compute_blast_radius', symbolB: finding.symbolB || 'verify',
+      fileA: finding.fileA || 'core/impact.py', fileB: finding.fileB || 'core/audit.py',
+      dependents: finding.dependents || 5, verdict: finding.verdict || 'BLOCK'
+    };
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.74);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px';
+    var card = document.createElement('div');
+    card.style.cssText = 'width:min(680px,96vw);max-height:90vh;overflow:auto;background:#0b0806;border:1px solid rgba(255,122,26,0.3);border-radius:14px;padding:22px;box-shadow:0 40px 90px -30px #000;font-family:Inter,sans-serif;color:#F6EFE6';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+      '<span style="width:9px;height:9px;border-radius:50%;background:#FF7A1A;box-shadow:0 0 10px #FF7A1A"></span>' +
+      '<div style="font:600 15px/1 \'Space Grotesk\',sans-serif">Keystone agent &middot; open a fix PR</div>' +
+      '<button id="ksa-x" style="margin-left:auto;background:none;border:none;color:#8B9099;font-size:22px;cursor:pointer;line-height:1">&times;</button></div>' +
+      '<div style="font:400 12.5px/1.6 Inter,sans-serif;color:#A6907B;margin-bottom:14px">Deterministic, no LLM. The agent drafts a co-change guard from the Orbit collision, shows every step, and opens a <b style="color:#F6EFE6">real pull request</b> only after you approve.</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;background:#0c0805;border:1px solid rgba(255,122,26,0.3);border-radius:9px;padding:10px 12px;margin-bottom:12px"><span style="color:#FF7A1A;font:600 12px/1 \'JetBrains Mono\',monospace">repo</span><input id="ksa-repo" placeholder="owner/repo (you must own it)" value="' + String(repo0).replace(/"/g, '') + '" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;color:#F6EFE6;font:400 13px/1 \'JetBrains Mono\',monospace"/></div>' +
+      '<div id="ksa-log" style="background:#070504;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;min-height:84px;max-height:220px;overflow:auto;margin-bottom:12px"></div>' +
+      '<pre id="ksa-diff" style="display:none;background:#070504;border:1px solid rgba(52,211,153,0.22);border-radius:10px;padding:12px 14px;max-height:170px;overflow:auto;font:400 11px/1.55 \'JetBrains Mono\',monospace;color:#9DEFC4;white-space:pre-wrap;margin-bottom:12px"></pre>' +
+      '<div style="display:flex;gap:10px;align-items:center"><button id="ksa-go" style="flex:1;padding:13px 18px;border-radius:9px;border:none;cursor:pointer;font:700 13px/1 \'JetBrains Mono\',monospace;letter-spacing:0.06em;text-transform:uppercase;color:#150a02;background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)">Plan the fix</button>' +
+      '<a id="ksa-pr" href="#" target="_blank" rel="noopener" style="display:none;padding:13px 18px;border-radius:9px;font:700 13px/1 \'JetBrains Mono\',monospace;color:#0c1410;background:#4AD6A0;text-decoration:none">View PR &rarr;</a></div>';
+    ov.appendChild(card); document.body.appendChild(ov);
+    var logEl = card.querySelector('#ksa-log'), diffEl = card.querySelector('#ksa-diff'),
+      goBtn = card.querySelector('#ksa-go'), prLink = card.querySelector('#ksa-pr'), repoIn = card.querySelector('#ksa-repo');
+    function close() { try { ov.remove(); } catch (e) {} }
+    card.querySelector('#ksa-x').addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    function log(t, kind) {
+      var d = document.createElement('div');
+      d.style.cssText = 'font:500 12px/1.65 \'JetBrains Mono\',monospace;opacity:0;transition:opacity .3s;color:' + (kind === 'ok' ? '#4AD6A0' : kind === 'err' ? '#FF6A3D' : kind === 'wait' ? '#FFC24D' : '#C9CDD4');
+      d.textContent = (kind === 'ok' ? '✓ ' : kind === 'err' ? '✕ ' : kind === 'wait' ? '○ ' : '› ') + t;
+      logEl.appendChild(d); requestAnimationFrame(function () { d.style.opacity = '1'; }); logEl.scrollTop = logEl.scrollHeight;
+    }
+    function reveal(steps, cb) {
+      var i = 0; (function nxt() {
+        if (i >= steps.length) { cb && cb(); return; }
+        var s = steps[i]; log(s.t, s.ok === false ? 'err' : (s.ok ? 'ok' : (s.k === 'approve' ? 'wait' : ''))); i++;
+        setTimeout(nxt, 430);
+      })();
+    }
+    var phase = 'idle';
+    goBtn.addEventListener('click', function () {
+      body.repo = (repoIn.value || '').trim();
+      if (phase === 'idle') {
+        if (!body.repo || body.repo.indexOf('/') < 0) { log('Enter a repo you own as owner/repo.', 'err'); return; }
+        phase = 'planning'; goBtn.disabled = true; goBtn.textContent = 'Planning...';
+        log('POST /api/agent/plan', '');
+        fetch(KS + '/api/agent/plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            reveal(d.steps || [], function () {
+              if (d.diff) { diffEl.style.display = 'block'; diffEl.textContent = d.diff; }
+              goBtn.disabled = false; phase = 'planned';
+              goBtn.textContent = 'Approve & open PR';
+              goBtn.style.background = 'linear-gradient(135deg,#4AD6A0,#2BB07F)';
+            });
+          })
+          .catch(function () { log('Plan failed - backend may be warming. Try again.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Plan the fix'; phase = 'idle'; });
+        return;
+      }
+      if (phase === 'planned') {
+        if (!window.__ksUser) {
+          log('Sign in with GitHub (public_repo scope) so the agent can write.', 'wait');
+          if (window.__ksSignIn) window.__ksSignIn();
+          return;
+        }
+        phase = 'applying'; goBtn.disabled = true; goBtn.textContent = 'Opening PR...';
+        log('Approved. POST /api/agent/apply (writing to ' + body.repo + ' as ' + (window.__ksUser.login || 'you') + ')', 'wait');
+        fetch(KS + '/api/agent/apply', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (res) {
+            var d = res.d || {};
+            if (res.ok && d.ok) {
+              reveal(d.steps || [], function () {
+                log('Pull request opened.', 'ok');
+                if (d.pr_url) { prLink.href = d.pr_url; prLink.style.display = 'inline-block'; prLink.textContent = 'View PR #' + (d.pr_number || '') + ' →'; }
+                goBtn.style.display = 'none'; phase = 'done';
+              });
+            } else {
+              var det = (d && d.detail) || {};
+              if (det.error === 'NOT_SIGNED_IN') { log('Not signed in. Authorize GitHub first.', 'err'); if (window.__ksSignIn) window.__ksSignIn(); }
+              else { log((det.hint || det.error || 'GitHub write failed') + '', 'err'); (det.steps || []).forEach(function (s) { log(s.t, s.ok === false ? 'err' : 'ok'); }); }
+              goBtn.disabled = false; goBtn.textContent = 'Approve & open PR'; phase = 'planned';
+            }
+          })
+          .catch(function () { log('Apply failed - check the repo is public and you own it.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Approve & open PR'; phase = 'planned'; });
+      }
+    });
+  };
   var KS_BACKEND = 'https://keystone-zt6c.onrender.com';
   // Sign in with GitHub: only redirect when the backend OAuth is actually configured;
   // otherwise the button is never broken - it opens the public scanner (same engine).

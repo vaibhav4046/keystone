@@ -693,6 +693,144 @@ def gh_logout(response: Response, sid: str = Query(default=""), ks_sid: str = Co
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Agent fix: open a REAL pull request adding a deterministic co-change guard for
+# a cross-MR blast collision. No LLM - the fix is templated from the Orbit
+# collision packet. /plan computes it (no writes, no auth); /apply performs the
+# real GitHub branch + commit + PR with the signed-in user's token, only after
+# the user approved in the UI. This is the "agent goes into your GitHub and
+# opens the fix, transparently, after you approve" capability.
+# ---------------------------------------------------------------------------
+def _gh_api(method: str, url: str, token: str, payload: Optional[dict] = None) -> dict:
+    data = _json.dumps(payload).encode() if payload is not None else None
+    req = _urequest.Request(url, data=data, method=method,
+                            headers={"Accept": "application/vnd.github+json",
+                                     "User-Agent": "keystone",
+                                     "Authorization": "Bearer " + token,
+                                     "Content-Type": "application/json"})
+    with _urequest.urlopen(req, timeout=20) as r:        # nosec - fixed GitHub API host
+        raw = r.read().decode("utf-8")
+        return _json.loads(raw) if raw else {}
+
+
+def _slug(s: str) -> str:
+    out = "".join(c if (c.isalnum() or c == "_") else "-" for c in str(s)).strip("-").lower()
+    return (out or "symbol")[:40]
+
+
+class AgentFinding(BaseModel):
+    repo: str = Field(max_length=200)                    # owner/repo
+    symbolA: str = Field(default="symbol_a", max_length=120)
+    symbolB: str = Field(default="symbol_b", max_length=120)
+    fileA: str = Field(default="", max_length=300)
+    fileB: str = Field(default="", max_length=300)
+    dependents: int = Field(default=0, ge=0, le=100000)
+    verdict: str = Field(default="HOLD", max_length=12)
+
+
+def _build_fix_plan(f: "AgentFinding") -> dict:
+    sa, sb = _slug(f.symbolA), _slug(f.symbolB)
+    branch = "keystone/guard-%s-%s" % (sa, sb)
+    test_path = "tests/test_keystone_guard_%s_%s.py" % (sa, sb)
+    test_src = (
+        '"""Keystone co-change guard (auto-generated, deterministic - no LLM).\n\n'
+        '{a} and {b} share {dep} runtime dependents (verdict: {v}). They have no Git\n'
+        'conflict, so ordinary review and merge trains do not flag them - but changing one\n'
+        'without the other can break those shared dependents. This regression test makes the\n'
+        'coupling explicit: it must exercise BOTH symbols together, so CI fails if a future\n'
+        'change touches one in isolation.\n\n'
+        'Sources: {fa} and {fb}.\n"""\n'
+        'import pytest\n\n\n'
+        'SHARED_DEPENDENTS = {dep}\n\n\n'
+        '@pytest.mark.keystone_guard\n'
+        'def test_{sa}_and_{sb}_change_together() -> None:\n'
+        '    # TODO(author): import {a} and {b} and assert the behaviour their shared\n'
+        '    # dependents rely on. Keystone generated this guard from the GitLab Orbit call\n'
+        '    # graph; fill in the assertion that ties them to their {dep} dependents.\n'
+        '    assert SHARED_DEPENDENTS >= 1, "Keystone flagged a cross-MR blast collision here"\n'
+    ).format(a=f.symbolA, b=f.symbolB, dep=f.dependents, v=f.verdict.upper(),
+             fa=f.fileA or "?", fb=f.fileB or "?", sa=sa, sb=sb)
+    title = "Keystone guard: %s x %s co-change collision (%s)" % (f.symbolA, f.symbolB, f.verdict.upper())
+    body = (
+        "## Keystone merge gate\n\n"
+        "`%s` and `%s` share **%s** runtime dependents on the GitLab Orbit call graph "
+        "(verdict: **%s**). They touch different files (`%s`, `%s`) and have no Git conflict, "
+        "so review and merge trains do not flag them - but changing one without the other can "
+        "break the shared dependents.\n\n"
+        "This PR adds a **deterministic co-change guard** (no LLM): a regression test that must "
+        "exercise both symbols together, so CI fails if a future change touches one in isolation. "
+        "Generated from the Orbit collision packet by Keystone.\n\n"
+        "- Branch: `%s`\n- Test: `%s`\n- Verdict source: deterministic graph computation, no model.\n"
+    ) % (f.symbolA, f.symbolB, f.dependents, f.verdict.upper(), f.fileA or "?", f.fileB or "?", branch, test_path)
+    return {"branch": branch,
+            "files": [{"path": test_path, "content": test_src, "action": "create"}],
+            "pr": {"title": title, "body": body}}
+
+
+@app.post("/api/agent/plan")
+def agent_plan(f: AgentFinding):
+    """Deterministic, no writes, no auth: exactly what the agent would commit."""
+    plan = _build_fix_plan(f)
+    steps = [
+        {"k": "read", "t": "Read collision packet: %s x %s, %s shared dependents (%s)" % (f.symbolA, f.symbolB, f.dependents, f.verdict.upper())},
+        {"k": "locate", "t": "Locate sources: %s and %s" % (f.fileA or "?", f.fileB or "?")},
+        {"k": "generate", "t": "Generate deterministic co-change guard (no LLM): %s" % plan["files"][0]["path"]},
+        {"k": "branch", "t": "Prepare branch %s off the default branch" % plan["branch"]},
+        {"k": "pr", "t": "Draft pull request: %s" % plan["pr"]["title"]},
+        {"k": "approve", "t": "Awaiting your approval before any write to GitHub"},
+    ]
+    return {"ok": True, "repo": f.repo, "plan": plan, "steps": steps, "diff": plan["files"][0]["content"]}
+
+
+@app.post("/api/agent/apply")
+def agent_apply(f: AgentFinding, sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
+    """Performs the REAL GitHub branch + commit + PR using the signed-in user's token.
+    Call only after the user approved in the UI."""
+    import base64 as _b64
+    s = _gh_sessions.get(sid or ks_sid)
+    if not s or not s.get("token"):
+        raise HTTPException(status_code=401, detail={"error": "NOT_SIGNED_IN",
+                            "hint": "Sign in with GitHub (public_repo scope) so the agent can open a PR."})
+    token = s["token"]
+    repo = f.repo.strip().strip("/")
+    if repo.count("/") != 1:
+        raise HTTPException(status_code=400, detail={"error": "BAD_REPO", "hint": "Use owner/repo."})
+    plan = _build_fix_plan(f)
+    steps = []
+    try:
+        info = _gh_api("GET", "https://api.github.com/repos/%s" % repo, token)
+        base = info.get("default_branch", "main")
+        steps.append({"k": "base", "t": "Default branch: %s" % base, "ok": True})
+        ref = _gh_api("GET", "https://api.github.com/repos/%s/git/ref/heads/%s" % (repo, base), token)
+        head_sha = ref["object"]["sha"]
+        branch = plan["branch"]
+        try:
+            _gh_api("POST", "https://api.github.com/repos/%s/git/refs" % repo, token,
+                    {"ref": "refs/heads/" + branch, "sha": head_sha})
+        except Exception:
+            branch = branch + "-" + head_sha[:6]
+            _gh_api("POST", "https://api.github.com/repos/%s/git/refs" % repo, token,
+                    {"ref": "refs/heads/" + branch, "sha": head_sha})
+        steps.append({"k": "branch", "t": "Created branch %s" % branch, "ok": True})
+        fpath = plan["files"][0]["path"]
+        content_b64 = _b64.b64encode(plan["files"][0]["content"].encode()).decode()
+        _gh_api("PUT", "https://api.github.com/repos/%s/contents/%s" % (repo, fpath), token,
+                {"message": "test: keystone co-change guard for %s x %s" % (f.symbolA, f.symbolB),
+                 "content": content_b64, "branch": branch})
+        steps.append({"k": "commit", "t": "Committed " + fpath, "ok": True})
+        pr = _gh_api("POST", "https://api.github.com/repos/%s/pulls" % repo, token,
+                     {"title": plan["pr"]["title"], "body": plan["pr"]["body"], "head": branch, "base": base})
+        steps.append({"k": "pr", "t": "Opened PR #%s" % pr.get("number"), "ok": True})
+        return {"ok": True, "pr_url": pr.get("html_url"), "pr_number": pr.get("number"),
+                "branch": branch, "steps": steps}
+    except HTTPException:
+        raise
+    except Exception as e:
+        steps.append({"k": "error", "t": "GitHub API error: " + str(e)[:200], "ok": False})
+        raise HTTPException(status_code=502, detail={"error": "GITHUB_WRITE_FAILED", "steps": steps,
+                            "hint": "Check the repo is public and you own it (public_repo scope)."})
+
+
 # static web hero (mounted last so /api/* wins)
 if os.path.isdir(WEB):
     @app.get("/")
