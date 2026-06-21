@@ -338,7 +338,12 @@
       </div>
 
       <!-- BLAST ARTIFACT right (medium-big) -->
-      <div style="position:relative; align-self:start; margin-top:8px; display:flex; align-items:center; justify-content:center">
+      <div style="position:relative; align-self:start; margin-top:8px; display:flex; flex-direction:column; align-items:center; gap:18px">
+      <!-- Autoplaying demo: the product in motion, above the fold, no click required. -->
+      <div style="width:100%; max-width:560px; border-radius:14px; overflow:hidden; border:1px solid rgba(255,122,26,0.3); box-shadow:0 22px 60px -24px rgba(0,0,0,0.85); position:relative">
+        <video src="keystone-demo.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Keystone demo: two merge requests that pass review but break production together, blocked before merge" style="display:block; width:100%; height:auto; background:#0a0706"></video>
+        <span style="position:absolute; left:10px; top:10px; font:600 9px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; color:#FFB14D; background:rgba(10,7,5,0.72); border:1px solid rgba(255,122,26,0.35); border-radius:999px; padding:5px 9px">▶ 90-SECOND DEMO</span>
+      </div>
       <div onMouseMove="{{ onArtMove }}" onMouseLeave="{{ onArtLeave }}" style="position:relative; width:100%; max-width:560px; aspect-ratio:1 / 1; --mx:0; --my:0; --px:50%; --py:50%; --torch:0; cursor:crosshair">
 
         <div style="position:absolute; inset:0; background:radial-gradient(circle closest-side at 50% 50%, rgba(255,138,40,0.12), transparent 72%); pointer-events:none; z-index:0"></div>
