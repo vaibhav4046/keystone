@@ -6,6 +6,8 @@
 
 ## Quick start (for judges)
 
+**▶ 90-second demo:** it autoplays in the hero on the live site, or watch it directly: https://vaibhav4046.github.io/keystone/keystone-demo.mp4 (two safe-looking MRs that break together → BLOCK → tamper-evident ledger).
+
 Live demo, nothing to install: **https://vaibhav4046.github.io/keystone/** - open it, click **Try a live demo** to load Keystone's real GitLab Orbit self-index (262 definitions), read the silent-collision finding and the **All silent collisions** table, then use the left rail to walk the **Reviewer Cockpit**, the **Engineering Harness** (a bot MR run to a BLOCK verdict), and the **Audit Ledger**, where **Simulate tamper** breaks the live hash chain and **Restore chain** re-validates it.
 
 Live backend (the real product, not the static snapshot): **https://keystone-zt6c.onrender.com** - deployed on Render's free tier; runs in LIVE mode with the live `orbit sql` cross-check. Health: [`/api/health`](https://keystone-zt6c.onrender.com/api/health). (Free instance sleeps when idle; the first request after idle can take ~50s to wake.)
