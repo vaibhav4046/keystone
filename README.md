@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml/badge.svg)](https://github.com/vaibhav4046/keystone/actions/workflows/ci.yml)
 
-> **Git sees files. Orbit sees relationships.** Keystone uses the GitLab Orbit code graph to catch hidden merge-request collisions — two MRs that touch different files, pass review, and still break together through a shared dependency — and gates them before they ship. Second act: when an AI agent proposes the merge, Keystone overrules an approval that contradicts recorded precedent. The model proposes; the engine decides; the ledger remembers.
+> **Git sees files. Orbit sees relationships.** Keystone uses the GitLab Orbit code graph to catch hidden merge-request collisions - two MRs that touch different files, pass review, and still break together through a shared dependency - and gates them before they ship. Second act: when an AI agent proposes the merge, Keystone overrules an approval that contradicts recorded precedent. The model proposes; the engine decides; the ledger remembers.
 
 ## Quick start (for judges)
 
@@ -253,7 +253,7 @@ It does not learn or self-evolve; the ledger is memory by recall, never by mutat
 
 The web command center (`web/`) is a vanilla HTML/CSS/JS single-page application with no build step. It loads Inter from Google Fonts for prose and uses system monospace for code and data. The design system is token-based: CSS custom properties in `:root` define the color palette, spacing scale (4 px multiples), border radii, and shadow levels, with backward-compatible aliases for every variable the JavaScript references.
 
-**Layout.** A fixed 64 px sidebar (`nav.sidebar`) holds icon-only navigation buttons for Overview, Symbols, Impact, and Audit; it expands to 240 px on toggle and persists the state in `localStorage`. The main content sits in `.app-shell` with a 52 px sticky topbar carrying the brand, status chips, and the sidebar toggle. Below the topbar, the hazard X-ray section spans the full width, then a two-column workspace (`.workspace`: CSS Grid `1fr 400px`) splits the symbol explorer + blast radius on the left from a sticky scrollable detail panel (impact, precedent, brief, AI assistant, governance gate) on the right. The audit ledger sits below as a full-width section. Four responsive breakpoints (1440+, 1080–1439, 768–1079, <768) progressively collapse the sidebar, stack the panels, and increase touch targets.
+**Layout.** A fixed 64 px sidebar (`nav.sidebar`) holds icon-only navigation buttons for Overview, Symbols, Impact, and Audit; it expands to 240 px on toggle and persists the state in `localStorage`. The main content sits in `.app-shell` with a 52 px sticky topbar carrying the brand, status chips, and the sidebar toggle. Below the topbar, the hazard X-ray section spans the full width, then a two-column workspace (`.workspace`: CSS Grid `1fr 400px`) splits the symbol explorer + blast radius on the left from a sticky scrollable detail panel (impact, precedent, brief, AI assistant, governance gate) on the right. The audit ledger sits below as a full-width section. Four responsive breakpoints (1440+, 1080-1439, 768-1079, <768) progressively collapse the sidebar, stack the panels, and increase touch targets.
 
 **Keyboard shortcuts.** `Ctrl+K` / `Cmd+K` opens a command palette overlay for instant symbol search and action dispatch. `/` focuses the symbol filter. `↑`/`↓` navigate the symbol listbox. `Escape` closes the command palette, clears the search, or dismisses the mobile sidebar.
 

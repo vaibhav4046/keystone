@@ -1,4 +1,4 @@
-# Keystone — Final 10/10 Judge Packet
+# Keystone - Final 10/10 Judge Packet
 
 One page to evaluate, verify, and submit Keystone. Every number is real and reproducible.
 Full paste-ready submission copy (Devpost 22 fields, AI Catalog, video script) lives in
@@ -11,7 +11,7 @@ exact submit checklist.
 - **GitHub:** https://github.com/vaibhav4046/keystone
 - **GitLab (primary):** https://gitlab.com/lalwanivaibhav079/keystone
 - **Video:** `<paste unlisted YouTube/Vimeo URL>`
-- **Commit:** `dd86d9b` · **Track:** GitLab Transcend — Showcase · **License:** MIT
+- **Commit:** `dd86d9b` · **Track:** GitLab Transcend - Showcase · **License:** MIT
 
 ## One-command demo
 ```bash

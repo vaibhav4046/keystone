@@ -3,9 +3,9 @@
 Paste these into the Devpost fields. Written to be honest and specific. No em-dashes, no
 hashtags, no invented numbers or users. Fill the two links and the video URL where marked.
 
-GitLab repo (PRIMARY — required by the rules): https://gitlab.com/lalwanivaibhav079/keystone   (public, MIT, synced to commit 8069f64)
+GitLab repo (PRIMARY - required by the rules): https://gitlab.com/lalwanivaibhav079/keystone   (public, MIT, synced to commit 8069f64)
 GitHub mirror (secondary): https://github.com/vaibhav4046/keystone
-AI Catalog artifact: <PASTE CATALOG LINK — publish .gitlab/agents/keystone/agent.yml to the AI Catalog, then paste>
+AI Catalog artifact: <PASTE CATALOG LINK - publish .gitlab/agents/keystone/agent.yml to the AI Catalog, then paste>
 Live demo: https://vaibhav4046.github.io/keystone/
 Video (public, under 3 min): <PASTE YOUTUBE OR VIMEO URL>
 
