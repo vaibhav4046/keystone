@@ -37,6 +37,8 @@ class Impact:
     epicenter_fqn: str = ""  # fully-qualified name, to disambiguate same-short-name symbols
     epicenter_file: str = "" # owning file path of the epicenter
     epicenter_kind: str = "" # definition type (Function, Class, etc.)
+    signature_fqn: str = ""  # content-addressed sig over epicenter FQN + sorted affected FQNs
+    affected_fqns: list = None  # sorted FQNs of the affected (dependent) set
 
     def to_dict(self) -> dict:
         return {
@@ -47,6 +49,7 @@ class Impact:
             "affected_ids": self.affected_ids,
             "counts": self.counts,
             "signature": self.signature,
+            "signature_fqn": self.signature_fqn,
             "owners": self.owners,
             "names": {str(k): v for k, v in self.names.items()},
             "parents": {str(k): v for k, v in self.parents.items()},
@@ -63,6 +66,29 @@ def blast_radius_signature(affected_ids, epicenter_id=None) -> str:
     ordered = sorted(set(int(x) for x in affected_ids))
     payload = json.dumps(
         {"epicenter": int(epicenter_id) if epicenter_id is not None else None, "affected": ordered},
+        separators=(",", ":"), sort_keys=True,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def blast_radius_signature_fqn(affected_fqns, epicenter_fqn=None) -> str:
+    """Content-addressed sha256 over the epicenter's fully-qualified name plus the sorted,
+    de-duplicated set of affected (dependent) FQNs.
+
+    Why FQNs instead of DuckDB row ids (the id-based blast_radius_signature): row ids are
+    assigned at index time and are NOT stable across a re-index or a different machine, so an
+    id-based precedent key silently misses after the graph is rebuilt. FQNs are the change's
+    real semantic footprint, so this key is stable across re-indexing and ties a precedent to
+    *what the change touches*, not to volatile ids.
+
+    Rename resistance (and its honest limit): renaming the epicenter changes epicenter_fqn, so
+    a pure-rename evasion still alters THIS key. But the affected-FQN SET is unchanged by an
+    epicenter rename, so the ledger's separate FQN-overlap match still fires. A change that
+    renames the epicenter AND restructures its entire dependent set can still evade content
+    addressing; that is a documented limitation, not a silent gap."""
+    ordered = sorted({f for f in (affected_fqns or []) if f})
+    payload = json.dumps(
+        {"epicenter": (epicenter_fqn or None), "affected": ordered},
         separators=(",", ":"), sort_keys=True,
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
@@ -104,9 +130,15 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
 
     owners = [{"id": epi_id, "ring": 0, **graph.owning_file_and_dir(epi_id)}]
     names = {epi_id: epi["name"]}
+    fqn_of = getattr(graph, "fqn_of", None)
+    affected_fqns = []
     for i in affected:
         owners.append({"id": i, "ring": ring_of[i], **graph.owning_file_and_dir(i)})
         names[i] = graph.name_of(i)
+        if fqn_of:
+            affected_fqns.append(fqn_of(i))
+    affected_fqns = sorted(f for f in affected_fqns if f)
+    epi_fqn = epi.get("fqn", "") or ""
 
     return Impact(
         epicenter_id=epi_id,
@@ -118,7 +150,9 @@ def compute_blast_radius(graph, target_name: str, max_depth: int = DEFAULT_MAX_D
         owners=owners,
         names=names,
         parents={c: p for c, p in parents.items()},
-        epicenter_fqn=epi.get("fqn", "") or "",
+        epicenter_fqn=epi_fqn,
         epicenter_file=epi.get("file", "") or "",
         epicenter_kind=epi.get("kind", "") or "",
+        signature_fqn=blast_radius_signature_fqn(affected_fqns, epicenter_fqn=epi_fqn),
+        affected_fqns=affected_fqns,
     )

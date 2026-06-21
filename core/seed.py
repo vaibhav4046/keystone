@@ -36,6 +36,8 @@ def seed_rows_for(graph) -> list:
                 "target_symbols": [second],
                 "epicenter_id": imp2.epicenter_id,
                 "blast_radius_set": imp2.affected_ids,
+                "signature_fqn": imp2.signature_fqn,
+                "target_fqns": [imp2.epicenter_fqn] if imp2.epicenter_fqn else None,
                 "decision": "approve",
                 "rationale": f"Internal refactor of {second}; public signature unchanged, "
                              f"{len(imp2.affected_ids)} dependents recompute identically. Low risk.",
@@ -53,6 +55,8 @@ def seed_rows_for(graph) -> list:
             "target_symbols": [top],
             "epicenter_id": imp.epicenter_id,
             "blast_radius_set": imp.affected_ids,
+            "signature_fqn": imp.signature_fqn,
+            "target_fqns": [imp.epicenter_fqn] if imp.epicenter_fqn else None,
             "decision": "reject",
             "rationale": f"{top} sits under {n} dependents across the graph; changing it shifts "
                          f"the computed impact of every one. Needs an RFC and a migration test first.",

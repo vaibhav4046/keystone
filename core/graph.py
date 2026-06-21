@@ -182,6 +182,20 @@ class Graph:
         rows = self._con.execute("SELECT name FROM gl_definition WHERE id = ?", [def_id]).fetchall()
         return rows[0][0] if rows else str(def_id)
 
+    def fqn_of(self, def_id: int) -> str:
+        """Fully-qualified name of a definition for content-addressed precedent keys.
+        Falls back to `<file_path>::<name>` when the index has no fqn, so the key is still
+        stable across re-indexing (unlike the volatile integer id)."""
+        rows = self._con.execute(
+            "SELECT fqn, file_path, name FROM gl_definition WHERE id = ?", [def_id]).fetchall()
+        if not rows:
+            return str(def_id)
+        fqn, fpath, name = rows[0]
+        if fqn:
+            return fqn
+        base = (fpath or "").replace("\\", "/")
+        return (base + "::" + (name or str(def_id))) if base else (name or str(def_id))
+
     def total_definitions(self) -> int:
         return self._con.execute("SELECT count(*) FROM gl_definition").fetchone()[0]
 
