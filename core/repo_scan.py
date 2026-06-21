@@ -22,7 +22,9 @@ from typing import Dict, List, Optional, Tuple
 
 MAX_FILES = 400
 MAX_FILE_BYTES = 300_000
-_DEF_TYPES = {"FunctionDef": "function", "AsyncFunctionDef": "function", "ClassDef": "class"}
+# Match the capitalized Orbit vocabulary the graph filters on (core/graph.py CALLABLE_TYPES);
+# lowercase values silently miss every WHERE definition_type IN (...) query on a scanned graph.
+_DEF_TYPES = {"FunctionDef": "Function", "AsyncFunctionDef": "Function", "ClassDef": "Class"}
 
 
 def parse_repo_spec(raw: str) -> Tuple[str, str, str]:
@@ -35,7 +37,7 @@ def parse_repo_spec(raw: str) -> Tuple[str, str, str]:
     parts = s.split("/")
     if len(parts) < 2:
         raise ValueError("expected owner/repo, got %r" % raw)
-    branch = parts[3] if len(parts) >= 4 and parts[2] == "tree" else ""
+    branch = "/".join(parts[3:]) if len(parts) >= 4 and parts[2] == "tree" else ""  # keep slash branches (feature/x)
     return parts[0], parts[1], branch
 
 
@@ -134,6 +136,8 @@ def build_graph_duckdb(sources: Dict[str, str], out_path: str, repo_label: str) 
     def _many(sql, rows):
         if rows:
             con.executemany(sql, rows)
+    if os.path.exists(out_path):       # else CREATE TABLE crashes on a reused out_path (CatalogException)
+        os.remove(out_path)
     con = duckdb.connect(out_path)
     con.execute("CREATE TABLE gl_directory (id BIGINT, path VARCHAR, name VARCHAR)")
     _many("INSERT INTO gl_directory VALUES (?, ?, ?)",

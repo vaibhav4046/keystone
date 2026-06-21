@@ -49,7 +49,12 @@ def _load() -> dict:
     except Exception:
         return _empty()
     base = _empty()
-    base.update({k: data.get(k, base[k]) for k in base})
+    if not isinstance(data, dict):     # a valid-JSON non-object (list/str/number) must not brick every tool
+        return base
+    base["summary"] = data["summary"] if isinstance(data.get("summary"), str) else ""
+    base["updated_at"] = data.get("updated_at")
+    base["memories"] = data["memories"] if isinstance(data.get("memories"), list) else []
+    base["todos"] = data["todos"] if isinstance(data.get("todos"), list) else []
     return base
 
 
@@ -57,14 +62,16 @@ def _save(data: dict) -> None:
     data["updated_at"] = _now()
     path = _store_path()
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    tmp = path + ".tmp"
+    tmp = "%s.tmp.%d" % (path, os.getpid())   # unique per writer: concurrent saves can't collide on one temp
     with open(tmp, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False)
-    os.replace(tmp, path)            # atomic
+    os.replace(tmp, path)            # atomic file swap
 
 
 def _next_id(items: list) -> int:
-    return (max([int(i.get("id", 0)) for i in items], default=0) + 1)
+    ids = [int(i["id"]) for i in items
+           if isinstance(i, dict) and str(i.get("id", "")).lstrip("-").isdigit()]
+    return (max(ids, default=0) + 1)   # skip foreign/non-int ids so one bad record can't crash every write
 
 
 mcp = FastMCP("keystone-continuity")
@@ -123,7 +130,7 @@ def complete_todo(todo_id: int) -> dict:
     """Mark a todo done by id."""
     data = _load()
     for t in data["todos"]:
-        if int(t.get("id", -1)) == int(todo_id):
+        if str(t.get("id")) == str(todo_id):     # string-compare so a foreign non-int stored id can't crash the loop
             t["done"] = True
             _save(data)
             return {"ok": True, "id": todo_id, "done": True}
@@ -168,24 +175,34 @@ def seed_from_memory(memory_dir: str = "") -> dict:
         return {"ok": False, "error": "no_MEMORY.md", "path": index}
     with open(index, "r", encoding="utf-8") as fh:
         text = fh.read()
-    rows = re.findall(r"^-\s*\[([^\]]+)\]\(([^)]+)\)\s*[—\-]\s*(.*)$", text, re.M)
+    # Accept -, *, + bullets and optional indentation; keep the separator on the SAME line
+    # ([ \t]* only) so a description-less link can't swallow the next entry; the hook is optional.
+    rows = re.findall(r"^[ \t]*[-*+]\s*\[([^\]]+)\]\(([^)]+)\)[ \t]*(?:[—\-][ \t]*(.*?))?[ \t]*$", text, re.M)
     data = _load()
+    root = os.path.realpath(mdir)
     imported = 0
     for title, fname, hook in rows:
         title = title.strip()
-        body = hook.strip()
+        hook = (hook or "").strip()
+        body = hook
         mtype = "reference"
-        fpath = os.path.join(mdir, fname.strip())
-        if os.path.exists(fpath):
+        fname = fname.strip()
+        # Confine the read to the memory dir: reject absolute targets and ../ escapes so a
+        # crafted MEMORY.md link can't import an arbitrary file off disk.
+        real = os.path.realpath(os.path.join(mdir, fname))
+        confined = (not os.path.isabs(fname)) and (os.path.commonpath([real, root]) == root)
+        if confined and os.path.isfile(real):
             try:
-                with open(fpath, "r", encoding="utf-8") as fh:
+                with open(real, "r", encoding="utf-8") as fh:
                     raw = fh.read()
-                mt = re.search(r"type:\s*([A-Za-z|/ ]+)", raw)
-                if mt:
-                    mtype = mt.group(1).split("|")[0].strip()
+                fm = re.match(r"^---\s*\n(.*?)\n---", raw, re.S)   # type ONLY from a real frontmatter block
+                if fm:
+                    mt = re.search(r"^type:\s*([A-Za-z|/ ]+)$", fm.group(1), re.M)
+                    if mt:
+                        mtype = mt.group(1).split("|")[0].strip()
                 bodytext = re.sub(r"^---.*?---\s*", "", raw, count=1, flags=re.S).strip()
                 if bodytext:
-                    body = (hook.strip() + "\n\n" + bodytext) if hook.strip() else bodytext
+                    body = (hook + "\n\n" + bodytext) if hook else bodytext
             except Exception:
                 pass
         body = body[:4000]

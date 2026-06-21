@@ -152,10 +152,11 @@ class Graph:
             [limit],
         ).fetchall()
         names = [r[0] for r in rows]
-        if not names:  # extreme fallback: any named definition
-            names = [r[0] for r in self._con.execute(
-                "SELECT DISTINCT name FROM gl_definition WHERE name IS NOT NULL AND name <> '' "
-                "ORDER BY name LIMIT ?", [limit]).fetchall()]
+        if not names:  # fallback: any named definition, STILL fan-in ranked (no type filter) so
+            names = [r[0] for r in self._con.execute(    # the top-blast hub is never dropped by an alphabetical cap
+                f"SELECT d.name, MAX({self._fanin_subquery()}) AS fanin FROM gl_definition d "
+                "WHERE d.name IS NOT NULL AND d.name <> '' "
+                "GROUP BY d.name ORDER BY fanin DESC, d.name ASC LIMIT ?", [limit]).fetchall()]
         return names
 
     def direct_callers(self, def_id: int) -> list:
@@ -248,12 +249,23 @@ class Graph:
         return out[:limit]
 
     def repo_label(self) -> Optional[str]:
-        """Best-effort repo name from the manifest, for the status panel."""
+        """Best-effort repo name from the manifest, for the status panel.
+
+        Returns only the final path component (the repo basename), never the
+        absolute path baked into the index manifest. The manifest stores the
+        indexing machine's repo_path (e.g. a Windows dev path); leaking that
+        publicly is needless info disclosure. Splits on both separators because
+        a Windows-style path is served from a Linux host, where os.path.basename
+        would not split on backslash."""
         if "_orbit_manifest" not in self._cols:
             return None
         try:
             row = self._con.execute("SELECT repo_path FROM _orbit_manifest LIMIT 1").fetchone()
-            return row[0] if row else None
+            raw = row[0] if row else None
+            if not raw:
+                return None
+            base = str(raw).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
+            return base or None
         except Exception:
             return None
 

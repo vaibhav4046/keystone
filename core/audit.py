@@ -102,13 +102,20 @@ class Ledger:
 
     def _read_raw(self) -> list:
         if not os.path.exists(self.path):
+            self._corrupt_lines = 0
             return []
         rows = []
+        corrupt = 0
         with open(self.path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if line:
+                if not line:
+                    continue
+                try:
                     rows.append(json.loads(line))
+                except (json.JSONDecodeError, ValueError):
+                    corrupt += 1   # a partial/hand-edited line: skip so reads never crash; verify() flags the break
+        self._corrupt_lines = corrupt
         return rows
 
     def rows(self) -> list:
@@ -155,13 +162,21 @@ class Ledger:
                     if k not in payload:
                         payload[k] = v
             payload["row_hash"] = _row_hash(prev_hash, payload)
-            with open(self.path, "a", encoding="utf-8") as f:
-                f.write(_canonical(payload) + "\n")
+            # Atomic full-rewrite (temp + os.replace): a crash mid-write can never leave a
+            # partial line that bricks every later read. Existing rows re-canonicalize to
+            # identical bytes (deterministic _canonical), so the row_hash chain is preserved.
+            lines = [_canonical(r) for r in existing] + [_canonical(payload)]
+            tmp = self.path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+            os.replace(tmp, self.path)
         return payload
 
     def verify(self) -> dict:
         """Recompute the whole chain. Returns {ok, count, broken_index|None}."""
         rows = self._read_raw()
+        if getattr(self, "_corrupt_lines", 0):
+            return {"ok": False, "count": len(rows), "broken_index": -1, "corrupt": True}
         prev = GENESIS_PREV
         for idx, row in enumerate(rows):
             stored = row.get("row_hash")
