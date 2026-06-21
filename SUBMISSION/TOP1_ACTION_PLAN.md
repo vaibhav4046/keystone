@@ -1,4 +1,4 @@
-# TOP-1 ACTION PLAN — Honest Path to Winning
+# TOP-1 ACTION PLAN - Honest Path to Winning
 
 **Deadline: June 24, 2026 @ 2:00pm ET (9 days from now)**
 
@@ -7,23 +7,23 @@
 **739 participants, 8 prizes, 4 equally-weighted criteria, partly subjective judging.**
 
 Your code is genuine top-2 contender quality in two categories:
-- **Technological Implementation** (strongest — real engine, correct graph algorithms, hardened trust model)
+- **Technological Implementation** (strongest - real engine, correct graph algorithms, hardened trust model)
 - **Quality of the Idea** (cross-MR blast collision is novel, invisible to standard review)
 
 Design is good (tour, guided chips, loud refusals). Impact is the weakest (real problem, narrow TAM, no field evidence).
 
-**But right now P(win) = 0 — not because of quality, but because the entry cannot be judged yet.**
+**But right now P(win) = 0 - not because of quality, but because the entry cannot be judged yet.**
 
 Three hard requirements gate everything:
 1. **GitLab mirror** (rules require "Link to your provisioned open source (MIT Licensed) **GitLab project**")
-2. **Demo video ≤ 3 min** on YouTube/Vimeo (public) — **no video = not judged at all**
-3. **Devpost submission** — must be submitted, not draft
+2. **Demo video ≤ 3 min** on YouTube/Vimeo (public) - **no video = not judged at all**
+3. **Devpost submission** - must be submitted, not draft
 
 Without these, the strongest code in the field places nowhere.
 
 ## What you must do (in order, ~2 hours total)
 
-### 1. GitLab mirror (10 minutes) — HARD REQUIREMENT
+### 1. GitLab mirror (10 minutes) - HARD REQUIREMENT
 
 Follow `SUBMISSION/GITLAB_MIRROR.md` or `SHIP.md` step 1:
 
@@ -35,7 +35,7 @@ glab repo create keystone --public --source . --remote gitlab --push
 
 **Why**: Judges are GitLab engineers. They will check the repo is on GitLab, verify MIT license, test by cloning. GitHub-only risks disqualification.
 
-### 2. Demo video (30-45 minutes) — HARD REQUIREMENT
+### 2. Demo video (30-45 minutes) - HARD REQUIREMENT
 
 Follow `SUBMISSION/VIDEO_SCRIPT.md` or `SHIP.md` step 3:
 
@@ -47,7 +47,7 @@ Follow `SUBMISSION/VIDEO_SCRIPT.md` or `SHIP.md` step 3:
 
 **Why**: This is the hardest rule. No video = not judged. Period.
 
-### 3. Devpost submission (15 minutes) — HARD REQUIREMENT
+### 3. Devpost submission (15 minutes) - HARD REQUIREMENT
 
 Follow `SUBMISSION/DEVPOST.md`:
 
@@ -61,7 +61,7 @@ Follow `SUBMISSION/DEVPOST.md`:
 
 **Why**: Last hackathon bit someone on this. Don't let it happen.
 
-### 4. AI Catalog publication (10 minutes, optional but strengthens) — RECOMMENDED
+### 4. AI Catalog publication (10 minutes, optional but strengthens) - RECOMMENDED
 
 Follow `SHIP.md` step 4:
 
@@ -71,7 +71,7 @@ Follow `SHIP.md` step 4:
 
 **Why**: The rules say "At least one agent or flow must be published to the AI Catalog." Your SKILL.md is already in the right format; this is just the publication step.
 
-### 5. Live backend deploy (5 minutes, optional but high-leverage) — RECOMMENDED
+### 5. Live backend deploy (5 minutes, optional but high-leverage) - RECOMMENDED
 
 Follow `SUBMISSION/RENDER_DEPLOY.md`:
 
@@ -115,17 +115,17 @@ Across many simulated judge panels (directional, not real scores):
 These are estimates, not guarantees. The real scores are the judges' to write.
 
 **What moves the needle now:**
-- Deploy the live backend (5 min) — judges test the real agent
-- Record the video (30 min) — the #1 lever, no substitute
-- Submit early (15 min) — avoid last-minute issues
-- Publish to AI Catalog (10 min) — strengthens the Orbit integration claim
+- Deploy the live backend (5 min) - judges test the real agent
+- Record the video (30 min) - the #1 lever, no substitute
+- Submit early (15 min) - avoid last-minute issues
+- Publish to AI Catalog (10 min) - strengthens the Orbit integration claim
 
 ## What I will NOT do
 
-- **Fabricate a score or claim a guaranteed win** — that disqualifies honesty-judged entries
-- **Run more simulated judge panels** — the number is measured and stable
-- **Invent more code work** — the code is at its honest maximum
-- **Promise top-1** — 739 participants, 8 prizes, partly subjective; no one can guarantee that
+- **Fabricate a score or claim a guaranteed win** - that disqualifies honesty-judged entries
+- **Run more simulated judge panels** - the number is measured and stable
+- **Invent more code work** - the code is at its honest maximum
+- **Promise top-1** - 739 participants, 8 prizes, partly subjective; no one can guarantee that
 
 ## The bottom line
 

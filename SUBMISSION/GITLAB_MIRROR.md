@@ -26,7 +26,7 @@ Your repo is currently on GitHub only. You MUST create a GitLab mirror before su
 4. **Verify**:
    - Go to https://gitlab.com/YOUR_USERNAME/keystone
    - Confirm the repo is public and the MIT license is visible in the About section
-   - Copy the URL — this is what you'll paste into Devpost
+   - Copy the URL - this is what you'll paste into Devpost
 
 ## Option 2: Use GitLab's import feature (if you have a GitLab account)
 

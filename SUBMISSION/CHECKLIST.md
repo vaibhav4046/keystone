@@ -1,17 +1,17 @@
-# Keystone — submission checklist (P0 first)
+# Keystone - submission checklist (P0 first)
 
 Deadline: 2026-06-24 14:00 ET. Two-stage judging: Stage 1 is PASS/FAIL on the items marked [P0].
 A perfect Stage-2 score is worthless if any [P0] is open.
 
-## P0 — eligibility (close ALL before anything else)
+## P0 - eligibility (close ALL before anything else)
 
 | # | Requirement | Status | Owner |
 |---|---|---|---|
-| 1 | MIT license in repo | DONE (`LICENSE`, MIT) | — |
-| 2 | Working skill/agent that does real automation (not chat) | DONE — `run_review.py --local` verified producing report + BLOCK | — |
-| 3 | Meaningfully uses GitLab Orbit | DONE — reads `gl_definition`/`gl_edge`, drives `glab orbit local sql`; real index of this repo + pallets/click | — |
-| 4 | Duo Agent Platform agent definition exists | DONE — `.gitlab/agents/keystone/agent.yml` (schema match to Catalog = UNVERIFIED, validate on publish) | — |
-| 5 | GitLab repo public + current | DONE — https://gitlab.com/lalwanivaibhav079/keystone synced to 8069f64, public | — |
+| 1 | MIT license in repo | DONE (`LICENSE`, MIT) | - |
+| 2 | Working skill/agent that does real automation (not chat) | DONE - `run_review.py --local` verified producing report + BLOCK | - |
+| 3 | Meaningfully uses GitLab Orbit | DONE - reads `gl_definition`/`gl_edge`, drives `glab orbit local sql`; real index of this repo + pallets/click | - |
+| 4 | Duo Agent Platform agent definition exists | DONE - `.gitlab/agents/keystone/agent.yml` (schema match to Catalog = UNVERIFIED, validate on publish) | - |
+| 5 | GitLab repo public + current | DONE - https://gitlab.com/lalwanivaibhav079/keystone synced to 8069f64, public | - |
 | 6 | Published to the AI Catalog | OPEN | YOU (GitLab account/UI) |
 | 7 | Public demo video < 3 min | OPEN | YOU (record from DEMO_SCRIPT.md) |
 | 8 | Devpost links GitLab repo + Catalog + video | OPEN (placeholders set) | YOU (paste links) |
@@ -26,12 +26,12 @@ git remote set-url gitlab https://oauth2:<NEW_GITLAB_TOKEN>@gitlab.com/<YOUR_USE
 git push gitlab main
 git remote set-url gitlab https://gitlab.com/<YOUR_USERNAME>/keystone.git
 ```
-   Verify: open `https://gitlab.com/<YOUR_USERNAME>/keystone` — public, MIT visible, latest commit
+   Verify: open `https://gitlab.com/<YOUR_USERNAME>/keystone` - public, MIT visible, latest commit
    matches `git rev-parse --short HEAD`.
 
 2) Publish to the AI Catalog: in GitLab, open the Duo Agent Platform / AI Catalog, add the agent
    from `.gitlab/agents/keystone/agent.yml`, set visibility public. Copy the Catalog artifact URL.
-   (UNVERIFIED: if the Catalog rejects the YAML schema, adjust to its required format — the workflow
+   (UNVERIFIED: if the Catalog rejects the YAML schema, adjust to its required format - the workflow
    logic does not change.)
 
 3) Record the video using `SUBMISSION/DEMO_SCRIPT.md` (CLI workflow first, not a website tour).

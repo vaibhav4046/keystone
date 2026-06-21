@@ -1,4 +1,4 @@
-# Keystone — Final Judge QA (hostile 10-judge panel, simulated)
+# Keystone - Final Judge QA (hostile 10-judge panel, simulated)
 
 Simulated hostile panel against the LIVE product (static site + Render backend), post-deploy. Scores
 /10. For every score < 9.5: reason + status (Completed = fixed this/earlier passes · Login = blocked
@@ -16,17 +16,17 @@ by login/recording access · External = external judge control).
 | Startup | 8.0 | 8.5 | 6.5 | 8.0 | 9.0 | 9.0 | 9.0 | med |
 | OSS maintainer | 9.0 | 9.0 | 7.5 | 8.5 | 9.5 | 9.5 | 9.0 | high |
 | Last-yr winner | 8.5 | 9.0 | 7.0 | 8.5 | 9.0 | 9.5 | 9.0 | med-high |
-| Mean | 8.8 | 8.9 | 7.2 | 8.4 | 9.3 | 9.4 | 9.0 | — |
+| Mean | 8.8 | 8.9 | 7.2 | 8.4 | 9.3 | 9.4 | 9.0 | - |
 
 ## Every score < 9.5, classified
 | Dimension | Reason | Status |
 |---|---|---|
-| Impact (6.5–7.5) | Ultimate+Orbit TAM; no real incident/partner metric | External — copy carries the concrete scenario + agent-velocity thesis; a real metric is the only further lift, outside our control |
-| Idea (8.0–9.0) | Composition of known primitives | External — novelty cap + judge taste |
-| Tech (8.0–9.0, some) | Want live `orbit sql` on the decision path; Render container has no orbit binary so it falls back to DuckDB (engine numbers identical; static snapshot carries the 120/120 CLI-verified cross-check) | External preference — defensible; full live-CLI-on-Render is high-risk Docker work the snapshot already proves |
-| Design (8.5, some) | dc-runtime landing is a strong export, not a bespoke system | Completed to ceiling — no defect remains; further is taste/roadmap |
+| Impact (6.5-7.5) | Ultimate+Orbit TAM; no real incident/partner metric | External - copy carries the concrete scenario + agent-velocity thesis; a real metric is the only further lift, outside our control |
+| Idea (8.0-9.0) | Composition of known primitives | External - novelty cap + judge taste |
+| Tech (8.0-9.0, some) | Want live `orbit sql` on the decision path; Render container has no orbit binary so it falls back to DuckDB (engine numbers identical; static snapshot carries the 120/120 CLI-verified cross-check) | External preference - defensible; full live-CLI-on-Render is high-risk Docker work the snapshot already proves |
+| Design (8.5, some) | dc-runtime landing is a strong export, not a bespoke system | Completed to ceiling - no defect remains; further is taste/roadmap |
 | Trust (9.0, some) | Static ledger uses a published key; asymmetric anchoring not yet | Completed to ceiling (honestly labeled); asymmetric = disclosed roadmap (External) |
-| Submission (9.0) | Video not live; Devpost/AI-Catalog not submitted | Login/recording — all fields/script ready |
+| Submission (9.0) | Video not live; Devpost/AI-Catalog not submitted | Login/recording - all fields/script ready |
 
 ## Verdict
 No fixable code-, UX-, demo-, copy-, or test-owned issue remains below 9.5 (re-verified live this pass:
