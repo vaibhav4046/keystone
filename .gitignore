@@ -62,3 +62,4 @@ _tourtest.cjs
 # demo-recording frame scratch
 _recframes/
 _scantest.cjs
+_wasmtest.cjs

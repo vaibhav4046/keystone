@@ -9,7 +9,7 @@
      console (app.html) and the backend run under a STRICT, no-eval CSP. Every external origin is
      allow-listed and pinned (React, ReactDOM and Babel load from unpkg with Subresource Integrity);
      a static host cannot mint per-request nonces, hence 'unsafe-inline'. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com https://keystone-zt6c.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com https://keystone-zt6c.onrender.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
@@ -23,6 +23,7 @@
 <meta name="twitter:card" content="summary" />
 <script src="./support.js"></script>
 <script src="repo-analyzer.js?v=7"></script>
+<script src="orbit_wasm.js?v=1"></script>
 <style>
   /* Judge fix (Design): responsive collapse + visible keyboard focus. The dc renders
      two-column grids via inline styles, so target them by attribute with !important. */
@@ -1934,7 +1935,7 @@ class Component extends DCLogic {
       + '<div style="font:400 12px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:13px">This runs the same blast-radius query Orbit runs — <b style="color:#C9A98F">count(DISTINCT source_id) over CALLS</b> — <b style="color:#34D399">live in your browser</b>, over the real <b style="color:#C9A98F">gl_definition / gl_edge</b> graph Orbit indexed (' + Object.keys(graph.defs).length + ' defs). In production the identical query runs server-side via <b style="color:#C9A98F">glab orbit local sql</b> — click <b style="color:#34D399">Verify on the live backend</b> to run it against the deployed engine right now.</div>'
       + '<div style="display:flex;gap:8px;margin-bottom:12px"><input id="ks-q-in" list="ks-sym-list" value="' + esc(first) + '" placeholder="symbol name" autocomplete="off" style="flex:1;background:#0c0805;border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:10px 12px;color:#F6EFE6;font:500 12.5px/1 \'JetBrains Mono\',monospace;outline:none"/><datalist id="ks-sym-list">' + opts + '</datalist><button id="ks-q-run" style="font:700 12px/1 Inter,sans-serif;padding:10px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#7be0b4,#34D399 60%,#10b981);color:#06281c;cursor:pointer">Run orbit sql</button></div>'
       + '<div id="ks-q-out" style="background:#0c0805;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 15px;margin-bottom:12px;min-height:64px"></div>'
-      + '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px"><button id="ks-q-live" style="font:600 11px/1 Inter,sans-serif;padding:9px 13px;border-radius:8px;border:1px solid rgba(52,211,153,0.4);background:rgba(52,211,153,0.07);color:#34D399;cursor:pointer">Verify on the LIVE backend →</button><button id="ks-q-gate" style="font:600 11px/1 Inter,sans-serif;padding:9px 13px;border-radius:8px;border:1px solid rgba(255,122,26,0.4);background:rgba(255,122,26,0.07);color:#FFB14D;cursor:pointer">Gate as an AI-agent MR →</button><span style="font:400 10px/1.3 \'JetBrains Mono\',monospace;color:#5f4836">real server-side, at judge-time</span></div>'
+      + '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px"><button id="ks-q-wasm" style="font:600 11px/1 Inter,sans-serif;padding:9px 13px;border-radius:8px;border:1px solid rgba(157,239,196,0.5);background:rgba(52,211,153,0.12);color:#9DEFC4;cursor:pointer">Run REAL duckdb-wasm SQL in your browser →</button><button id="ks-q-live" style="font:600 11px/1 Inter,sans-serif;padding:9px 13px;border-radius:8px;border:1px solid rgba(52,211,153,0.4);background:rgba(52,211,153,0.07);color:#34D399;cursor:pointer">Verify on the LIVE backend →</button><button id="ks-q-gate" style="font:600 11px/1 Inter,sans-serif;padding:9px 13px;border-radius:8px;border:1px solid rgba(255,122,26,0.4);background:rgba(255,122,26,0.07);color:#FFB14D;cursor:pointer">Gate as an AI-agent MR →</button><span style="font:400 10px/1.3 \'JetBrains Mono\',monospace;color:#5f4836">real engine, in-browser + server-side</span></div>'
       + '<div id="ks-q-live-out" style="font:400 11.5px/1.6 \'JetBrains Mono\',monospace;background:#0c0805;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:18px;display:none"></div>'
       + '<div style="font:600 10px/1 \'JetBrains Mono\',monospace;letter-spacing:0.12em;color:#6b8f7e;text-transform:uppercase;margin-bottom:6px">Captured CLI provenance · ' + match + '/' + keys.length + ' matched (orbit v' + esc((prov && prov.orbit_version) || "") + ')</div>'
       + rows + '</div>';
@@ -1944,6 +1945,19 @@ class Component extends DCLogic {
     ov.querySelector("#ks-q-run").onclick = function () { renderResult((document.getElementById("ks-q-in").value || "").trim()); };
     ov.querySelector("#ks-q-live").onclick = function () { runLive((document.getElementById("ks-q-in").value || "").trim()); };
     ov.querySelector("#ks-q-gate").onclick = function () { runGate((document.getElementById("ks-q-in").value || "").trim()); };
+    ov.querySelector("#ks-q-wasm").onclick = function () {
+      var name = (document.getElementById("ks-q-in").value || "").trim();
+      var out = document.getElementById("ks-q-live-out"); out.style.display = "block";
+      out.innerHTML = '<span style="color:#FFC24D">Loading duckdb-wasm and running the real SQL in your browser...</span>';
+      if (!window.__ksRunOrbitSQL) { out.innerHTML = '<span style="color:#FF8A66">in-browser engine unavailable here - use Verify on the LIVE backend</span>'; return; }
+      window.__ksRunOrbitSQL(name).then(function (r) {
+        out.innerHTML = '<div style="color:#34D399;font-weight:600">duckdb-wasm (real engine, in YOUR browser): ' + esc(r.symbol) + ' -> ' + r.count + ' direct callers</div>'
+          + '<pre style="white-space:pre-wrap;color:#9DEFC4;margin:8px 0 0;font:400 10.5px/1.5 \'JetBrains Mono\',monospace">' + esc(r.sql) + '</pre>'
+          + '<div style="margin-top:7px;color:#6b8f7e;font:400 10.5px/1.4 \'JetBrains Mono\',monospace">no backend, no precomputed answer - and it matches /api/impact ring_1 (click Verify on the LIVE backend)</div>';
+      }).catch(function (e) {
+        out.innerHTML = '<span style="color:#FF8A66">in-browser duckdb-wasm did not load here - the identical query runs on the LIVE backend, click Verify above (' + esc(String((e && e.message) || e).slice(0, 60)) + ')</span>';
+      });
+    };
     ov.querySelector("#ks-q-in").addEventListener("keydown", function (e) { if (e.key === "Enter") renderResult((this.value || "").trim()); });
     ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
     document.addEventListener("keydown", function esc2(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc2); } });
