@@ -36,3 +36,12 @@ story concrete: a blocked bot MR now gets a deterministic remediation plan
 (stack, test, safe merge order, re-run gates, record to ledger) with an explicit
 "advisory - gate is deterministic" disclosure. Good material for the AI Catalog
 capability description.
+
+---
+
+## 2026-06-21 - verification surface deepened
+
+`/api/proof` is a single self-describing "is this real" endpoint (live source mode,
+definitions, audit-chain state, integrity mode, routes, demo symbols, and the exact
+external-repo verify command). Good for the AI Catalog "Verification" field. A
+generated demo video asset (`SUBMISSION/keystone-demo.mp4`) also exists.

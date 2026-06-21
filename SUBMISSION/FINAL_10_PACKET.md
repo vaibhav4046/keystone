@@ -20,7 +20,7 @@ python skills/keystone/run_review.py demo
 ```
 **Expected CLI outputs**
 ```
-python -m pytest -q                                                     -> 115 passed, 2 skipped
+python -m pytest -q                                                     -> 116 passed, 2 skipped
 python skills/keystone/run_review.py demo                               -> exit 0  (all 6 beats below)
 python skills/keystone/run_review.py shadow-merge                       -> VERDICT: BLOCK   (exit 2; change_in_blast)
 python skills/keystone/run_review.py shadow-merge --safe                -> VERDICT: ALLOW   (exit 0)
@@ -38,7 +38,7 @@ python skills/keystone/run_review.py shadow-merge --graph data/click_graph.duckd
 5. Click **pallets/click** (verify panel) -> the same engine on a 1,841-definition third-party library.
 
 ## 3-minute technical verification route
-1. `python -m pytest -q` -> 115 passed, 2 skipped.
+1. `python -m pytest -q` -> 116 passed, 2 skipped.
 2. `python skills/keystone/run_review.py demo` -> BLOCK / ALLOW / AI override / ledger break, in one command.
 3. `python skills/keystone/run_review.py shadow-merge --graph data/click_graph.duckdb --a Context --b echo` -> real collision on a repo we didn't write (`tests/test_external_repo.py` enforces it).
 4. README -> **"How to verify this is real"** maps every claim to a check; the engine cross-checks 120/120 ring-1 counts against Orbit's own `glab orbit local sql`.
@@ -64,7 +64,7 @@ AI coding agents now increase merge velocity - more parallel MRs than any review
 ## Why it should win
 1. A capability nothing else shows: cross-MR silent collision + safe merge order on the Orbit graph.
 2. Deepest, most honest Orbit use; proven general on a third-party repo.
-3. Deterministic, no-LLM verdict; 115 tests; one-command reproducible.
+3. Deterministic, no-LLM verdict; 116 tests; one-command reproducible.
 4. Trust as a feature: tamper-evident ledger you watch break, labelled honesty.
 5. First 90 seconds is engineered and live: one CTA, judge-demo + verify panels, working graph, zero console errors.
 
@@ -127,5 +127,18 @@ CI green (run 27893658209):
 Also: stripped all 52 em/en dashes the recent redesign reintroduced into the
 landing copy, back to the repo's hyphen convention.
 
-Tests: 115 passed / 2 skipped. CLI: demo / shadow-merge / shadow-merge --safe /
+Tests: 116 passed / 2 skipped. CLI: demo / shadow-merge / shadow-merge --safe /
 memory-gate --prove / external pallets-click graph all exit with the right codes.
+
+---
+
+## 2026-06-21 - war-loop additions (video + live proof)
+
+- Automated self-narrated demo video generated: `SUBMISSION/keystone-demo.mp4`
+  (~97s, ~2 MB) via `scripts/record_demo_video.mjs` (headless Chrome + ffmpeg),
+  verified frame-by-frame. The hard video blocker is now Completed at the asset
+  level; only the unlisted upload + Devpost paste need the user's login.
+- `/api/proof` endpoint (1 hermetic test) + a Live backend proof panel on the
+  landing (reads /api/status on load; "Re-check backend" wakes a cold free tier;
+  honest snapshot fallback). Verified live: panel reads "Live backend verified".
+- Tests now 116 passed / 2 skipped; all test-count copy updated 115 -> 116.
