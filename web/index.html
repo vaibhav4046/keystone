@@ -799,6 +799,10 @@ class Component extends DCLogic {
 
   componentDidMount() {
     this._lastView = this.state.view;
+    // Re-render hook for the data loaders: forceUpdate() preserves the active panel, unlike the
+    // old fallback of clicking the Dashboard rail (which reset panel -> overview and broke
+    // landing -> Reviewer Cockpit / Audit Ledger deep links).
+    if (typeof window !== 'undefined') window.__ksRerender = () => { try { this.forceUpdate(); } catch (e) {} };
     if (this.props && this.props.startView === 'Dashboard' && this.state.view === 'landing') {
       this.setState({ view: 'dashboard' });
     }
@@ -1390,7 +1394,7 @@ class Component extends DCLogic {
       top: top, chain: chain
     };
   }
-  function rerender() { var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
+  function rerender() { if (window.__ksRerender) { window.__ksRerender(); return; } var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
   function indicator(text, kind) {
     var el = document.getElementById("ks-scan-ind");
     if (!el) { el = document.createElement("div"); el.id = "ks-scan-ind"; el.style.cssText = "position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:99999;font:600 12.5px/1 'JetBrains Mono',monospace;padding:11px 20px;border-radius:999px;letter-spacing:0.02em;transition:opacity .45s ease;box-shadow:0 10px 34px -8px rgba(0,0,0,0.7);pointer-events:none"; document.body.appendChild(el); }
