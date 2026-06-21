@@ -46,3 +46,16 @@ def test_memory_gate_allows_clean_symbol(tmp_path, monkeypatch):
     out = tmp_path / "mg2.md"
     rc = run_review.main(["memory-gate", "append", "--out", str(out)])
     assert rc == 0, "a symbol with no contradicting precedent must be ALLOW / exit 0"
+
+
+def test_memory_gate_prove_records_real_reject_then_overrides(tmp_path):
+    """--prove starts from an EMPTY ledger and records the precedent through the real reject
+    path, so the override is driven by a decision recorded live (not a pre-seeded contradiction)."""
+    out = tmp_path / "prove.md"
+    rc = run_review.main(["memory-gate", "compute_blast_radius", "--prove",
+                          "--reject-by", "staff-engineer", "--out", str(out)])
+    assert rc == 2, "agent APPROVE must be overruled by the just-recorded reject"
+    md = out.read_text(encoding="utf-8")
+    assert "Recorded live in this run" in md, "packet must disclose the precedent was recorded live"
+    assert "staff-engineer" in md and "REJECTED" in md
+    assert "OVERRIDES the agent" in md

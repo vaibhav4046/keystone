@@ -48,3 +48,11 @@ temp_*.ps1
 
 # internal agent handoff: full strategy + honest scores, kept local (not for the public repo)
 HANDOFF.md
+
+# Design-tool exports / handoff dumps (not shipped; kept local only)
+_design2/
+_design_handoff/
+web/index.prev.html
+_evidence.cjs
+_cdpshot.cjs
+_repotest.cjs

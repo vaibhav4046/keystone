@@ -12,13 +12,24 @@ Run the same governed review in your own terminal (Python 3.13):
 
 ```bash
 pip install -r requirements.txt
-python -m pytest -q                                   # 103 passed, 2 skipped
-python skills/keystone/run_review.py shadow-merge                       # THE hook: two MRs, no Git conflict, but they COLLIDE on the Orbit graph (exits 2)
-python skills/keystone/run_review.py memory-gate compute_blast_radius   # second act: an AI agent's APPROVE is OVERRULED by Orbit precedent (exits 2)
+python -m pytest -q                                   # 115 passed, 2 skipped
+python skills/keystone/run_review.py demo              # THE WHOLE STORY in one command: collision BLOCK -> safe ALLOW -> AI approval overruled by memory -> tamper-evident ledger breaks
+python skills/keystone/run_review.py shadow-merge                       # THE hook: MR-204 x MR-207 - no Git conflict, a DIRECTIONAL change_in_blast collision -> BLOCK (exit 2)
+python skills/keystone/run_review.py shadow-merge --safe                # the safe counter-example: non-overlapping pair -> ALLOW (exit 0)
+python skills/keystone/run_review.py memory-gate compute_blast_radius --prove   # records a REAL reject live, then OVERRULES an AI agent's APPROVE from it (exit 2)
 python skills/keystone/run_review.py harness sample    # the full review for MR-204
 ```
 
-Expect a `BLOCK` on `MR-204`: tier `CROSS_TEAM`, blast radius `12`, two cross-MR collisions, and the safe merge order `MR-204 -> MR-207 -> MR-211`. The command exits non-zero on purpose, because a `BLOCK` is meant to fail a pipeline. Every number is computed from a real GitLab Orbit graph and cross-checked by `orbit sql`.
+Expect a `BLOCK` on the headline pair: `MR-207` changes `impact()`, which sits **inside** `MR-204`'s blast radius for `compute_blast_radius()` - each is safe alone, unsafe together, and Git sees two unrelated files. The command exits non-zero on purpose, because a `BLOCK` is meant to fail a pipeline. `--safe` shows the same engine pass a clean pair (exit 0). Every number is computed from a real GitLab Orbit graph and cross-checked by `orbit sql`.
+
+**Proof it is not tuned to our own repo** - run the exact same engine on a real GitLab Orbit index of `pallets/click` (1,841 definitions, 6,305 call edges, a library Keystone did not write):
+
+```bash
+python skills/keystone/run_review.py shadow-merge --graph data/click_graph.duckdb --a Context --b echo          # real blast_overlap, 14 shared dependents -> HOLD (exit 2)
+python skills/keystone/run_review.py shadow-merge --graph data/click_graph.duckdb --a echo --b make_context     # real change_in_blast -> BLOCK (exit 2)
+```
+
+Both are genuine collisions the engine finds on third-party code. `tests/test_external_repo.py` asserts this in CI. The deployed site's **Demo on pallets/click** button loads the same indexed graph (`Context`, 127 dependents; the top shared-dependency collisions) so a judge can see the generality without a terminal.
 
 Two merge requests pass review, touch different files, have no merge conflict, and still break each other in production, because one changes a function the other depends on. Keystone calls that a Blast Collision, and it is exactly the risk the GitLab Orbit code knowledge graph can see and the normal review surface (Git, the MR diff, CODEOWNERS) structurally cannot. Keystone X-rays the graph for these hazards, then governs the change with a deterministic, tamper-evident gate. The lead is the hazard, not the gate. And as autonomous coding agents start authoring these merge requests, faster than any human can carefully review, a gate that binds every decision to a verifiable identity and refuses an agent approving outside its committed scope is exactly the missing control, which is why the addressable problem grows rather than stays niche.
 
@@ -29,6 +40,26 @@ Then it governs. Orbit gives the blast radius of a single change; Keystone maps 
 A GitLab-native extension, not a standalone product: it consumes Orbit, drives Orbit's own CLI, ships as a project SKILL.md plus a CI governance gate, and is built for the GitLab Transcend Hackathon, Showcase track. The onboarding path is a merge-request hook (or the committed `.gitlab-ci.yml` gate) that calls the Keystone API on the touched symbols and fails the pipeline on a BLOCK.
 
 Live demo: https://vaibhav4046.github.io/keystone/ - status SNAPSHOT: a committed real `orbit index` of this repo (262 definitions) with every figure cross-verified by `orbit sql`, served static. Stand up the live backend (one-click `render.yaml`) to interact with the agent and the live hazard detection.
+
+## How to verify this is real (for a skeptical judge)
+
+Every headline claim is checkable in under two minutes. Nothing below depends on a model.
+
+| Claim | How to verify yourself |
+|-------|------------------------|
+| The engine is deterministic and tested | `python -m pytest -q` → **115 passed, 2 skipped**. |
+| Blast numbers are observed, not asserted | The backend cross-checks each ring-1 count against a real `glab orbit local sql` query (`backend/app.py` `_orbit_crosscheck`); `tests/test_engine.py::test_independent_recompute_matches` recomputes the set with raw SQL. |
+| Two safe MRs block together | `shadow-merge` → `change_in_blast` **BLOCK**, exit 2, prints the relationship path. `shadow-merge --safe` → **ALLOW**, exit 0. |
+| Project memory overrules an AI approval | `memory-gate compute_blast_radius --prove` records a real reject into an *empty* ledger, then overrules the agent's APPROVE from that recorded row (exit 2). Not pre-seeded. |
+| It is not tuned to our own repo | `shadow-merge --graph data/click_graph.duckdb --a Context --b echo` → a real collision on pallets/click. `tests/test_external_repo.py` enforces it. |
+| Precedent survives a re-index / rename | `signature_fqn` is content-addressed over epicenter FQN + affected FQN set, not volatile row ids (`tests/test_precedent_identity.py`). |
+| The ledger is tamper-evident | On the live site, **Audit Ledger → Simulate tamper** recomputes the chain in your browser and every downstream hash breaks; **Restore chain** re-validates. |
+
+What is **honestly demo-only**, labelled in the UI and code, not hidden:
+
+- **Ledger hash:** the in-browser landing demo chains rows with **FNV-1a** (a fast, non-cryptographic hash) to show the mechanism live; the production ledger uses keyed **HMAC-SHA256** (`core/audit.py`). The badge in the ledger view states exactly this.
+- **Reviewer identity:** in the static demo the reviewer is **self-asserted**; on the GitLab CI path the runner injects an **OIDC id_token** and the recorded row carries its `sub` claim with `self_asserted=false` (`core/identity.py`, `.gitlab-ci.yml`).
+- **Content-addressed precedent limit:** a change that renames the epicenter *and* restructures its entire dependent set can still alter the content key; this reduces casual id-churn / rename evasion, it is not a cryptographic identity of intent.
 
 ## 3-Minute Demo Script (For Judges)
 
