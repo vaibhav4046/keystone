@@ -139,6 +139,34 @@ def _orbit_access() -> str:
     return "CLI+DuckDB" if _orbit_cli_ok else "DuckDB"
 
 
+def _rel_db_path(p):
+    """Trailing 'parent/file' of the graph path, never the absolute path.
+
+    Graph.source.path is abspath()'d internally; surfacing it in /api/status
+    would leak the deploy's filesystem layout (a dev machine path locally, the
+    Render project dir in prod) to anyone who fetches the public endpoint. This
+    keeps the field informative (matches what the web UI already shows) without
+    the leak. Separator-agnostic so a Windows-indexed path stays clean on Linux."""
+    if not p:
+        return p
+    parts = [seg for seg in str(p).replace("\\", "/").split("/") if seg]
+    return "/".join(parts[-2:]) if parts else None
+
+
+def _clean_repo(r):
+    """The repo label is the _orbit_manifest repo_path, which is the ABSPATH at index
+    time (a dev-machine path baked into the committed self-graph). Surfacing it raw in
+    the public /api/status leaks the filesystem layout, so an absolute path (Windows
+    drive or leading slash) is reduced to its basename; a clean label like
+    'pallets/click' is already safe and passes through unchanged."""
+    if not r:
+        return r
+    s = str(r).replace("\\", "/")
+    if (len(s) > 1 and s[1] == ":") or s.startswith("/"):
+        return s.rstrip("/").split("/")[-1] or s
+    return r
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True, "service": "keystone", "version": "1.0.0"}
@@ -185,8 +213,8 @@ def status():
     return {
         "source_mode": rep["mode"],            # LIVE or FALLBACK
         "orbit_access": _orbit_access(),       # CLI+DuckDB / DuckDB / FALLBACK (honest)
-        "duckdb_path": rep["path"],
-        "repo": _graph.repo_label(),
+        "duckdb_path": _rel_db_path(rep["path"]),   # relative 'data/<file>', never the abspath
+        "repo": _clean_repo(_graph.repo_label()),
         "tables": rep["tables"],
         "schema_pinned": {t: rep["columns"].get(t, []) for t in rep["tables"]},
         "audit_chain": v,                      # {ok, count, broken_index}
