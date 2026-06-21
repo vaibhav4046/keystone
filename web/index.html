@@ -138,7 +138,7 @@
     </header>
 
     <!-- hero -->
-    <main style="flex:1; display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); align-items:center; gap:clamp(20px,3vw,56px); padding:8px 48px 36px; max-width:1440px; margin:0 auto; width:100%">
+    <main style="flex:1; display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); align-items:start; gap:clamp(20px,3vw,56px); padding:8px 48px 36px; max-width:1440px; margin:0 auto; width:100%">
 
       <!-- content left -->
       <div style="max-width:660px; padding:12px 0">
@@ -232,7 +232,7 @@
       </div>
 
       <!-- BLAST ARTIFACT right (medium-big) -->
-      <div style="position:relative; align-self:center; display:flex; align-items:center; justify-content:center">
+      <div style="position:relative; align-self:start; margin-top:8px; display:flex; align-items:center; justify-content:center">
       <div onMouseMove="{{ onArtMove }}" onMouseLeave="{{ onArtLeave }}" style="position:relative; width:100%; max-width:560px; aspect-ratio:1 / 1; --mx:0; --my:0; --px:50%; --py:50%; --torch:0; cursor:crosshair">
 
         <div style="position:absolute; inset:0; background:radial-gradient(circle closest-side at 50% 50%, rgba(255,138,40,0.30), rgba(240,72,10,0.09) 50%, transparent 78%); pointer-events:none; z-index:0"></div>
