@@ -26,7 +26,11 @@ def _urllib_get(base):
     def g(path):
         try:
             with request.urlopen(base + path, timeout=8) as r:
-                return json.loads(r.read().decode())
+                _raw = r.read().decode()
+            try:
+                return json.loads(_raw)                  # a gateway/proxy HTML page served as 200
+            except ValueError:                           # is not JSON -> clean unreachable, not a traceback
+                raise _Unreachable(f"{base} returned a non-JSON response")
         except error.HTTPError as e:
             if e.code == 404:
                 return {}                       # missing symbol -> governed_review reports it cleanly
@@ -42,7 +46,11 @@ def _urllib_post(base):
         req = request.Request(base + path, data=data, headers={"content-type": "application/json"}, method="POST")
         try:
             with request.urlopen(req, timeout=8) as r:
-                return json.loads(r.read().decode())
+                _raw = r.read().decode()
+            try:
+                return json.loads(_raw)                  # non-JSON 200 (gateway page) -> clean unreachable
+            except ValueError:
+                raise _Unreachable(f"{base} returned a non-JSON response")
         except (error.URLError, OSError) as e:
             if not isinstance(e, error.HTTPError):
                 raise _Unreachable(base)        # connection refused / DNS / timeout
@@ -75,7 +83,7 @@ def governed_review(symbol, get_json, post_json=None, *, decide=None, reviewer=N
     report["counts"] = imp["counts"]
     report["signature"] = imp["signature"]
 
-    prec = get_json(f"/api/precedent/{parse.quote(symbol)}")
+    prec = get_json(f"/api/precedent/{parse.quote(symbol)}") or {}   # a 200 'null' body decodes to None
     report["steps"].append("precedent")
     report["precedent"] = {
         "matches": prec.get("match_count", 0),
@@ -94,7 +102,7 @@ def governed_review(symbol, get_json, post_json=None, *, decide=None, reviewer=N
             report["error"] = "decision must be approve or reject"
             return report
         res = post_json("/api/approve", {"name": symbol, "decision": decide,
-                                         "reviewer": reviewer, "rationale": reason})
+                                         "reviewer": reviewer, "rationale": reason}) or {}
         report["steps"].append("approve")
         if res.get("blocked"):
             report["blocked"] = res["blocked"]
@@ -106,7 +114,7 @@ def governed_review(symbol, get_json, post_json=None, *, decide=None, reviewer=N
         report["self_asserted"] = res.get("self_asserted", True)
         report["ci_identity"] = res.get("ci_identity")
     else:
-        report["chain"] = get_json("/api/audit/verify")
+        report["chain"] = get_json("/api/audit/verify") or {}
         report["steps"].append("verify")
     return report
 
@@ -609,6 +617,9 @@ def _scan_repo(argv):
 
     items, worst = [], "ALLOW"
     if a.diff:
+        if not os.path.isfile(a.diff):
+            print("ERROR: diff file not found: " + a.diff)
+            return 1
         with open(a.diff, "r", encoding="utf-8", errors="replace") as fh:
             diff_text = fh.read()
         for s in diff_symbols.changed_symbols(g, diff_text):
@@ -651,6 +662,9 @@ def _changed_symbols(argv):
     a = ap.parse_args(argv)
 
     if a.diff:
+        if not os.path.isfile(a.diff):
+            print("ERROR: diff file not found: " + a.diff)
+            return 1
         with open(a.diff, "r", encoding="utf-8", errors="replace") as fh:
             diff_text = fh.read()
     else:
