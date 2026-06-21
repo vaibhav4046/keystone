@@ -130,15 +130,15 @@
     <!-- top nav -->
     <header style="display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:24px; padding:26px 48px; max-width:1440px; width:100%; margin:0 auto">
       <nav style="display:flex; align-items:center; gap:30px">
-        <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">PRODUCT</span>
-        <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">DOCS</span>
+        <button onClick="{{ goDemo }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">PRODUCT</button>
+        <a href="https://github.com/vaibhav4046/keystone#readme" target="_blank" rel="noopener" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; text-decoration:none" style-hover="color:#FF7A1A">DOCS</a>
       </nav>
       <div style="display:flex; flex-direction:column; align-items:center; gap:8px">
         <span style="font:600 23px/0.95 'Bodoni Moda',serif; letter-spacing:0.07em; color:#F6EFE6">KEYSTONE</span>
         <svg viewBox="0 0 24 24" width="15" height="15" fill="#FF7A1A"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>
       </div>
       <nav style="display:flex; align-items:center; gap:30px; justify-content:flex-end">
-        <span style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; cursor:pointer" style-hover="color:#FF7A1A">PORTAL</span>
+        <a href="https://github.com/vaibhav4046/keystone" target="_blank" rel="noopener" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; text-decoration:none" style-hover="color:#FF7A1A">SOURCE</a>
         <button onClick="{{ goDemo }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">LIVE DEMO →</button>
       </nav>
     </header>
@@ -332,6 +332,8 @@
           <span style="width:6px; height:6px; border-radius:50%; background:{{ d.color }}; transform:scale({{ d.scale }}); transition:background 0.3s, transform 0.3s"></span>
         </sc-for>
       </div>
+      <button onClick="{{ toggleTourPause }}" title="Pause or resume the auto-demo" aria-label="Pause or resume the auto-demo" style="flex:none; padding:8px 11px; border-radius:8px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:#FFB14D; background:rgba(255,122,26,0.1); border:1px solid rgba(255,122,26,0.3)" style-hover="background:rgba(255,122,26,0.18)">{{ tourPauseLabel }}</button>
+      <button onClick="{{ tourNext }}" title="Next step" aria-label="Next step" style="flex:none; padding:8px 11px; border-radius:8px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; color:#C9CDD4; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14)" style-hover="background:rgba(255,255,255,0.1); color:#fff">Next ›</button>
       <button onClick="{{ stopTour }}" title="Exit the auto-demo" aria-label="Exit the auto-demo" style="flex:none; padding:8px 13px; border-radius:8px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:#C9CDD4; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14)" style-hover="background:rgba(255,255,255,0.1); color:#fff">EXIT</button>
       <div class="ks-tour-bar" style="position:absolute; left:0; bottom:0; height:2px; width:100%; background:linear-gradient(90deg,#FFC24D,#FF7A1A 55%,#F0480A)"></div>
     </div>
@@ -364,7 +366,7 @@
       <header style="position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:20px; padding:0 28px; height:60px; border-bottom:1px solid rgba(255,255,255,0.07); background:rgba(10,7,5,0.78); backdrop-filter:blur(12px)">
         <nav style="display:flex; align-items:center; gap:4px">
           <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
-            <span style="font:500 14px/1 'Inter',sans-serif; padding:8px 12px; border-radius:7px; color:{{ t.color }}; background:{{ t.bg }}; cursor:pointer" style-hover="color:#F2F3F5">{{ t.label }}</span>
+            <button onClick="{{ t.onClick }}" style="font:500 14px/1 'Inter',sans-serif; padding:8px 12px; border-radius:7px; color:{{ t.color }}; background:{{ t.bg }}; border:none; cursor:pointer" style-hover="color:#F2F3F5">{{ t.label }}</button>
           </sc-for>
         </nav>
         <div style="display:flex; align-items:center; gap:14px; margin-left:auto">
@@ -392,8 +394,8 @@
             </div>
           </div>
           <div style="display:flex; gap:11px">
-            <button style="padding:12px 20px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A); box-shadow:0 8px 26px -10px rgba(240,72,10,0.6)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.98)">Start analysis</button>
-            <button style="padding:12px 20px; border-radius:8px; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#F2F3F5; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13)" style-hover="background:rgba(255,255,255,0.08)">View dashboard</button>
+            <button onClick="{{ scrollGraph }}" style="padding:12px 20px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A); box-shadow:0 8px 26px -10px rgba(240,72,10,0.6)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.98)">Start analysis</button>
+            <button onClick="{{ goCockpit }}" style="padding:12px 20px; border-radius:8px; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#F2F3F5; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13)" style-hover="background:rgba(255,255,255,0.08)">Open Reviewer Cockpit</button>
           </div>
         </section>
 
@@ -896,7 +898,7 @@
   &quot;startView&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Landing&quot;, &quot;Dashboard&quot;], &quot;default&quot;: &quot;Landing&quot;, &quot;tsType&quot;: &quot;string&quot; }
 }">
 class Component extends DCLogic {
-  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false, tourStep: 0, tourCaption: '', backend: { status: 'checking' } };
+  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false, tourPaused: false, tourStep: 0, tourCaption: '', backend: { status: 'checking' } };
 
   componentDidMount() {
     this._lastView = this.state.view;
@@ -971,16 +973,23 @@ class Component extends DCLogic {
       { panel: 'ledger', tampered: false, cap: 'Restore the chain, and it verifies again.' },
       { panel: 'harness', tampered: false, cap: 'The same gate runs on AI-agent merge requests.' }
     ];
+    this._tourSteps = steps;
     this._tourTotal = steps.length;
-    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true, tourStep: 0, tourCaption: steps[0].cap });
-    let i = 0;
-    this._tourTimer = setInterval(() => {
-      i = (i + 1) % steps.length;
-      this.setState({ panel: steps[i].panel, tampered: steps[i].tampered, tourStep: i, tourCaption: steps[i].cap });
-      try { window.scrollTo(0, 0); } catch (e) {}
-    }, 4200);
+    this._tourIdx = 0;
+    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true, tourPaused: false, tourStep: 0, tourCaption: steps[0].cap });
+    this._tourStartTimer();
   }
-  stopTour() { if (this._tourTimer) { clearInterval(this._tourTimer); this._tourTimer = null; } if (this.state.autoTour) this.setState({ autoTour: false }); }
+  _tourStartTimer() { if (this._tourTimer) clearInterval(this._tourTimer); this._tourTimer = setInterval(() => this._tourGo(1), 4200); }
+  _tourGo(delta) {
+    const n = this._tourSteps.length; this._tourIdx = (this._tourIdx + delta + n) % n;
+    const s = this._tourSteps[this._tourIdx];
+    this.setState({ panel: s.panel, tampered: s.tampered, tourStep: this._tourIdx, tourCaption: s.cap });
+    try { window.scrollTo(0, 0); } catch (e) {}
+  }
+  pauseTour() { if (this._tourTimer) { clearInterval(this._tourTimer); this._tourTimer = null; } this.setState({ tourPaused: true }); }
+  resumeTour() { this.setState({ tourPaused: false }); this._tourStartTimer(); }
+  tourNext() { this._tourGo(1); if (!this.state.tourPaused) this._tourStartTimer(); }
+  stopTour() { if (this._tourTimer) { clearInterval(this._tourTimer); this._tourTimer = null; } if (this.state.autoTour) this.setState({ autoTour: false, tourPaused: false }); }
 
   setPanel(p) {
     this.stopTour();
@@ -1405,6 +1414,9 @@ class Component extends DCLogic {
       goDemoClick: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksLoadOrbit) setTimeout(function () { window.__ksLoadOrbit('orbit_snapshot_click.json'); }, 60); },
       watchRun: () => this.startTour(),
       autoTour: this.state.autoTour,
+      tourPauseLabel: this.state.tourPaused ? '▶ Play' : '⎉ Pause',
+      toggleTourPause: () => { if (this.state.tourPaused) this.resumeTour(); else this.pauseTour(); },
+      tourNext: () => this.tourNext(),
       tourCaption: this.state.tourCaption || '',
       tourStepLabel: 'Step ' + ((this.state.tourStep || 0) + 1) + ' of 6',
       backendBadge: (function (b) {
@@ -1432,13 +1444,7 @@ class Component extends DCLogic {
       scrollGraph: () => { const el = document.querySelector('[data-blast]'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 72; window.scrollTo({ top: y, behavior: 'smooth' }); } },
 
       railIcons: [['overview', 'Dashboard', '▤'], ['cockpit', 'Reviewer Cockpit', '◎'], ['harness', 'Engineering Harness', '⌁'], ['ledger', 'Audit Ledger', '☰'], ['demo', 'Live Demo', '▶']].map(([k, label, glyph]) => { const on = this.state.panel === k; return { label, glyph, onClick: () => this.setPanel(k), color: on ? '#FFB14D' : '#8B9099', bg: on ? 'rgba(255,122,26,0.12)' : 'transparent', border: on ? 'rgba(255,122,26,0.3)' : 'transparent' }; }),
-      navTabs: [
-        { label: 'Dashboard', color: '#F2F3F5', bg: 'rgba(255,255,255,0.06)' },
-        { label: 'Inventory', color: '#8B9099', bg: 'transparent' },
-        { label: 'Analysis', color: '#8B9099', bg: 'transparent' },
-        { label: 'Reports', color: '#8B9099', bg: 'transparent' },
-        { label: 'Overview', color: '#8B9099', bg: 'transparent' }
-      ],
+      navTabs: [['overview', 'Dashboard'], ['cockpit', 'Reviewer Cockpit'], ['harness', 'Engineering Harness'], ['ledger', 'Audit Ledger'], ['demo', 'Live Demo']].map(([k, label]) => { const on = this.state.panel === k; return { label, onClick: () => this.setPanel(k), color: on ? '#F2F3F5' : '#8B9099', bg: on ? 'rgba(255,255,255,0.08)' : 'transparent' }; }),
       isOrbit: !!(_SC && _SC.orbit),
       orbitDefs: _SC ? String(_SC.defs) : '262',
       stats: [
