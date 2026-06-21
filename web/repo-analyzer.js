@@ -16,6 +16,8 @@
   var MAX_FILE_BYTES = 240000;  // skip very large files
   var MAX_DEFS = 1200;          // cap symbols
   var FETCH_CONCURRENCY = 12;
+  var SRC_RE = /\.(py|js|jsx|ts|tsx|mjs|cjs)$/i;
+  var SKIP_RE = /(^|\/)(\.|node_modules\/|venv\/|site-packages\/|dist\/|build\/|vendor\/|__pycache__\/)|\.min\.js$|\.d\.ts$/i;
 
   function parseRepoUrl(raw) {
     var s = String(raw || "").trim().replace(/^https?:\/\/(www\.)?github\.com\//i, "").replace(/\.git$/i, "");
@@ -47,8 +49,8 @@
     return ghJson("https://api.github.com/repos/" + owner + "/" + repo + "/git/trees/" + encodeURIComponent(branch) + "?recursive=1")
       .then(function (tree) {
         var files = (tree.tree || []).filter(function (t) {
-          return t.type === "blob" && /\.py$/.test(t.path) && (t.size || 0) <= MAX_FILE_BYTES
-            && !/(^|\/)(\.|node_modules\/|venv\/|site-packages\/)/.test(t.path);
+          return t.type === "blob" && SRC_RE.test(t.path) && (t.size || 0) <= MAX_FILE_BYTES
+            && !SKIP_RE.test(t.path);
         });
         files.sort(function (a, b) {
           var at = /test/i.test(a.path) ? 1 : 0, bt = /test/i.test(b.path) ? 1 : 0;
@@ -127,6 +129,56 @@
     return defs;
   }
 
+  // JS/TS keywords + ubiquitous built-ins to exclude from "calls" (same spirit as the Python KW set).
+  var JSKW = { "if": 1, "for": 1, "while": 1, "switch": 1, "return": 1, "function": 1, "typeof": 1, "instanceof": 1, "new": 1, "await": 1, "async": 1, "catch": 1, "try": 1, "throw": 1, "super": 1, "this": 1, "console": 1, "require": 1, "import": 1, "export": 1, "const": 1, "let": 1, "var": 1, "class": 1, "extends": 1, "Math": 1, "JSON": 1, "Object": 1, "Array": 1, "String": 1, "Number": 1, "Boolean": 1, "Promise": 1, "Date": 1, "RegExp": 1, "Error": 1, "Set": 1, "Map": 1, "parseInt": 1, "parseFloat": 1, "isNaN": 1, "setTimeout": 1, "setInterval": 1, "fetch": 1, "map": 1, "filter": 1, "forEach": 1, "reduce": 1, "find": 1, "some": 1, "every": 1, "push": 1, "pop": 1, "shift": 1, "unshift": 1, "slice": 1, "splice": 1, "concat": 1, "join": 1, "split": 1, "indexOf": 1, "includes": 1, "replace": 1, "match": 1, "test": 1, "then": 1, "keys": 1, "values": 1, "entries": 1, "assign": 1, "stringify": 1, "parse": 1, "querySelector": 1, "addEventListener": 1, "toString": 1, "call": 1, "apply": 1, "bind": 1 };
+
+  // Brace-match the body that opens at/after `from`; returns the index of the matching close brace.
+  // String/comment-aware enough for an honest static approximation (matches the parser's stated limits).
+  function findBodyEnd(text, from) {
+    var i = text.indexOf("{", from);
+    if (i < 0) return text.length;
+    var depth = 0, str = 0, line = false, block = false;
+    for (var k = i; k < text.length; k++) {
+      var c = text[k], n = text[k + 1];
+      if (line) { if (c === "\n") line = false; continue; }
+      if (block) { if (c === "*" && n === "/") { block = false; k++; } continue; }
+      if (str) { if (c === "\\") { k++; continue; } if (c === str) str = 0; continue; }
+      if (c === "/" && n === "/") { line = true; k++; continue; }
+      if (c === "/" && n === "*") { block = true; k++; continue; }
+      if (c === '"' || c === "'" || c === "`") { str = c; continue; }
+      if (c === "{") depth++;
+      else if (c === "}") { depth--; if (depth === 0) return k; }
+    }
+    return text.length;
+  }
+
+  // Regex-based JS/TS/JSX/TSX parser. Captures function declarations, classes, and
+  // arrow/function-expression consts; attributes calls inside each brace-matched body.
+  function parseJs(file, text) {
+    var defs = [];
+    var headerRe = /(?:^|[\n;{}])[ \t]*(?:export\s+)?(?:default\s+)?(?:(?:async\s+)?function\s*\*?\s*([A-Za-z_$][\w$]*)|class\s+([A-Za-z_$][\w$]*)|(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\([^)]*\)\s*(?::[^=]+)?=>|[A-Za-z_$][\w$]*\s*=>))/g;
+    var m;
+    while ((m = headerRe.exec(text))) {
+      var name = m[1] || m[2] || m[3];
+      if (!name) continue;
+      var kind = m[2] ? "Class" : "Function";
+      var line = text.slice(0, m.index).split(/\n/).length;
+      var end = findBodyEnd(text, headerRe.lastIndex);
+      var body = text.slice(headerRe.lastIndex, end);
+      defs.push({ name: name, kind: kind, file: file, line: line, calls: {}, _body: body });
+    }
+    defs.forEach(function (def) {
+      var callRe = /([A-Za-z_$][\w$]*)\s*\(/g, mm;
+      while ((mm = callRe.exec(def._body))) {
+        var nm = mm[1];
+        if (JSKW[nm] || nm === def.name) continue;
+        def.calls[nm] = 1;
+      }
+      delete def._body;
+    });
+    return defs;
+  }
+
   function fnv(s) { var h = 0x811c9dc5; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 0x01000193) >>> 0; } return ("" + h); }
 
   function sha256Hex(str) {
@@ -201,7 +253,7 @@
       var files = {}; affected.forEach(function (id) { files[model.byId[id].file] = 1; });
       var tier = tierFor(total);
       var imp = {
-        epicenter: { id: def.id, name: def.name, fqn: def.file.replace(/\.py$/, "").replace(/\//g, ".") + "." + def.name, file: def.file, kind: def.kind },
+        epicenter: { id: def.id, name: def.name, fqn: def.file.replace(/\.[^.\/]+$/, "").replace(/\//g, ".") + "." + def.name, file: def.file, kind: def.kind },
         rings: ringObj, affected_ids: affected,
         counts: { ring_1: (rings[1] || []).length, total_affected: total, unaffected: Math.max(0, defs.length - 1 - total) },
         signature: "", owners: owners, names: namesMap, parents: {},
@@ -227,7 +279,7 @@
           source_mode: "REPO", definitions: defs.length, orbit_access: "client static analysis",
           orbit_verified_symbols: 0, duckdb_path: meta.slug, audit_chain: { ok: true, count: 0 },
           integrity: { hmac: false, open_mode: true, reviewer_verified: false }, window_enforced: false,
-          data_provenance: "Client-side static analysis of " + meta.slug + " (" + defs.length + " Python definitions across " + meta.fileCount + " files). Regex-based call graph - an honest approximation; Python dynamic dispatch is under-approximated."
+          data_provenance: "Client-side static analysis of " + meta.slug + " (" + defs.length + " definitions across " + meta.fileCount + " files, Python + JS/TS). Regex-based call graph - an honest approximation; dynamic dispatch is under-approximated."
         },
         definitions: { names: names, details: details },
         impact: impact, precedent: {}, brief: {}, assistant: {}, policy: {}, agents: {},
@@ -244,15 +296,15 @@
     if (onProgress) onProgress("Resolving " + slug + "…");
     return resolveBranch(p.owner, p.repo, p.branch).then(function (branch) {
       p.branch = branch;
-      if (onProgress) onProgress("Listing Python files…");
+      if (onProgress) onProgress("Listing source files…");
       return listPyFiles(p.owner, p.repo, branch);
     }).then(function (listed) {
-      if (!listed.files.length) throw new Error("No Python files found in " + slug + " (this analyzer reads .py). Try a Python repo, e.g. pallets/click.");
-      if (onProgress) onProgress("Found " + listed.total + " Python files" + (listed.truncated ? " (analyzing first " + MAX_FILES + ")" : "") + "…");
+      if (!listed.files.length) throw new Error("No supported source files found in " + slug + " (this analyzer reads .py / .js / .ts / .jsx / .tsx). Try another repo, e.g. pallets/click.");
+      if (onProgress) onProgress("Found " + listed.total + " source files" + (listed.truncated ? " (analyzing first " + MAX_FILES + ")" : "") + "…");
       return fetchAll(p.owner, p.repo, p.branch, listed.files, onProgress).then(function (fetched) {
         if (onProgress) onProgress("Parsing call graph from " + fetched.length + " files…");
         var allDefs = [];
-        fetched.forEach(function (f) { var ds = parsePy(f.path, f.text); for (var i = 0; i < ds.length; i++) allDefs.push(ds[i]); });
+        fetched.forEach(function (f) { var ds = /\.py$/i.test(f.path) ? parsePy(f.path, f.text) : parseJs(f.path, f.text); for (var i = 0; i < ds.length; i++) allDefs.push(ds[i]); });
         if (!allDefs.length) throw new Error("Parsed no definitions from " + slug + ".");
         var model = buildModel(allDefs);
         if (onProgress) onProgress("Computing blast radii for " + model.defs.length + " symbols…");
