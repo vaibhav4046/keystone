@@ -223,7 +223,7 @@
 <span style="color:#6b5440">$</span> open keystone — sign in, scan, review</pre>
           <div style="display:flex; gap:14px; margin-top:13px; font:600 11.5px/1 'Inter',sans-serif">
             <a href="https://github.com/vaibhav4046/keystone#readme" target="_blank" rel="noopener" style="color:#FFC24D; text-decoration:none">View on GitHub →</a>
-            <a href="app.html" style="color:#A6907B; text-decoration:none">Open the live tool →</a>
+            <button onClick="{{ goDemo }}" style="color:#A6907B; text-decoration:none; background:none; border:none; cursor:pointer; font:inherit; padding:0">Open the live tool →</button>
           </div>
           <div id="ks-xcheck" title="Click to see the exact glab orbit local sql command and the count Orbit itself returned, per symbol." style="display:flex; align-items:center; gap:8px; margin-top:13px; padding-top:13px; border-top:1px solid rgba(255,122,26,0.12); font:600 11px/1.4 'JetBrains Mono',monospace; color:#34D399; cursor:pointer">
             <span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>Cross-checked 120/120 symbols against GitLab Orbit CLI (v0.74.0) — exact match&nbsp;<span style="color:#6b8f7e">› show commands</span>
@@ -1485,8 +1485,7 @@ class Component extends DCLogic {
       var el = nodes[i]; if (el.__navwired || el.childElementCount > 0) continue;
       var t = (el.textContent || "").trim().toUpperCase();
       if (t === "DOCS") { el.__navwired = 1; el.style.cursor = "pointer"; el.onclick = function () { window.open("https://github.com/vaibhav4046/keystone#readme", "_blank"); }; }
-      else if (t === "PRODUCT") { el.__navwired = 1; el.style.cursor = "pointer"; el.onclick = function () { location.href = "app.html"; }; }
-      else if (t === "PORTAL") { el.__navwired = 1; el.style.cursor = "pointer"; el.onclick = function () { location.href = "app.html"; }; }
+      else if (t === "PRODUCT" || t === "PORTAL") { el.__navwired = 1; el.style.cursor = "pointer"; el.onclick = function () { var b = [].slice.call(document.querySelectorAll("button")).find(function (x) { return /try the live demo/i.test(x.textContent || ""); }); if (b) b.click(); }; }
     }
   }
   window.addEventListener("load", function () { [800, 1800, 3500].forEach(function (ms) { setTimeout(wireNav, ms); }); });
