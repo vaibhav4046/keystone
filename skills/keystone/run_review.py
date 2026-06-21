@@ -569,6 +569,68 @@ def _shadow_merge(argv):
     return exit_code
 
 
+def _changed_symbols(argv):
+    """Autonomous gate: read a real unified diff, extract the changed symbols (no
+    hand-naming), and run the deterministic governance gate on each."""
+    import argparse
+    import json as _json
+    ap = argparse.ArgumentParser(prog="run_review.py changed-symbols",
+                                 description="Extract changed symbols from a git/MR diff and gate them.")
+    ap.add_argument("--diff", help="path to a unified diff file (default: read stdin)")
+    ap.add_argument("--fixture", action="store_true", help="force the committed fixture graph")
+    ap.add_argument("--graph", help="path to an Orbit DuckDB to query")
+    ap.add_argument("--json", action="store_true", dest="as_json")
+    ap.add_argument("--fail-on-block", action="store_true",
+                    help="exit non-zero if the strictest changed-symbol verdict is HOLD or BLOCK")
+    a = ap.parse_args(argv)
+
+    if a.diff:
+        with open(a.diff, "r", encoding="utf-8", errors="replace") as fh:
+            diff_text = fh.read()
+    else:
+        diff_text = sys.stdin.read()
+
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    sys.path.insert(0, root)
+    self_graph = os.path.join(root, "data", "keystone_self_graph.duckdb")
+    if a.graph:
+        graph_path = a.graph if os.path.isabs(a.graph) else os.path.join(root, a.graph)
+    elif a.fixture:
+        graph_path = None
+    else:
+        graph_path = self_graph if os.path.exists(self_graph) else None
+    from core import graph as graph_mod, impact as impact_mod, policy as policy_mod, diff_symbols
+    g = graph_mod.Graph(prefer_live=not a.fixture, path=graph_path)
+
+    syms = diff_symbols.changed_symbols(g, diff_text)
+    rank = {"ALLOW": 0, "HOLD": 1, "BLOCK": 2}
+    items, worst = [], "ALLOW"
+    for s in syms:
+        imp = impact_mod.compute_blast_radius(g, s["name"])
+        if imp is None:
+            items.append({**s, "tier": "ISOLATED", "action": "ALLOW", "blast": 0})
+            continue
+        d = imp.to_dict()
+        pol = policy_mod.evaluate(d)
+        action = pol.get("action", "ALLOW")
+        if rank.get(action, 0) > rank.get(worst, 0):
+            worst = action
+        items.append({**s, "tier": pol.get("tier", "ISOLATED"), "action": action,
+                      "blast": d["counts"]["total_affected"]})
+
+    if a.as_json:
+        print(_json.dumps({"changed_symbols": items, "verdict": worst, "count": len(items)}, indent=2))
+    else:
+        print(f"\nKEYSTONE autonomous gate : extracted {len(items)} changed symbol(s) from the diff "
+              f"(none named by hand)")
+        for it in items:
+            print(f"  {it['file_path']}:{it['name']}  blast {it['blast']}  -> {it['tier']} / {it['action']}")
+        print(f"  MR VERDICT          : {worst}")
+        if worst != "ALLOW":
+            print("  -> a changed symbol exceeds the safe blast tier; the gate holds the merge.")
+    return (2 if (a.fail_on_block and rank.get(worst, 0) >= 1) else 0)
+
+
 def _memory_gate(argv):
     """Orbit Memory Gate: an AI agent proposes a decision; Keystone consults the GitLab Orbit graph
     and the precedent ledger and OVERRIDES the agent when its proposal contradicts recorded
@@ -733,6 +795,8 @@ def main(argv=None):
         return _demo(raw[1:])
     if raw and raw[0] == "shadow-merge":
         return _shadow_merge(raw[1:])
+    if raw and raw[0] == "changed-symbols":
+        return _changed_symbols(raw[1:])
     if raw and raw[0] == "memory-gate":
         return _memory_gate(raw[1:])
     if raw and raw[0] in ("review-mr", "review"):
