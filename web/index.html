@@ -1724,8 +1724,12 @@ class Component extends DCLogic {
   window.__ksAgentFix = function (finding) {
     finding = finding || {};
     var KS = (typeof KS_BACKEND !== 'undefined') ? KS_BACKEND : 'https://keystone-zt6c.onrender.com';
-    var repo0 = finding.repo || (window.__ksScan && window.__ksScan.repo) ||
-      (window.__ksUser && window.__ksUser.repos && window.__ksUser.repos[0] && window.__ksUser.repos[0].full_name) || '';
+    var _isRepo = function (s) { return /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(String(s || '')); };
+    var _userRepo = (window.__ksUser && window.__ksUser.repos && window.__ksUser.repos[0] && window.__ksUser.repos[0].full_name) || '';
+    // Prefill only with a REAL owner/repo. The dashboard scan label (e.g. "GitLab Orbit -
+    // keystone self-index") is not a repo, so fall back to the signed-in user's repo or an
+    // empty placeholder rather than seeding an invalid value the plan call would reject.
+    var repo0 = [finding.repo, (window.__ksScan && window.__ksScan.repo), _userRepo].filter(_isRepo)[0] || '';
     var body = {
       repo: repo0, symbolA: finding.symbolA || 'compute_blast_radius', symbolB: finding.symbolB || 'verify',
       fileA: finding.fileA || 'core/impact.py', fileB: finding.fileB || 'core/audit.py',
