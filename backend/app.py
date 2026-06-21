@@ -842,6 +842,45 @@ def agent_apply(f: AgentFinding, ks_sid: str = Cookie(default=""), x_keystone_se
                             "hint": "Check the repo is public and you own it (public_repo scope)."})
 
 
+class ScanCollisionReq(BaseModel):
+    repo: str = Field(max_length=200)
+
+
+@app.post("/api/scan-collision")
+def scan_collision(r: ScanCollisionReq):
+    """The hero flow: scan ANY public repo live, find its single highest-severity REAL
+    cross-MR blast collision on the call graph, and draft the deterministic guard PR.
+    No LLM, no auth, zero pre-indexing - the 'it just did that on a real repo' moment."""
+    import re as _re
+    from core import repo_scan as _rs, collision as _coll
+    repo = r.repo.strip().strip("/")
+    if not _re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        raise HTTPException(status_code=400, detail={"error": "BAD_REPO", "hint": "Use owner/repo."})
+    try:
+        g, stats = _rs.scan_repo(repo)
+    except Exception as e:
+        print("scan_collision error:", repr(e))
+        raise HTTPException(status_code=502, detail={"error": "SCAN_FAILED",
+                            "hint": "Repo unreachable, private, has no Python, or is rate-limited."})
+    top = _coll.find_top_collision(g)
+    steps = [{"k": "scan", "t": "Fetched %s and built its Orbit graph live: %d definitions (zero pre-indexing)"
+              % (stats["repo"], stats["definitions"])}]
+    if not top:
+        steps.append({"k": "none", "t": "No cross-MR collision in the top symbols - safe to parallelize."})
+        return {"ok": True, "repo": stats["repo"], "definitions": stats["definitions"],
+                "collision": None, "steps": steps}
+    finding = AgentFinding(repo=stats["repo"], symbolA=top["a"], symbolB=top["b"],
+                           dependents=top["shared_count"], verdict="BLOCK")
+    plan = _build_fix_plan(finding)
+    steps.append({"k": "collide", "t": "Real collision: %s x %s share %d runtime dependents (Git sees no conflict)"
+                  % (top["a"], top["b"], top["shared_count"])})
+    steps.append({"k": "guard", "t": "Drafted the deterministic co-change guard: %s" % plan["files"][0]["path"]})
+    return {"ok": True, "repo": stats["repo"], "definitions": stats["definitions"],
+            "collision": top, "plan": plan, "steps": steps,
+            "finding": {"repo": stats["repo"], "symbolA": top["a"], "symbolB": top["b"],
+                        "dependents": top["shared_count"], "verdict": "BLOCK"}}
+
+
 # static web hero (mounted last so /api/* wins)
 if os.path.isdir(WEB):
     @app.get("/")
