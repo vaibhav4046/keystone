@@ -629,9 +629,12 @@ def gh_login():
         raise HTTPException(status_code=503, detail={"error": "OAUTH_NOT_CONFIGURED",
                             "hint": "Set KEYSTONE_GH_CLIENT_ID and KEYSTONE_GH_CLIENT_SECRET; see SUBMISSION/GITHUB_OAUTH_SETUP.md"})
     state = _secrets.token_urlsafe(16)
-    _gh_states[state] = datetime.datetime.now().timestamp()
+    _now_ts = datetime.datetime.now().timestamp()
+    for _k in [k for k, v in _gh_states.items() if _now_ts - v > 600]:   # drop expired first so the cap holds real in-flight states
+        _gh_states.pop(_k, None)
+    _gh_states[state] = _now_ts
     while len(_gh_states) > 512:
-        _gh_states.pop(next(iter(_gh_states)), None)     # evict the OLDEST inserted, not an arbitrary set element
+        _gh_states.pop(next(iter(_gh_states)), None)     # then evict the OLDEST inserted, never an arbitrary element
     params = _uparse.urlencode({"client_id": _GH_CLIENT_ID, "redirect_uri": _OAUTH_CALLBACK,
                                 "scope": "read:user public_repo", "state": state, "allow_signup": "true"})
     return RedirectResponse("https://github.com/login/oauth/authorize?" + params)
@@ -797,8 +800,11 @@ def agent_apply(f: AgentFinding, ks_sid: str = Cookie(default=""), x_keystone_se
                             "hint": "Sign in with GitHub (public_repo scope) so the agent can open a PR."})
     token = s["token"]
     repo = f.repo.strip().strip("/")
-    if repo.count("/") != 1:
-        raise HTTPException(status_code=400, detail={"error": "BAD_REPO", "hint": "Use owner/repo."})
+    import re as _re
+    # Strict allowlist BEFORE interpolating into GitHub API URLs: reject ? # % whitespace and
+    # extra slashes so a crafted value can't redirect the privileged write to another path.
+    if not _re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+        raise HTTPException(status_code=400, detail={"error": "BAD_REPO", "hint": "Use owner/repo (letters, digits, ., _, -)."})
     plan = _build_fix_plan(f)
     steps = []
     try:

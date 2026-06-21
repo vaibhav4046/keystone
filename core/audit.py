@@ -162,21 +162,27 @@ class Ledger:
                     if k not in payload:
                         payload[k] = v
             payload["row_hash"] = _row_hash(prev_hash, payload)
-            # Atomic full-rewrite (temp + os.replace): a crash mid-write can never leave a
-            # partial line that bricks every later read. Existing rows re-canonicalize to
-            # identical bytes (deterministic _canonical), so the row_hash chain is preserved.
-            lines = [_canonical(r) for r in existing] + [_canonical(payload)]
-            tmp = self.path + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as f:
-                f.write("\n".join(lines) + "\n")
-            os.replace(tmp, self.path)
+            # Append-only and byte-preserving. We DO NOT rewrite existing rows: rewriting from
+            # the lossy _read_raw() would silently drop a corrupt/tampered line and erase the
+            # evidence (a "self-healing" ledger is not tamper-evident). Instead, refuse to extend
+            # a corrupt ledger so the tampering stays visible and blocks new rows until an operator
+            # recovers it; a single append + fsync is O(1) and crash-durable.
+            if getattr(self, "_corrupt_lines", 0):
+                raise RuntimeError(
+                    "refusing to append onto a corrupt ledger (%d unparseable line(s)); "
+                    "the chain is broken and must be recovered before new decisions are recorded"
+                    % self._corrupt_lines)
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(_canonical(payload) + "\n")
+                f.flush()
+                os.fsync(f.fileno())
         return payload
 
     def verify(self) -> dict:
         """Recompute the whole chain. Returns {ok, count, broken_index|None}."""
         rows = self._read_raw()
         if getattr(self, "_corrupt_lines", 0):
-            return {"ok": False, "count": len(rows), "broken_index": -1, "corrupt": True}
+            return {"ok": False, "count": len(rows), "broken_index": None, "corrupt": True}
         prev = GENESIS_PREV
         for idx, row in enumerate(rows):
             stored = row.get("row_hash")

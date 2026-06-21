@@ -53,8 +53,10 @@ def _load() -> dict:
         return base
     base["summary"] = data["summary"] if isinstance(data.get("summary"), str) else ""
     base["updated_at"] = data.get("updated_at")
-    base["memories"] = data["memories"] if isinstance(data.get("memories"), list) else []
-    base["todos"] = data["todos"] if isinstance(data.get("todos"), list) else []
+    # Filter to dict ELEMENTS too (not just list containers): a foreign tool can write a list
+    # with a non-dict item, which would crash every consumer that does item.get(...).
+    base["memories"] = [m for m in data["memories"] if isinstance(m, dict)] if isinstance(data.get("memories"), list) else []
+    base["todos"] = [t for t in data["todos"] if isinstance(t, dict)] if isinstance(data.get("todos"), list) else []
     return base
 
 
@@ -190,11 +192,14 @@ def seed_from_memory(memory_dir: str = "") -> dict:
         # Confine the read to the memory dir: reject absolute targets and ../ escapes so a
         # crafted MEMORY.md link can't import an arbitrary file off disk.
         real = os.path.realpath(os.path.join(mdir, fname))
-        confined = (not os.path.isabs(fname)) and (os.path.commonpath([real, root]) == root)
+        try:
+            confined = (not os.path.isabs(fname)) and (os.path.commonpath([real, root]) == root)
+        except ValueError:                  # different Windows drives -> outside the memory dir, skip (don't crash the seed)
+            confined = False
         if confined and os.path.isfile(real):
             try:
                 with open(real, "r", encoding="utf-8") as fh:
-                    raw = fh.read()
+                    raw = fh.read().replace("\r\n", "\n")   # normalize CRLF so frontmatter type parses on Windows
                 fm = re.match(r"^---\s*\n(.*?)\n---", raw, re.S)   # type ONLY from a real frontmatter block
                 if fm:
                     mt = re.search(r"^type:\s*([A-Za-z|/ ]+)$", fm.group(1), re.M)

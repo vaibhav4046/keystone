@@ -28,12 +28,17 @@ def test_audit_survives_and_flags_a_corrupt_line():
     with open(led.path, "a", encoding="utf-8") as f:
         f.write('{"truncated": \n')
     v = led.verify()
-    assert v["ok"] is False
+    assert v["ok"] is False and v.get("corrupt") is True
     assert isinstance(led.rows(), list)            # rows() does not raise
-    # the atomic rewrite on the next append drops the corrupt line and re-validates the chain
-    led.append(actor="a", change_id="c3", target_symbols=["z"], blast_radius_set=[4],
-               signature="sig3", decision="approve", rationale="ok")
-    assert led.verify()["ok"] is True
+    # appending onto a corrupt ledger must be REFUSED, so tamper evidence is never silently
+    # overwritten (the round-1 'self-heals' behavior erased evidence - that was the regression).
+    import pytest
+    with pytest.raises(RuntimeError):
+        led.append(actor="a", change_id="c3", target_symbols=["z"], blast_radius_set=[4],
+                   signature="sig3", decision="approve", rationale="ok")
+    with open(led.path, encoding="utf-8") as f:    # the corrupt bytes are still on disk
+        assert "truncated" in f.read()
+    assert led.verify()["ok"] is False             # still flagged, not silently healed
 
 
 def test_scanned_graph_ranks_by_fanin_not_alphabetically():
