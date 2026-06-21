@@ -673,10 +673,64 @@ def _memory_gate(argv):
     return 0
 
 
+def _demo(argv):
+    """One command, the whole story (for the demo video and a 90-second judge): two safe-looking
+    changes collide -> BLOCK, a safe pair -> ALLOW, an AI approval overruled by recorded memory,
+    and a tamper-evident ledger that breaks when a past decision is edited. Reproducible, no model."""
+    import json as _json
+    import os
+    import tempfile
+    bar = "=" * 64
+    print("\n" + bar + "\n  KEYSTONE - the whole story in one command\n" + bar)
+    print("\n[1-3] TWO SAFE-LOOKING CHANGES COLLIDE ON THE ORBIT GRAPH -> BLOCK")
+    print("      (Git sees two unrelated files and no conflict.)\n")
+    _shadow_merge([])
+    print("\n[4] THE SAFE COUNTER-EXAMPLE -> ALLOW (the gate blocks the danger, not everything)\n")
+    _shadow_merge(["--safe"])
+    print("\n[5] AN AI AGENT'S APPROVAL IS OVERRULED BY PROJECT MEMORY (recorded live, not seeded)\n")
+    _memory_gate(["compute_blast_radius", "--prove"])
+
+    print("\n[6] THE DECISION LEDGER IS TAMPER-EVIDENT")
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    sys.path.insert(0, root)
+    from core.audit import Ledger
+    lp = os.path.join(tempfile.mkdtemp(), "demo_ledger.jsonl")
+    led = Ledger(lp)
+    led.append(actor="alice", change_id="MR-1", target_symbols=["compute_blast_radius"],
+               blast_radius_set=[2, 3, 4], signature="sig-a", decision="approve",
+               rationale="reviewed; safe at this radius")
+    led.append(actor="bob", change_id="MR-2", target_symbols=["verify"],
+               blast_radius_set=[5, 6], signature="sig-b", decision="reject",
+               rationale="needs a migration test first")
+    v_before = led.verify()
+    print(f"      appended 2 decisions -> chain {'VERIFIED' if v_before['ok'] else 'BROKEN'} "
+          f"(count {v_before['count']})")
+    rows = open(lp, encoding="utf-8").read().splitlines()
+    r0 = _json.loads(rows[0])
+    r0["decision"] = "reject"                       # silently flip a past APPROVE, do NOT re-hash
+    rows[0] = _json.dumps(r0)
+    with open(lp, "w", encoding="utf-8") as f:
+        f.write("\n".join(rows) + "\n")
+    v_after = led.verify()
+    if v_after["ok"]:
+        print("      WARNING: tamper not detected (unexpected)")
+    else:
+        print(f"      someone edited decision #0 (approve -> reject) -> chain BROKEN at row "
+              f"{v_after['broken_index']}. The edit cannot hide.")
+
+    print("\n" + bar)
+    print("  Git review sees files. Orbit sees relationships. Keystone sees consequences -")
+    print("  and records the decision where no one can quietly edit it.")
+    print(bar + "\n")
+    return 0
+
+
 def main(argv=None):
     # Dispatch the MR Guardian subcommand without breaking the legacy
     # `run_review.py <symbol>` positional form.
     raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] == "demo":
+        return _demo(raw[1:])
     if raw and raw[0] == "shadow-merge":
         return _shadow_merge(raw[1:])
     if raw and raw[0] == "memory-gate":

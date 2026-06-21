@@ -13,6 +13,7 @@ Run the same governed review in your own terminal (Python 3.13):
 ```bash
 pip install -r requirements.txt
 python -m pytest -q                                   # 115 passed, 2 skipped
+python skills/keystone/run_review.py demo              # THE WHOLE STORY in one command: collision BLOCK -> safe ALLOW -> AI approval overruled by memory -> tamper-evident ledger breaks
 python skills/keystone/run_review.py shadow-merge                       # THE hook: MR-204 x MR-207 - no Git conflict, a DIRECTIONAL change_in_blast collision -> BLOCK (exit 2)
 python skills/keystone/run_review.py shadow-merge --safe                # the safe counter-example: non-overlapping pair -> ALLOW (exit 0)
 python skills/keystone/run_review.py memory-gate compute_blast_radius --prove   # records a REAL reject live, then OVERRULES an AI agent's APPROVE from it (exit 2)
