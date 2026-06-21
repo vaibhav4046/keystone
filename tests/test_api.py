@@ -37,6 +37,20 @@ def test_status_is_fixture_and_hmac():
     assert s["audit_chain"]["ok"] is True
 
 
+def test_proof_endpoint_is_self_describing_and_live():
+    p = client.get("/api/proof").json()
+    assert p["service"] == "keystone" and p["version"]
+    assert p["source_mode"] == "FALLBACK"                  # hermetic fixture
+    assert p["no_llm_on_verdict"] is True
+    assert p["integrity_mode"] == "HMAC-SHA256"
+    assert p["audit_chain_ok"] is True
+    assert "/api/proof" in p["available_routes"] and "/api/status" in p["available_routes"]
+    assert p["demo_symbols"] == ["compute_blast_radius", "verify"]
+    assert p["external_repo_proof"]["repo"] == "pallets/click"
+    assert "shadow-merge" in p["external_repo_proof"]["verify_cmd"]
+    assert p["timestamp"].endswith("Z")                    # real ISO-8601 UTC
+
+
 def test_definitions_and_impact():
     names = client.get("/api/definitions").json()["names"]
     assert "tokenize" in names
