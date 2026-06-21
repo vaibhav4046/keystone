@@ -167,6 +167,18 @@
           </button>
           <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations - collision, blast graph, ledger tamper and restore - on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
         </div>
+
+        <!-- Impact + novel-capability framing (Idea + Impact levers) -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:22px 0 4px; max-width:52ch">
+          <div style="background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.16); border-radius:10px; padding:13px 15px">
+            <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; color:#FF7A1A; text-transform:uppercase; margin-bottom:7px">New capability</div>
+            <div style="font:400 12.5px/1.5 'Inter',sans-serif; color:#C9A98F">The first <b style="color:#F6EFE6">merge gate for AI coding agents</b>. When a bot opens an MR, Orbit's call graph — not a text diff — decides ALLOW / HOLD / BLOCK.</div>
+          </div>
+          <div style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.16); border-radius:10px; padding:13px 15px">
+            <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; color:#34D399; text-transform:uppercase; margin-bottom:7px">Why it matters</div>
+            <div style="font:400 12.5px/1.5 'Inter',sans-serif; color:#C9A98F">Every silent collision caught is a <b style="color:#F6EFE6">2am production incident that never happens</b> — and a rollback, a hotfix, and an incident review that never get written.</div>
+          </div>
+        </div>
         <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:28px; font:600 12.5px/1 'JetBrains Mono',monospace">
           <button onClick="{{ goDemoClick }}" title="Same engine on a real GitLab Orbit index of pallets/click (1,841 defs) - a library Keystone did not write." style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">or see it on pallets/click →</button>
           <button onClick="{{ goLedger }}" style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">verify it yourself →</button>
