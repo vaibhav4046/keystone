@@ -235,20 +235,11 @@
       <div style="position:relative; align-self:start; margin-top:8px; display:flex; align-items:center; justify-content:center">
       <div onMouseMove="{{ onArtMove }}" onMouseLeave="{{ onArtLeave }}" style="position:relative; width:100%; max-width:560px; aspect-ratio:1 / 1; --mx:0; --my:0; --px:50%; --py:50%; --torch:0; cursor:crosshair">
 
-        <div style="position:absolute; inset:0; background:radial-gradient(circle closest-side at 50% 50%, rgba(255,138,40,0.30), rgba(240,72,10,0.09) 50%, transparent 78%); pointer-events:none; z-index:0"></div>
+        <div style="position:absolute; inset:0; background:radial-gradient(circle closest-side at 50% 50%, rgba(255,138,40,0.12), transparent 72%); pointer-events:none; z-index:0"></div>
 
-        <div style="position:absolute; inset:0; z-index:1; -webkit-mask-image:radial-gradient(circle closest-side at 50% 50%, #000 62%, rgba(0,0,0,0.5) 82%, transparent 96%); mask-image:radial-gradient(circle closest-side at 50% 50%, #000 62%, rgba(0,0,0,0.5) 82%, transparent 96%)">
-          <div style="position:absolute; inset:0; transform:translate(calc(var(--mx) * -16px), calc(var(--my) * -12px)); transition:transform 0.35s cubic-bezier(0.22,0.61,0.36,1); will-change:transform">{{ heroArt }}</div>
-        </div>
+        <div style="position:absolute; inset:0; z-index:1; transform:translate(calc(var(--mx) * -14px), calc(var(--my) * -10px)); transition:transform 0.35s cubic-bezier(0.22,0.61,0.36,1); will-change:transform">{{ heroArt }}</div>
 
-        <div style="position:absolute; left:50%; top:50%; width:14%; height:18%; z-index:2; pointer-events:none; mix-blend-mode:screen; transform:translate(-50%,-48%) translate(calc(var(--mx) * -22px), calc(var(--my) * -17px)); transition:transform 0.35s cubic-bezier(0.22,0.61,0.36,1)">
-          <div style="position:absolute; inset:-110%; background:radial-gradient(circle at 50% 52%, rgba(255,238,180,1), rgba(255,138,30,0.6) 32%, rgba(240,72,10,0.18) 60%, transparent 78%); filter:blur(5px); animation:keyGlow 3.4s ease-in-out infinite"></div>
-          <div style="position:absolute; left:34%; bottom:30%; width:32%; height:64%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFE89A, #FF8A1A 58%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.85s ease-in-out infinite alternate"></div>
-          <div style="position:absolute; left:42%; bottom:28%; width:18%; height:50%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFF6D8, #FFB347 60%, transparent); filter:blur(1.5px); transform-origin:50% 100%; animation:flameLick2 0.72s 0.12s ease-in-out infinite alternate"></div>
-          <div style="position:absolute; left:28%; bottom:30%; width:16%; height:44%; border-radius:50% 50% 46% 46%; background:linear-gradient(to top, #FFD27A, #F0480A 65%, transparent); filter:blur(2px); transform-origin:50% 100%; animation:flameLick 0.98s 0.26s ease-in-out infinite alternate"></div>
-        </div>
-
-        <div style="position:absolute; left:0; top:0; width:240px; height:240px; margin:-120px 0 0 -120px; border-radius:50%; background:radial-gradient(circle, rgba(255,170,80,0.45), rgba(255,122,26,0.14) 45%, transparent 70%); mix-blend-mode:screen; transform:translate(var(--px), var(--py)); opacity:var(--torch); transition:opacity 0.3s ease-out; pointer-events:none; z-index:3"></div>
+        <div style="position:absolute; left:0; top:0; width:240px; height:240px; margin:-120px 0 0 -120px; border-radius:50%; background:radial-gradient(circle, rgba(255,170,80,0.28), rgba(255,122,26,0.09) 45%, transparent 70%); mix-blend-mode:screen; transform:translate(var(--px), var(--py)); opacity:var(--torch); transition:opacity 0.3s ease-out; pointer-events:none; z-index:2"></div>
 
       </div>
       </div>
@@ -992,6 +983,36 @@ class Component extends DCLogic {
   buildHeroArt() {
     if (this._art) return this._art;
     const R = React.createElement;
+    // --- Premium blast-radius graph hero: the real concept (epicenter + orbiting dependents +
+    //     a live silent-collision arc), calm rotation. Supersedes the legacy fire artifact below
+    //     (now unreachable). Base opacity is full so it stays visible under prefers-reduced-motion. ---
+    {
+      const gw = 600, gh = 600, gcx = 300, gcy = 300;
+      const kids = [];
+      [120, 200, 268].forEach(function (r, i) { kids.push(R('circle', { key: 'ring' + i, cx: gcx, cy: gcy, r: r, fill: 'none', stroke: 'rgba(255,180,90,0.13)', strokeWidth: 1 })); });
+      const N1 = 6, N2 = 11, r1 = 120, r2 = 200;
+      const ring1 = [], ring2 = [], edges = [], nodes = [];
+      for (let i = 0; i < N1; i++) { const a = (i / N1) * Math.PI * 2 - Math.PI / 2; ring1.push([gcx + Math.cos(a) * r1, gcy + Math.sin(a) * r1]); }
+      for (let i = 0; i < N2; i++) { const a = (i / N2) * Math.PI * 2 - Math.PI / 2 + 0.32; ring2.push([gcx + Math.cos(a) * r2, gcy + Math.sin(a) * r2]); }
+      ring1.forEach(function (p, i) { edges.push(R('line', { key: 'e1' + i, x1: gcx, y1: gcy, x2: p[0], y2: p[1], stroke: 'rgba(255,122,26,0.34)', strokeWidth: 1.2 })); });
+      ring2.forEach(function (p, i) { const s = ring1[i % N1]; edges.push(R('line', { key: 'e2' + i, x1: s[0], y1: s[1], x2: p[0], y2: p[1], stroke: 'rgba(255,122,26,0.13)', strokeWidth: 0.8 })); });
+      const A = ring1[0], B = ring1[2], mx = gcx + ((A[0] + B[0]) / 2 - gcx) * 0.45, my = gcy + ((A[1] + B[1]) / 2 - gcy) * 0.45;
+      const colD = 'M' + A[0].toFixed(1) + ' ' + A[1].toFixed(1) + ' Q' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + B[0].toFixed(1) + ' ' + B[1].toFixed(1);
+      edges.push(R('path', { key: 'colbase', d: colD, fill: 'none', stroke: 'rgba(255,106,61,0.45)', strokeWidth: 1.4 }));
+      edges.push(R('path', { key: 'coltravel', d: colD, fill: 'none', stroke: '#FFE9C2', strokeWidth: 1.8, pathLength: 1, style: { strokeDasharray: '0.16 0.84', strokeDashoffset: 1, animation: 'sparkTravel 3.4s linear infinite' } }));
+      ring2.forEach(function (p, i) { nodes.push(R('circle', { key: 'n2' + i, cx: p[0], cy: p[1], r: 4, fill: '#F5A623', style: { filter: 'drop-shadow(0 0 5px rgba(245,166,35,0.55))' } })); });
+      ring1.forEach(function (p, i) { const hot = (i === 0 || i === 2); nodes.push(R('circle', { key: 'n1' + i, cx: p[0], cy: p[1], r: hot ? 8 : 6, fill: hot ? '#FF6A3D' : '#FFB14D', style: { filter: 'drop-shadow(0 0 ' + (hot ? 12 : 8) + 'px rgba(255,106,61,0.65))' } })); });
+      const rotG = R('g', { key: 'rot', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'spinSlow 120s linear infinite' } }, edges.concat(nodes));
+      const epi = [
+        R('circle', { key: 'glow', cx: gcx, cy: gcy, r: 92, fill: 'url(#kglow)', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 3.6s ease-in-out infinite' } }),
+        R('circle', { key: 'pr1', cx: gcx, cy: gcy, r: 30, fill: 'none', stroke: 'rgba(255,122,26,0.55)', strokeWidth: 1.3, style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'pulseRing 2.8s ease-out infinite' } }),
+        R('circle', { key: 'pr2', cx: gcx, cy: gcy, r: 30, fill: 'none', stroke: 'rgba(255,122,26,0.55)', strokeWidth: 1.3, style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'pulseRing 2.8s ease-out 1.4s infinite' } }),
+        R('circle', { key: 'core', cx: gcx, cy: gcy, r: 15, fill: '#150a02', stroke: '#FF7A1A', strokeWidth: 2 }),
+        R('circle', { key: 'corehot', cx: gcx, cy: gcy, r: 6, fill: '#FFD27A', style: { transformBox: 'fill-box', transformOrigin: 'center', animation: 'corePulse 2.4s ease-in-out infinite' } })
+      ];
+      this._art = R('svg', { viewBox: '0 0 ' + gw + ' ' + gh, width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet', style: { display: 'block', overflow: 'visible', filter: 'drop-shadow(0 0 22px rgba(240,72,10,0.28))' } }, kids.concat([rotG]).concat(epi));
+      return this._art;
+    }
     const W = 640, H = 640, cx = 320, cy = 320;
 
     // ---- Layer 0: blurred volumetric back-rays for depth ----
