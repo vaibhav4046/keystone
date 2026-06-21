@@ -29,7 +29,7 @@
 <meta name="twitter:description" content="Surface change risk a normal merge-request review cannot see, then govern the change." />
 <link rel="preload" href="fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="fonts/grotesk-600.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="styles.css?v=2.3" />
+<link rel="stylesheet" href="styles.css?v=2.4" />
 <link rel="stylesheet" href="ui-v3.css?v=2.0" />
 <link rel="stylesheet" href="ui-glass.css?v=4.6" />
 <link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
@@ -592,7 +592,7 @@
       <li><b>Live/CI path:</b> actor can be bound with GitLab OIDC.</li>
       <li><b>AI assistant:</b> advisory only.</li>
       <li><b>Gate decision:</b> deterministic.</li>
-      <li><b>Ledger:</b> HMAC hash-chained and tamper-evident.</li>
+      <li><b>Ledger:</b> HMAC-SHA256 hash-chained on the backend (tamper-evident). The public static sample uses a <em>published</em> key, so it proves no accidental corruption, not insider resistance.</li>
     </ul>
   </div>
 </section>
@@ -618,7 +618,7 @@
     <article class="kilo-card">
       <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.4-3 8-7 9.5C8 19 5 15.4 5 11V6l7-3z"/><path d="M9 11.5l2 2 4-4.5"/></svg></div>
       <h3>Tamper-evident decisions</h3>
-      <p>Every approve and reject is appended to a sha256 hash-chained ledger. Change one row and the whole chain visibly breaks.</p>
+      <p>Every approve and reject is appended to a hash-chained ledger — keyed HMAC-SHA256 on the backend, a fast FNV-1a in the static browser demo to show the mechanism. Change one row and the whole chain visibly breaks.</p>
     </article>
     <article class="kilo-card">
       <div class="kilo-card-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12a3 3 0 0 0 3 3h9"/><circle cx="6" cy="18" r="2.4"/><circle cx="6" cy="4" r="2"/><circle cx="18" cy="18" r="2.4"/></svg></div>
