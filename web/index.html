@@ -14,7 +14,7 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
 <meta name="theme-color" content="#0a0706" />
-<title>Keystone — stop merge requests that break production together</title>
+<title>Keystone - stop merge requests that break production together</title>
 <script src="./support.js"></script>
 <script src="repo-analyzer.js?v=6"></script>
 </head>
@@ -78,6 +78,12 @@
   @keyframes shockwave { 0% { transform: scale(0.32); opacity: 0; } 18% { opacity: 0.55; } 100% { transform: scale(1.5); opacity: 0; } }
   @keyframes stoneBob { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(0.6deg); } }
   @keyframes veinPulse { 0%,100% { opacity: 0.2; } 45% { opacity: 1; } }
+  @keyframes ksTourIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes ksTourPulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.55); } }
+  @keyframes ksTourBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .ks-tour-hud { animation: ksTourIn 0.42s cubic-bezier(0.16,1,0.3,1) both; }
+  .ks-tour-dot { animation: ksTourPulse 1.5s ease-in-out infinite; }
+  .ks-tour-bar { transform-origin: left; animation: ksTourBar 4.2s linear both; }
   @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
   }
@@ -149,9 +155,9 @@
 
         <h1 style="font:600 clamp(42px,5.4vw,80px)/0.96 'Bodoni Moda',serif; letter-spacing:0; text-transform:uppercase; margin:0 0 24px; color:#F6EFE6">Merge requests<br>that break<br><span style="color:#FF7A1A; font-style:italic">together</span></h1>
 
-        <p style="font:400 clamp(16px,1.5vw,19px)/1.6 'Inter',sans-serif; color:#D8C8B8; margin:0 0 18px; max-width:48ch; text-wrap:pretty">Two safe-looking merge requests. Different files. No Git conflict. They still break production together — because one changes a function the other depends on.</p>
+        <p style="font:400 clamp(16px,1.5vw,19px)/1.6 'Inter',sans-serif; color:#D8C8B8; margin:0 0 18px; max-width:48ch; text-wrap:pretty">Two safe-looking merge requests. Different files. No Git conflict. They still break production together - because one changes a function the other depends on.</p>
 
-        <p style="font:400 clamp(15px,1.4vw,18px)/1.6 'Inter',sans-serif; color:#B59B86; margin:0 0 34px; max-width:50ch; text-wrap:pretty">Git sees files. Orbit sees the call graph. <span style="color:#F6EFE6; font-weight:600">Keystone vetoes the merge before it breaks — and logs the decision in a tamper-evident ledger.</span></p>
+        <p style="font:400 clamp(15px,1.4vw,18px)/1.6 'Inter',sans-serif; color:#B59B86; margin:0 0 34px; max-width:50ch; text-wrap:pretty">Git sees files. Orbit sees the call graph. <span style="color:#F6EFE6; font-weight:600">Keystone vetoes the merge before it breaks - and logs the decision in a tamper-evident ledger.</span></p>
 
         <!-- ONE dominant gradient CTA + an outline 'watch it run' (hands-free auto-demo). -->
         <div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:12px">
@@ -159,10 +165,10 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="#150a02"><path d="M8 5v14l11-7z"></path></svg>
             Try the live demo
           </button>
-          <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations — collision, blast graph, ledger tamper and restore — on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
+          <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations - collision, blast graph, ledger tamper and restore - on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
         </div>
         <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:28px; font:600 12.5px/1 'JetBrains Mono',monospace">
-          <button onClick="{{ goDemoClick }}" title="Same engine on a real GitLab Orbit index of pallets/click (1,841 defs) — a library Keystone did not write." style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">or see it on pallets/click →</button>
+          <button onClick="{{ goDemoClick }}" title="Same engine on a real GitLab Orbit index of pallets/click (1,841 defs) - a library Keystone did not write." style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">or see it on pallets/click →</button>
           <button onClick="{{ goLedger }}" style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">verify it yourself →</button>
           <span style="color:#7a5e48; font-weight:400">no signup · runs in your browser</span>
         </div>
@@ -178,20 +184,20 @@
 
         <!-- JUDGE DEMO: numbered 90-second path; steps 3-4 are clickable. -->
         <div style="margin:0 0 14px; padding:15px 17px; border-radius:10px; background:rgba(255,194,77,0.07); border:1px solid rgba(255,194,77,0.26); max-width:580px">
-          <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FFC24D; text-transform:uppercase; margin-bottom:11px">First 90 seconds — judge demo</div>
+          <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FFC24D; text-transform:uppercase; margin-bottom:11px">First 90 seconds - judge demo</div>
           <ol style="margin:0; padding-left:20px; font:400 13.5px/1.85 'Inter',sans-serif; color:#D8C8B8">
             <li>Click <b style="color:#FFC24D">Try the live demo</b> (button above).</li>
             <li>Read the <b style="color:#F6EFE6">silent collision</b>: <code style="color:#FFB14D">compute_blast_radius × verify</code>, 5 shared dependents.</li>
             <li>Open <button onClick="{{ goCockpit }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Reviewer Cockpit →</button> for the blast-radius graph.</li>
-            <li>Open <button onClick="{{ goLedger }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Audit Ledger →</button> and hit <b style="color:#F6EFE6">Simulate tamper</b> — watch the hash chain break.</li>
-            <li>Optional: <button onClick="{{ goDemoClick }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">pallets/click →</button> — same engine, a repo we didn't write.</li>
+            <li>Open <button onClick="{{ goLedger }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Audit Ledger →</button> and hit <b style="color:#F6EFE6">Simulate tamper</b> - watch the hash chain break.</li>
+            <li>Optional: <button onClick="{{ goDemoClick }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">pallets/click →</button> - same engine, a repo we didn't write.</li>
           </ol>
         </div>
 
         <!-- VERIFY THIS IS REAL: proof links + plain-language how-to. -->
         <div style="margin:0 0 30px; padding:15px 17px; border-radius:10px; background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.24); max-width:580px">
           <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#4AD6A0; text-transform:uppercase; margin-bottom:10px">Verify this is real</div>
-          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9CDD4; margin-bottom:12px">No trust required. The verdict is a deterministic graph computation — <b style="color:#E7E9EC">no model decides anything</b>. Every number is computed from a real <code style="color:#9DEFC4">orbit index</code> and cross-checked by Orbit's own <code style="color:#9DEFC4">orbit sql</code> (120/120 match). 115 tests pass.</div>
+          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9CDD4; margin-bottom:12px">No trust required. The verdict is a deterministic graph computation - <b style="color:#E7E9EC">no model decides anything</b>. Every number is computed from a real <code style="color:#9DEFC4">orbit index</code> and cross-checked by Orbit's own <code style="color:#9DEFC4">orbit sql</code> (120/120 match). 115 tests pass.</div>
           <div style="display:flex; flex-wrap:wrap; gap:10px">
             <button onClick="{{ goLedger }}" style="min-height:44px; padding:10px 16px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; color:#0c1410; background:#4AD6A0; border:none; letter-spacing:0.04em" style-hover="filter:brightness(1.08)">Audit ledger + tamper proof →</button>
             <button onClick="{{ goDemoClick }}" style="min-height:44px; padding:10px 16px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; color:#A6F0CC; background:transparent; border:1px solid rgba(52,211,153,0.4); letter-spacing:0.04em" style-hover="background:rgba(52,211,153,0.1)">External-repo proof (pallets/click) →</button>
@@ -202,7 +208,7 @@
         <!-- External-repo story: what is indexed on pallets/click and why it matters. -->
         <div style="margin:0 0 30px; padding:15px 17px; border-radius:10px; background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.2); max-width:580px">
           <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF8A2B; text-transform:uppercase; margin-bottom:9px">Not tuned to our own repo</div>
-          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9A98F">We indexed <b style="color:#F6EFE6">pallets/click</b> with GitLab Orbit — <b style="color:#FFC24D">1,841 definitions, 6,305 call edges</b>, a library we did not write. The same engine finds real cross-MR collisions there: <code style="color:#FFB14D">Context × echo</code> share 14 runtime dependents (HOLD), and <code style="color:#FFB14D">echo × make_context</code> is a directional BLOCK. <button onClick="{{ goDemoClick }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Open the pallets/click demo →</button></div>
+          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9A98F">We indexed <b style="color:#F6EFE6">pallets/click</b> with GitLab Orbit - <b style="color:#FFC24D">1,841 definitions, 6,305 call edges</b>, a library we did not write. The same engine finds real cross-MR collisions there: <code style="color:#FFB14D">Context × echo</code> share 14 runtime dependents (HOLD), and <code style="color:#FFB14D">echo × make_context</code> is a directional BLOCK. <button onClick="{{ goDemoClick }}" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;color:#FFC24D;text-decoration:underline" style-hover="color:#FF7A1A">Open the pallets/click demo →</button></div>
         </div>
 
         <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:11px">Run in your terminal</div>
@@ -211,23 +217,23 @@
           <span style="font:400 13px/1 'JetBrains Mono',monospace; color:#C9A98F; flex:1">python skills/keystone/run_review.py shadow-merge</span>
           <span style="width:7px; height:14px; background:#FF7A1A; animation:flicker 1.1s steps(2) infinite"></span>
         </div>
-        <p style="font:400 12px/1.5 'Inter',sans-serif; color:#6f5640; margin:16px 0 0; max-width:46ch">No account needed for the demo — Keystone analyzes real public repos in your browser.</p>
+        <p style="font:400 12px/1.5 'Inter',sans-serif; color:#6f5640; margin:16px 0 0; max-width:46ch">No account needed for the demo - Keystone analyzes real public repos in your browser.</p>
         <div style="margin:26px 0 0; padding:14px 17px; border-radius:9px; background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.2); max-width:500px">
           <div style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF7A1A; text-transform:uppercase; margin-bottom:9px">What Git can't see</div>
-          <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#A6907B">In Keystone's own Orbit index, two MRs change <b style="color:#F6EFE6">compute_blast_radius()</b> in core/impact.py and <b style="color:#F6EFE6">verify()</b> in core/audit.py — different files, zero Git conflict, both pass review and CODEOWNERS. Yet <b style="color:#FFC24D">5 functions depend on both</b>. Merge both and those 5 break together. Keystone holds the merge and hands you the safe order — exactly the demo below.</div>
+          <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#A6907B">In Keystone's own Orbit index, two MRs change <b style="color:#F6EFE6">compute_blast_radius()</b> in core/impact.py and <b style="color:#F6EFE6">verify()</b> in core/audit.py - different files, zero Git conflict, both pass review and CODEOWNERS. Yet <b style="color:#FFC24D">5 functions depend on both</b>. Merge both and those 5 break together. Keystone holds the merge and hands you the safe order - exactly the demo below.</div>
         </div>
-        <p style="font:400 11px/1.5 'Inter',sans-serif; color:#5f4836; margin:13px 0 0; max-width:50ch">This in-browser demo parses the call graph client-side (Python today). The production engine reads the live <b style="color:#8a6c52">GitLab Orbit</b> graph (gl_definition / gl_edge) and drives <b style="color:#8a6c52">glab orbit local</b>. The blast-radius logic is <b style="color:#8a6c52">language-agnostic</b> — it runs on Orbit's symbol graph, not on any one language's syntax, so it covers every language Orbit indexes. See the repo + demo video.</p>
+        <p style="font:400 11px/1.5 'Inter',sans-serif; color:#5f4836; margin:13px 0 0; max-width:50ch">This in-browser demo parses the call graph client-side (Python today). The production engine reads the live <b style="color:#8a6c52">GitLab Orbit</b> graph (gl_definition / gl_edge) and drives <b style="color:#8a6c52">glab orbit local</b>. The blast-radius logic is <b style="color:#8a6c52">language-agnostic</b> - it runs on Orbit's symbol graph, not on any one language's syntax, so it covers every language Orbit indexes. See the repo + demo video.</p>
         <div style="margin:22px 0 0; max-width:52ch; background:#0c0805; border:1px solid rgba(255,122,26,0.18); border-radius:11px; padding:16px 18px">
           <div style="font:600 10.5px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF7A1A; text-transform:uppercase; margin-bottom:11px">Run it on your own Orbit graph</div>
           <pre style="margin:0; font:500 12px/1.7 'JetBrains Mono',monospace; color:#C9A98F; white-space:pre-wrap"><span style="color:#6b5440">$</span> glab orbit local index .            <span style="color:#5f4836"># build the call graph</span>
 <span style="color:#6b5440">$</span> python -m uvicorn backend.app:app   <span style="color:#5f4836"># start the engine</span>
-<span style="color:#6b5440">$</span> open keystone — sign in, scan, review</pre>
+<span style="color:#6b5440">$</span> open keystone - sign in, scan, review</pre>
           <div style="display:flex; gap:14px; margin-top:13px; font:600 11.5px/1 'Inter',sans-serif">
             <a href="https://github.com/vaibhav4046/keystone#readme" target="_blank" rel="noopener" style="color:#FFC24D; text-decoration:none">View on GitHub →</a>
             <button onClick="{{ goDemo }}" style="color:#A6907B; text-decoration:none; background:none; border:none; cursor:pointer; font:inherit; padding:0">Open the live tool →</button>
           </div>
           <div id="ks-xcheck" title="Click to see the exact glab orbit local sql command and the count Orbit itself returned, per symbol." style="display:flex; align-items:center; gap:8px; margin-top:13px; padding-top:13px; border-top:1px solid rgba(255,122,26,0.12); font:600 11px/1.4 'JetBrains Mono',monospace; color:#34D399; cursor:pointer">
-            <span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>Cross-checked 120/120 symbols against GitLab Orbit CLI (v0.74.0) — exact match&nbsp;<span style="color:#6b8f7e">› show commands</span>
+            <span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>Cross-checked 120/120 symbols against GitLab Orbit CLI (v0.74.0) - exact match&nbsp;<span style="color:#6b8f7e">› show commands</span>
           </div>
         </div>
       </div>
@@ -254,6 +260,27 @@
 
   <!-- ===================== DASHBOARD ===================== -->
   <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+
+  <!-- Guided auto-demo caption HUD: a fixed "now playing" banner narrating each step of the hands-free tour. -->
+  <sc-if value="{{ autoTour }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:80; width:min(660px,94vw); pointer-events:none">
+    <div class="ks-tour-hud" role="status" aria-live="polite" aria-atomic="true" style="pointer-events:auto; display:flex; align-items:center; gap:15px; padding:13px 15px 13px 17px; border-radius:14px; background:linear-gradient(180deg,rgba(22,16,11,0.97),rgba(12,9,6,0.97)); border:1px solid rgba(255,122,26,0.4); box-shadow:0 24px 64px -22px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.04) inset; overflow:hidden">
+      <span style="flex:none; display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:rgba(255,122,26,0.14); border:1px solid rgba(255,122,26,0.4)">
+        <span class="ks-tour-dot" style="width:7px; height:7px; border-radius:50%; background:#FF7A1A; box-shadow:0 0 9px #FF7A1A"></span>
+        <span style="font:700 10px/1 'JetBrains Mono',monospace; letter-spacing:0.14em; color:#FFB14D">AUTO-DEMO</span>
+      </span>
+      <span style="flex:1; min-width:0; font:500 14px/1.45 'Inter',sans-serif; color:#F4ECE2; text-wrap:pretty">{{ tourCaption }}</span>
+      <div style="flex:none; display:flex; align-items:center; gap:5px" aria-hidden="true">
+        <sc-for list="{{ tourDots }}" as="d" hint-placeholder-count="6">
+          <span style="width:6px; height:6px; border-radius:50%; background:{{ d.color }}; transform:scale({{ d.scale }}); transition:background 0.3s, transform 0.3s"></span>
+        </sc-for>
+      </div>
+      <button onClick="{{ stopTour }}" title="Exit the auto-demo" aria-label="Exit the auto-demo" style="flex:none; padding:8px 13px; border-radius:8px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:#C9CDD4; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14)" style-hover="background:rgba(255,255,255,0.1); color:#fff">EXIT</button>
+      <div class="ks-tour-bar" style="position:absolute; left:0; bottom:0; height:2px; width:100%; background:linear-gradient(90deg,#FFC24D,#FF7A1A 55%,#F0480A)"></div>
+    </div>
+  </div>
+  </sc-if>
+
   <div data-screen-label="Command Center" style="position:relative; z-index:1; min-height:100vh; display:flex">
 
     <!-- icon rail -->
@@ -332,14 +359,14 @@
             <div style="position:absolute; inset:0; background:radial-gradient(80% 60% at 100% 0%, rgba(240,72,10,0.14), transparent 60%); pointer-events:none"></div>
             <div style="position:relative">
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px">
-                <span title="A silent collision: two merge requests touch different files (no Git conflict) yet both change functions the same downstream code depends on — so they break together once both merge." style="display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:999px; background:rgba(255,106,61,0.15); border:1px solid rgba(255,106,61,0.4); cursor:help">
+                <span title="A silent collision: two merge requests touch different files (no Git conflict) yet both change functions the same downstream code depends on - so they break together once both merge." style="display:inline-flex; align-items:center; gap:7px; padding:6px 11px; border-radius:999px; background:rgba(255,106,61,0.15); border:1px solid rgba(255,106,61,0.4); cursor:help">
                   <span style="width:7px; height:7px; border-radius:50%; background:#FF6A3D; box-shadow:0 0 8px #FF6A3D"></span>
                   <span style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; color:#FF8A66">SILENT COLLISION FOUND</span>
                 </span>
                 <span style="font:500 11px/1 'JetBrains Mono',monospace; color:#5F636D; margin-left:auto">{{ repo }}</span>
               </div>
 
-              <p style="font:400 19px/1.5 'Inter',sans-serif; color:#E7E9EC; margin:0 0 22px; text-wrap:pretty">Changing <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">{{ findA }}</span> and <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">{{ findB }}</span> — different files, no Git conflict — both ripple into <span style="font:600 19px/1 'Space Grotesk',sans-serif; color:#FF6A3D">{{ findShared }}</span> shared runtime dependents. Two merge requests that pass review and break together.</p>
+              <p style="font:400 19px/1.5 'Inter',sans-serif; color:#E7E9EC; margin:0 0 22px; text-wrap:pretty">Changing <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">{{ findA }}</span> and <span style="font:600 18px/1 'JetBrains Mono',monospace; color:#FFC24D">{{ findB }}</span> - different files, no Git conflict - both ripple into <span style="font:600 19px/1 'Space Grotesk',sans-serif; color:#FF6A3D">{{ findShared }}</span> shared runtime dependents. Two merge requests that pass review and break together.</p>
 
               <div style="height:1px; background:rgba(255,255,255,0.08); margin:0 0 20px"></div>
 
@@ -611,7 +638,7 @@
         <section style="padding:6px 2px 4px">
           <div style="font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.16em; text-transform:uppercase; color:#8B9099; margin-bottom:14px">AI agents · merge governance</div>
           <h1 style="font:600 clamp(36px,4.2vw,58px)/1 'Bodoni Moda',serif; letter-spacing:0.01em; text-transform:uppercase; margin:0 0 12px; color:#F6EFE6">Engineering Harness</h1>
-          <p style="font:400 16px/1.55 'Inter',sans-serif; color:#B59B86; margin:0; max-width:60ch">Coding agents can write patches. Keystone decides whether they are safe to merge — running every bot MR through the same blast-radius pipeline a human reviewer gets.</p>
+          <p style="font:400 16px/1.55 'Inter',sans-serif; color:#B59B86; margin:0; max-width:60ch">Coding agents can write patches. Keystone decides whether they are safe to merge - running every bot MR through the same blast-radius pipeline a human reviewer gets.</p>
         </section>
         <section style="display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:18px">
           <div style="background:#14100b; border:1px solid rgba(255,150,80,0.09); border-radius:14px; padding:24px">
@@ -695,7 +722,7 @@
               <span style="font:400 11px/1 'JetBrains Mono',monospace; color:{{ r.hashColor }}">{{ r.prev }} <span style="color:#5F636D">→</span> {{ r.hash }}</span>
             </div>
           </sc-for>
-          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640"><span title="Hash-chained: each ledger row stores a hash of the row before it, so altering any past decision changes every hash after it — tampering is detectable." style="border-bottom:1px dotted rgba(201,169,143,0.5); cursor:help">Each row is hash-chained</span> to the one before it. These hashes are computed live in your browser, so Simulate Tamper genuinely recomputes the chain and every hash after the edited row changes. The demo uses a fast FNV-1a hash to show the mechanism; the production ledger uses keyed HMAC-SHA256 (see core/audit.py).</div>
+          <div style="padding:14px; font:400 11px/1.5 'Inter',sans-serif; color:#6f5640"><span title="Hash-chained: each ledger row stores a hash of the row before it, so altering any past decision changes every hash after it - tampering is detectable." style="border-bottom:1px dotted rgba(201,169,143,0.5); cursor:help">Each row is hash-chained</span> to the one before it. These hashes are computed live in your browser, so Simulate Tamper genuinely recomputes the chain and every hash after the edited row changes. The demo uses a fast FNV-1a hash to show the mechanism; the production ledger uses keyed HMAC-SHA256 (see core/audit.py).</div>
         </section>
         </sc-if>
 
@@ -756,7 +783,7 @@
         <span style="width:11px; height:11px; border-radius:50%; background:#FF6A3D"></span>
         <span style="width:11px; height:11px; border-radius:50%; background:#F5A623"></span>
         <span style="width:11px; height:11px; border-radius:50%; background:#34D399"></span>
-        <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#5F636D; margin-left:8px">keystone — auth</span>
+        <span style="font:500 12px/1 'JetBrains Mono',monospace; color:#5F636D; margin-left:8px">keystone - auth</span>
       </div>
       <div style="padding:24px 22px">
         <div style="font:400 14px/1.6 'JetBrains Mono',monospace; color:#C9CDD4; margin-bottom:18px"><span style="color:#FF7A1A">$</span> keystone auth --connect github</div>
@@ -768,7 +795,7 @@
             </div>
           </sc-for>
         </div>
-        <div style="padding:11px 13px; border-radius:8px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.22); font:400 12px/1.5 'Inter',sans-serif; color:#D7B89A; margin-bottom:22px">This static demo does <strong style="color:#F5A623">no real GitHub sign-in</strong> — it previews the read-only scopes the production GitHub App would request, then opens the in-browser command center on public-repo data. Private-repo access requires a deployed backend.</div>
+        <div style="padding:11px 13px; border-radius:8px; background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.22); font:400 12px/1.5 'Inter',sans-serif; color:#D7B89A; margin-bottom:22px">This static demo does <strong style="color:#F5A623">no real GitHub sign-in</strong> - it previews the read-only scopes the production GitHub App would request, then opens the in-browser command center on public-repo data. Private-repo access requires a deployed backend.</div>
         <div style="display:flex; gap:11px">
           <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; border:none; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#1c0d02; background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)" style-hover="filter:brightness(1.08)">Open the command center</button>
           <button onClick="{{ goDemo }}" style="flex:1; padding:12px; border-radius:8px; cursor:pointer; font:600 14px/1 'Space Grotesk',sans-serif; color:#F2F3F5; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.13)" style-hover="background:rgba(255,255,255,0.08)">Continue as demo</button>
@@ -787,7 +814,7 @@
   &quot;startView&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Landing&quot;, &quot;Dashboard&quot;], &quot;default&quot;: &quot;Landing&quot;, &quot;tsType&quot;: &quot;string&quot; }
 }">
 class Component extends DCLogic {
-  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false };
+  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false, tourStep: 0, tourCaption: '' };
 
   componentDidMount() {
     this._lastView = this.state.view;
@@ -822,18 +849,19 @@ class Component extends DCLogic {
   startTour() {
     this.stopTour();
     const steps = [
-      { panel: 'overview', tampered: false, cap: 'Two safe-looking MRs — Orbit finds 5 shared dependents Git cannot see' },
-      { panel: 'cockpit', tampered: false, cap: 'Blast-radius graph — exactly what breaks together' },
-      { panel: 'ledger', tampered: false, cap: 'Every decision lands in a tamper-evident ledger' },
-      { panel: 'ledger', tampered: true, cap: 'Someone edits a past decision — the hash chain BREAKS' },
-      { panel: 'ledger', tampered: false, cap: 'Restore — the chain verifies again' },
-      { panel: 'harness', tampered: false, cap: 'The same gate runs on AI-agent merge requests' }
+      { panel: 'overview', tampered: false, cap: 'Two safe-looking MRs. Orbit finds 5 shared dependents Git cannot see.' },
+      { panel: 'cockpit', tampered: false, cap: 'Blast-radius graph: exactly what breaks together.' },
+      { panel: 'ledger', tampered: false, cap: 'Every decision lands in a tamper-evident ledger.' },
+      { panel: 'ledger', tampered: true, cap: 'Someone edits a past decision. The hash chain BREAKS.' },
+      { panel: 'ledger', tampered: false, cap: 'Restore the chain, and it verifies again.' },
+      { panel: 'harness', tampered: false, cap: 'The same gate runs on AI-agent merge requests.' }
     ];
-    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true, tourCaption: steps[0].cap });
+    this._tourTotal = steps.length;
+    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true, tourStep: 0, tourCaption: steps[0].cap });
     let i = 0;
     this._tourTimer = setInterval(() => {
       i = (i + 1) % steps.length;
-      this.setState({ panel: steps[i].panel, tampered: steps[i].tampered, tourCaption: steps[i].cap });
+      this.setState({ panel: steps[i].panel, tampered: steps[i].tampered, tourStep: i, tourCaption: steps[i].cap });
       try { window.scrollTo(0, 0); } catch (e) {}
     }, 4200);
   }
@@ -902,7 +930,7 @@ class Component extends DCLogic {
     // Memoize per (slot, scan): the element ref must be STABLE across the runtime's
     // re-renders (a new ref every render loops the reconciler and restarts the entrance
     // animation forever -> blank graph). A SEPARATE cached element per slot lets the graph
-    // mount independently in the overview AND cockpit panels — one shared element object
+    // mount independently in the overview AND cockpit panels - one shared element object
     // cannot mount in two places or survive a panel switch (the original empty-cockpit bug).
     this._graphCache = this._graphCache || {};
     var _ck = (slot || 'a') + '|' + (_gsc ? (_gsc.repo + ':' + _gsc.defs + ':' + _gsc.a + ':' + _gsc.b) : 'none');
@@ -1099,7 +1127,7 @@ class Component extends DCLogic {
     paths.forEach((p, i) => {
       const delay = p.t0.toFixed(2);
       const common = { d: p.d, fill: 'none', pathLength: 1, strokeLinecap: 'round', strokeLinejoin: 'round' };
-      // soft outer glow, then molten body, then bright core — all draw on
+      // soft outer glow, then molten body, then bright core - all draw on
       crackKids.push(R('path', { key: 'cg' + i, ...common, stroke: '#F0480A', strokeWidth: p.w * 4.2, strokeOpacity: 0.32, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.9s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's forwards' } }));
       crackKids.push(R('path', { key: 'cm' + i, ...common, stroke: '#FF8A1A', strokeWidth: p.w * 2, strokeOpacity: 0.95, style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.9s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's forwards' } }));
       crackKids.push(R('path', { key: 'ck' + i, ...common, stroke: '#FFF2D0', strokeWidth: Math.max(0.9, p.w * 0.7), style: { strokeDasharray: 1, strokeDashoffset: 1, animation: 'dashRun 1.9s cubic-bezier(0.22,0.61,0.36,1) ' + delay + 's forwards' } }));
@@ -1146,7 +1174,7 @@ class Component extends DCLogic {
         R('circle', { key: 'co', cx: sx.toFixed(1), cy: sy.toFixed(1), r: base * 0.32, fill: '#FFF2D0', style: { transformBox: 'fill-box', transformOrigin: 'center', opacity: 0, animation: 'stoneCore ' + period + 's ease-in-out ' + flowDelay + 's infinite' } })
       ]));
     }
-    // lava conduits linking adjacent stones — light travels around the ring
+    // lava conduits linking adjacent stones - light travels around the ring
     const linkG = [];
     for (let i = 0; i < SN; i++) {
       const [x1, y1] = stoneCenters[i], [x2, y2] = stoneCenters[(i + 1) % SN];
@@ -1180,7 +1208,7 @@ class Component extends DCLogic {
     // Fallbacks below are the REAL Keystone self-index numbers (web/orbit_snapshot.json:
     // 262 defs, max blast 12 on compute_blast_radius, the compute_blast_radius × verify
     // collision with 5 shared dependents). The dashboard auto-loads that snapshot on entry,
-    // so live _SC values replace these almost immediately — no invented figures are ever shown.
+    // so live _SC values replace these almost immediately - no invented figures are ever shown.
     const _statDefs = _SC ? _SC.defs : '262';
     const _statDefsSub = _SC ? _SC.repo : 'keystone self-index';
     const _statBlast = _SC ? String(_SC.maxBlast) : '12';
@@ -1218,16 +1246,16 @@ class Component extends DCLogic {
     const _tamperedChain = _chainOf(_tamperedLed);
     const _shortHash = (h) => h === 'genesis' ? '0000…gen' : h.slice(0, 4) + '…' + h.slice(-4);
     const demoSteps = _SC ? [
-      { n: '1', title: 'Two MRs enter review', text: 'One MR changes ' + _SC.a + '() in ' + _SC.aFile + '. Another changes ' + _SC.b + '() in ' + _SC.bFile + '. Different files — Git reports no conflict.' },
+      { n: '1', title: 'Two MRs enter review', text: 'One MR changes ' + _SC.a + '() in ' + _SC.aFile + '. Another changes ' + _SC.b + '() in ' + _SC.bFile + '. Different files - Git reports no conflict.' },
       { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
       { n: '3', title: 'Blast radii are compared', text: _SC.a + ' ripples into ' + _SC.aBlast + ' dependents, ' + _SC.b + ' into ' + _SC.bBlast + '. Keystone intersects the two dependent sets.' },
-      { n: '4', title: 'The silent collision surfaces', text: _SC.shared + ' functions call both ' + _SC.a + ' and ' + _SC.b + '. Merge both and those ' + _SC.shared + ' break together — no file-diff tool would warn you.' },
+      { n: '4', title: 'The silent collision surfaces', text: _SC.shared + ' functions call both ' + _SC.a + ' and ' + _SC.b + '. Merge both and those ' + _SC.shared + ' break together - no file-diff tool would warn you.' },
       { n: '5', title: 'Resolve before merge', text: 'Keystone holds the merge, suggests a single stacked review, and records the decision in the audit ledger.' }
     ] : [
-      { n: '1', title: 'Two MRs enter review', text: 'MR-204 changes compute_blast_radius() in core/impact.py. MR-211 changes verify() in core/audit.py. Different files — Git reports no conflict.' },
+      { n: '1', title: 'Two MRs enter review', text: 'MR-204 changes compute_blast_radius() in core/impact.py. MR-211 changes verify() in core/audit.py. Different files - Git reports no conflict.' },
       { n: '2', title: 'Keystone reads the call graph', text: 'Each change resolves to a symbol on the GitLab Orbit call graph, and its direct dependents are computed.' },
       { n: '3', title: 'Blast radii are compared', text: 'compute_blast_radius ripples into 12 dependents, verify into 10. Keystone intersects the two dependent sets.' },
-      { n: '4', title: 'The silent collision surfaces', text: '5 functions depend on both compute_blast_radius and verify. Merge both and those 5 break together — no file-diff tool would warn you.' },
+      { n: '4', title: 'The silent collision surfaces', text: '5 functions depend on both compute_blast_radius and verify. Merge both and those 5 break together - no file-diff tool would warn you.' },
       { n: '5', title: 'Resolve before merge', text: 'Keystone holds the merge, suggests a single stacked review, and records the decision in the audit ledger.' }
     ];
 
@@ -1251,6 +1279,10 @@ class Component extends DCLogic {
       goDemoClick: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksLoadOrbit) setTimeout(function () { window.__ksLoadOrbit('orbit_snapshot_click.json'); }, 60); },
       watchRun: () => this.startTour(),
       autoTour: this.state.autoTour,
+      tourCaption: this.state.tourCaption || '',
+      tourStepLabel: 'Step ' + ((this.state.tourStep || 0) + 1) + ' of 6',
+      stopTour: () => this.stopTour(),
+      tourDots: [0, 1, 2, 3, 4, 5].map((k) => ({ color: k === (this.state.tourStep || 0) ? '#FF7A1A' : 'rgba(255,255,255,0.18)', scale: k === (this.state.tourStep || 0) ? '1.35' : '1' })),
       goLanding: () => this.setState({ view: 'landing' }),
       onArtMove: (e) => { const t = e.currentTarget; const r = t.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top; t.style.setProperty('--mx', (x / r.width - 0.5).toFixed(3)); t.style.setProperty('--my', (y / r.height - 0.5).toFixed(3)); t.style.setProperty('--px', x + 'px'); t.style.setProperty('--py', y + 'px'); t.style.setProperty('--torch', '1'); },
       onArtLeave: (e) => { const t = e.currentTarget; t.style.setProperty('--mx', '0'); t.style.setProperty('--my', '0'); t.style.setProperty('--torch', '0'); },
@@ -1267,9 +1299,9 @@ class Component extends DCLogic {
       isOrbit: !!(_SC && _SC.orbit),
       orbitDefs: _SC ? String(_SC.defs) : '262',
       stats: [
-        { label: 'Definitions indexed', value: _statDefs, sub: _statDefsSub, color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)', tip: 'Every function, method and class Keystone resolved on the call graph — GitLab Orbit\'s gl_definition table.' },
+        { label: 'Definitions indexed', value: _statDefs, sub: _statDefsSub, color: '#F2F3F5', bar: 'linear-gradient(90deg,#FF7A1A,transparent)', tip: 'Every function, method and class Keystone resolved on the call graph - GitLab Orbit\'s gl_definition table.' },
         { label: 'Max blast radius', value: _statBlast, sub: _statBlastSub, color: '#F5A623', bar: 'linear-gradient(90deg,#F5A623,transparent)', tip: 'Blast radius = how many other functions transitively depend on this symbol. The maximum is your single point of failure: change it and the most code can break at once.' },
-        { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)', tip: 'Functions that depend on BOTH changed symbols. Merge both merge requests and these break together — with no Git conflict to warn you.' }
+        { label: 'Silent-collision dependents', value: _statShared, sub: _statSharedSub, color: '#FF6A3D', bar: 'linear-gradient(90deg,#FF6A3D,transparent)', tip: 'Functions that depend on BOTH changed symbols. Merge both merge requests and these break together - with no Git conflict to warn you.' }
       ],
       findA: _SC ? _SC.a : 'compute_blast_radius', findB: _SC ? _SC.b : 'verify', findShared: _statShared,
       colCount: _SC ? String(_SC.collisions) : '16', hasMulti: _SC ? (_SC.collisions >= 1) : true,
@@ -1306,14 +1338,14 @@ class Component extends DCLogic {
         { sym: 'precedent', file: 'core/audit.py', type: 'function', dot: '#34D399', line: 'transparent' }
       ]),
       events: (_SC ? [
-        { t: '12:04:11', text: 'Silent collision detected — ' + _SC.a + ' × ' + _SC.b, dot: '#FF6A3D' },
-        { t: '12:04:09', text: 'Blast radius computed for ' + _SC.a + ' — ' + _SC.aBlast + ' direct dependents', dot: '#FF7A1A' },
-        { t: '11:58:42', text: 'Bot MR (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
+        { t: '12:04:11', text: 'Silent collision detected - ' + _SC.a + ' × ' + _SC.b, dot: '#FF6A3D' },
+        { t: '12:04:09', text: 'Blast radius computed for ' + _SC.a + ' - ' + _SC.aBlast + ' direct dependents', dot: '#FF7A1A' },
+        { t: '11:58:42', text: 'Bot MR (copilot-workspace) gated - verdict BLOCK', dot: '#FF6A3D' },
         { t: '11:52:30', text: 'Indexed ' + _SC.defs + ' definitions from ' + _SC.repo, dot: '#34D399' }
       ] : [
-        { t: '12:04:11', text: 'Silent collision detected — compute_blast_radius × verify', dot: '#FF6A3D' },
-        { t: '12:04:09', text: 'Blast radius computed for compute_blast_radius — 12 direct dependents', dot: '#FF7A1A' },
-        { t: '11:58:42', text: 'MR-204 (copilot-workspace) gated — verdict BLOCK', dot: '#FF6A3D' },
+        { t: '12:04:11', text: 'Silent collision detected - compute_blast_radius × verify', dot: '#FF6A3D' },
+        { t: '12:04:09', text: 'Blast radius computed for compute_blast_radius - 12 direct dependents', dot: '#FF7A1A' },
+        { t: '11:58:42', text: 'MR-204 (copilot-workspace) gated - verdict BLOCK', dot: '#FF6A3D' },
         { t: '11:52:30', text: 'Indexed 262 definitions from keystone self-index', dot: '#34D399' }
       ]),
       perms: ['Read repository contents and metadata', 'Read merge requests and diffs', 'No write access · no secrets · no code execution'],
@@ -1325,9 +1357,9 @@ class Component extends DCLogic {
       isLedger: this.state.panel === 'ledger',
       isDemo: this.state.panel === 'demo',
 
-      symbolList: (_SC ? [[_SC.a, _SC.aFile, 'definition', String(_SC.aBlast), true], [_SC.b, _SC.bFile, 'definition', String(_SC.bBlast), true]].concat(_SC.chain.slice(0, 3).map(function (c) { return [c.sym, c.file, 'shared dependent', '—', false]; })) : [['compute_blast_radius', 'core/impact.py', 'definition', '12', true], ['verify', 'core/audit.py', 'definition', '10', true], ['append', 'core/audit.py', 'shared dependent', '—', false], ['evaluate', 'core/gate.py', 'shared dependent', '—', false], ['precedent', 'core/audit.py', 'shared dependent', '—', false]]).map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
+      symbolList: (_SC ? [[_SC.a, _SC.aFile, 'definition', String(_SC.aBlast), true], [_SC.b, _SC.bFile, 'definition', String(_SC.bBlast), true]].concat(_SC.chain.slice(0, 3).map(function (c) { return [c.sym, c.file, 'shared dependent', '-', false]; })) : [['compute_blast_radius', 'core/impact.py', 'definition', '12', true], ['verify', 'core/audit.py', 'definition', '10', true], ['append', 'core/audit.py', 'shared dependent', '-', false], ['evaluate', 'core/gate.py', 'shared dependent', '-', false], ['precedent', 'core/audit.py', 'shared dependent', '-', false]]).map(([sym, file, kind, dep, hot]) => ({ sym, file, kind, dep, hot: hot ? '#FF6A3D' : '#5F636D' })),
 
-      botPipeline: (_SC ? [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', _SC.a + ' → ' + _SC.aBlast + ' · ' + _SC.b + ' → ' + _SC.bBlast + ' direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches ' + _SC.aFile + ' and ' + _SC.bFile, true, 'PASS'], ['4', 'Collision Scan', _SC.shared + ' shared dependents overlap the second MR', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']] : [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'compute_blast_radius → 12 · verify → 10 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core/impact.py', true, 'PASS'], ['4', 'Collision Scan', '5 shared dependents overlap open MR-211', false, 'FLAG'], ['5', 'Verdict', 'Silent collision — not safe to auto-merge', false, 'BLOCK']]).map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
+      botPipeline: (_SC ? [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', _SC.a + ' → ' + _SC.aBlast + ' · ' + _SC.b + ' → ' + _SC.bBlast + ' direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches ' + _SC.aFile + ' and ' + _SC.bFile, true, 'PASS'], ['4', 'Collision Scan', _SC.shared + ' shared dependents overlap the second MR', false, 'FLAG'], ['5', 'Verdict', 'Silent collision - not safe to auto-merge', false, 'BLOCK']] : [['1', 'Symbol Resolve', '2 changed symbols resolved on the call graph', true, 'PASS'], ['2', 'Blast Radius', 'compute_blast_radius → 12 · verify → 10 direct dependents', true, 'PASS'], ['3', 'Policy Gate', 'Touches CODEOWNERS-protected core/impact.py', true, 'PASS'], ['4', 'Collision Scan', '5 shared dependents overlap open MR-211', false, 'FLAG'], ['5', 'Verdict', 'Silent collision - not safe to auto-merge', false, 'BLOCK']]).map(([n, name, detail, ok, tag]) => ({ n, name, detail, mark: ok ? '✓' : '!', ok: ok ? '#34D399' : '#FF6A3D', okBg: ok ? 'rgba(52,211,153,0.12)' : 'rgba(255,106,61,0.14)', okBorder: ok ? 'rgba(52,211,153,0.3)' : 'rgba(255,106,61,0.3)', tag, tagColor: ok ? '#34D399' : '#FF8A66' })),
       botSymbols: (_SC ? [
         { sym: _SC.a, file: _SC.aFile, blast: String(_SC.aBlast), res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
         { sym: _SC.b, file: _SC.bFile, blast: String(_SC.bBlast), res: 'FLAG', color: '#F5A623', bg: 'rgba(245,166,35,0.14)' },
@@ -1471,7 +1503,7 @@ class Component extends DCLogic {
       window.__ksScan = d;
       indicator("✓  Live · " + (d.repo || "GitLab Orbit") + " · " + d.defs + " defs · " + d.collisions + " collisions", "done");
       setTimeout(rerender, 150); orbitBadge();
-    }).catch(function () { indicator("Orbit snapshot unavailable — falling back to live scan", "fail"); runScan("pallets/click"); });
+    }).catch(function () { indicator("Orbit snapshot unavailable - falling back to live scan", "fail"); runScan("pallets/click"); });
   }
   function runScan(repo) {
     if (scanning || !window.analyzeRepo) return; scanning = true;
@@ -1482,7 +1514,7 @@ class Component extends DCLogic {
       var sc = window.__ksScan;
       indicator("✓  Live · " + ((sc && sc.repo) || repo) + " · " + ((sc && sc.defs) || "?") + " defs · " + ((sc && sc.collisions) || 0) + " collisions", "done");
       setTimeout(rerender, 150); orbitBadge();
-    }).catch(function () { scanning = false; indicator("Scan failed — try another public repo", "fail"); });
+    }).catch(function () { scanning = false; indicator("Scan failed - try another public repo", "fail"); });
   }
   function askRepo() {
     if (document.getElementById("ks-repo-modal")) return;
@@ -1490,7 +1522,7 @@ class Component extends DCLogic {
     ov.style.cssText = "position:fixed;inset:0;z-index:99998;display:grid;place-items:center;padding:20px;background:rgba(8,5,3,0.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)";
     ov.innerHTML = '<div style="width:min(440px,94vw);background:#16100b;border:1px solid rgba(255,122,26,0.25);border-radius:14px;padding:24px;box-shadow:0 40px 90px -30px #000;font-family:Inter,sans-serif">'
       + '<div style="font:600 11px/1 \'JetBrains Mono\',monospace;letter-spacing:0.13em;color:#FF7A1A;text-transform:uppercase;margin-bottom:7px">Scan a public repo</div>'
-      + '<div style="font:400 13px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:16px">Keystone computes its call graph and finds the silent collisions — live, in your browser.</div>'
+      + '<div style="font:400 13px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:16px">Keystone computes its call graph and finds the silent collisions - live, in your browser.</div>'
       + '<div style="display:flex;gap:8px;align-items:center;background:#0c0805;border:1px solid rgba(255,122,26,0.3);border-radius:9px;padding:11px 13px;margin-bottom:14px"><span style="color:#FF7A1A;font:600 13px/1 \'JetBrains Mono\',monospace">$</span><input id="ks-repo-in" placeholder="owner/repo" value="pallets/click" autocomplete="off" spellcheck="false" style="flex:1;background:none;border:none;outline:none;color:#F6EFE6;font:400 13px/1 \'JetBrains Mono\',monospace"/></div>'
       + '<div id="ks-repo-ex" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px"></div>'
       + '<div style="display:flex;gap:10px;justify-content:flex-end"><button id="ks-repo-cancel" style="font:600 12px/1 Inter,sans-serif;padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#A6907B;cursor:pointer">Cancel</button><button id="ks-repo-go" style="font:600 12px/1 Inter,sans-serif;padding:10px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A);color:#150a02;cursor:pointer">Scan →</button></div></div>';
@@ -1541,10 +1573,10 @@ class Component extends DCLogic {
 /* Judge fix: jargon tooltips (Design). title= on short standalone labels. */
 (function () {
   var TIPS = [
-    ["blast radius", "Blast radius: the count of definitions that transitively depend on a symbol — what breaks if you change it."],
+    ["blast radius", "Blast radius: the count of definitions that transitively depend on a symbol - what breaks if you change it."],
     ["runtime dependents", "Runtime dependents: functions that call into this symbol on the live call graph (not just text references)."],
     ["single point of failure", "SPOF: the share of the whole graph that funnels through the single highest-blast symbol."],
-    ["silent collision", "Silent collision: two changes in different files whose blast radii overlap — no Git conflict, breaks together."],
+    ["silent collision", "Silent collision: two changes in different files whose blast radii overlap - no Git conflict, breaks together."],
     ["hash-chained", "Hash-chained ledger: each decision's hash includes the previous one, so any tamper breaks the chain."]
   ];
   function wireTips() {
@@ -1583,7 +1615,7 @@ class Component extends DCLogic {
     ov.style.cssText = "position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;background:rgba(8,5,3,0.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)";
     ov.innerHTML = '<div style="width:min(620px,95vw);max-height:82vh;overflow:auto;background:#16100b;border:1px solid rgba(52,211,153,0.28);border-radius:14px;padding:22px;box-shadow:0 40px 90px -30px #000;font-family:Inter,sans-serif">'
       + '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:6px"><div style="font:600 11px/1.3 \'JetBrains Mono\',monospace;letter-spacing:0.1em;color:#34D399;text-transform:uppercase">GitLab Orbit CLI cross-check · ' + match + '/' + keys.length + ' matched</div><button id="ks-prov-x" style="background:none;border:none;color:#A6907B;font:600 18px/1 Inter;cursor:pointer">×</button></div>'
-      + '<div style="font:400 12px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:14px">Each row is the exact <b style="color:#C9A98F">glab orbit local sql</b> command Orbit ran (v' + esc(d.orbit_version || "") + ', against a real <b style="color:#C9A98F">orbit index</b> of ' + (d.definitions_total || keys.length) + ' definitions). <b style="color:#34D399">ring1 cli</b> is the count Orbit itself returned; <b style="color:#34D399">engine</b> is Keystone\'s — they match.</div>'
+      + '<div style="font:400 12px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:14px">Each row is the exact <b style="color:#C9A98F">glab orbit local sql</b> command Orbit ran (v' + esc(d.orbit_version || "") + ', against a real <b style="color:#C9A98F">orbit index</b> of ' + (d.definitions_total || keys.length) + ' definitions). <b style="color:#34D399">ring1 cli</b> is the count Orbit itself returned; <b style="color:#34D399">engine</b> is Keystone\'s - they match.</div>'
       + rows + '</div>';
     document.body.appendChild(ov);
     function close() { ov.remove(); }
