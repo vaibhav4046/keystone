@@ -81,8 +81,43 @@ args:    ["/ABS/PATH/keystone/mcp/keystone_server.py"]
 On Windows, use the absolute `python.exe` (or `py`) and forward slashes, e.g.
 `"command": "python", "args": ["D:/project/keystone/mcp/keystone_server.py"]`.
 
+## Continuity server - carry your context across tools
+
+A second server (`mcp/continuity_server.py`) holds your running summary, memories, and open
+todos on disk, so when one tool's context runs out you switch tools, connect the same
+server, call `get_handoff`, and continue exactly where you left off.
+
+| Tool | What it does |
+|------|--------------|
+| `get_handoff()` | The continue-here call: returns summary + all memories + open todos as a ready-to-paste block. Call first when you switch tools. |
+| `set_summary(text)` | Set the one-paragraph "where things stand" summary. |
+| `save_memory(title, body, type?)` | Save/update a durable fact or decision (dedup by title). |
+| `recall(query?)` | All memories, or those matching a query. |
+| `add_todo(text)` / `complete_todo(id)` | Track next steps. |
+
+Storage is one JSON file at `KEYSTONE_CONTEXT_STORE` (default `mcp/continuity_store.json`),
+so the state is portable and survives across tools and runs. Verified with
+`python mcp/continuity_server.py --selftest`.
+
+Register it alongside the gate server (same shape, different command):
+
+```json
+{
+  "mcpServers": {
+    "keystone-continuity": {
+      "command": "python",
+      "args": ["/ABS/PATH/keystone/mcp/continuity_server.py"]
+    }
+  }
+}
+```
+
+Typical flow: in the tool you are leaving, call `set_summary` + `save_memory` + `add_todo`.
+In the new tool (Codex, ChatGPT, Claude Code, Odysseus, ...), call `get_handoff` and keep going.
+
 ## Why this matters
 
 The gate stops being a Keystone-only website and becomes a control any agent, in any
 harness, can call before it merges. Same deterministic engine, no LLM, available
-everywhere through one open protocol.
+everywhere through one open protocol. And with the continuity server, your working context
+travels with you between tools instead of dying when one runs out.
