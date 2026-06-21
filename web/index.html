@@ -818,21 +818,24 @@ class Component extends DCLogic {
 
   componentWillUnmount() { if (this._raf) cancelAnimationFrame(this._raf); if (this._demoTimer) clearInterval(this._demoTimer); if (this._tourTimer) clearInterval(this._tourTimer); }
 
-  // Auto-demo tour: hands-free cycle through the real operations for a visitor/judge.
+  // Auto-demo tour: a hands-free, narrated "video" cycle through the real operations.
   startTour() {
     this.stopTour();
-    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true });
     const steps = [
-      { panel: 'overview', tampered: false }, { panel: 'cockpit', tampered: false },
-      { panel: 'ledger', tampered: false }, { panel: 'ledger', tampered: true },
-      { panel: 'ledger', tampered: false }, { panel: 'harness', tampered: false }
+      { panel: 'overview', tampered: false, cap: 'Two safe-looking MRs — Orbit finds 5 shared dependents Git cannot see' },
+      { panel: 'cockpit', tampered: false, cap: 'Blast-radius graph — exactly what breaks together' },
+      { panel: 'ledger', tampered: false, cap: 'Every decision lands in a tamper-evident ledger' },
+      { panel: 'ledger', tampered: true, cap: 'Someone edits a past decision — the hash chain BREAKS' },
+      { panel: 'ledger', tampered: false, cap: 'Restore — the chain verifies again' },
+      { panel: 'harness', tampered: false, cap: 'The same gate runs on AI-agent merge requests' }
     ];
+    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true, tourCaption: steps[0].cap });
     let i = 0;
     this._tourTimer = setInterval(() => {
       i = (i + 1) % steps.length;
-      this.setState({ panel: steps[i].panel, tampered: steps[i].tampered });
+      this.setState({ panel: steps[i].panel, tampered: steps[i].tampered, tourCaption: steps[i].cap });
       try { window.scrollTo(0, 0); } catch (e) {}
-    }, 3600);
+    }, 4200);
   }
   stopTour() { if (this._tourTimer) { clearInterval(this._tourTimer); this._tourTimer = null; } if (this.state.autoTour) this.setState({ autoTour: false }); }
 
