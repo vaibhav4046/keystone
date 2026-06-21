@@ -1,0 +1,22 @@
+{
+  "name": "keystone-remotion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Renders the Keystone presentation video (Part 1 of the demo) in the HydraDB-style black/pixel aesthetic.",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render Keystone out/keystone-presentation.mp4",
+    "still": "remotion still Keystone out/title.png --frame=40"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}
