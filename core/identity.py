@@ -65,7 +65,7 @@ def _validate_claims(claims: dict) -> tuple:
         if exp is not None and time.time() >= float(exp):
             return False, "token expired"
     except (TypeError, ValueError):
-        pass
+        return False, "unparseable exp"      # a present-but-malformed exp must fail closed, not bind as never-expiring
     want_aud = os.environ.get("KEYSTONE_OIDC_AUD")
     if want_aud:
         aud = claims.get("aud")
