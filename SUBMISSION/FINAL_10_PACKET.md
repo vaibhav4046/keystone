@@ -7,7 +7,7 @@ exact submit checklist.
 
 ## Links
 - **Live demo:** https://vaibhav4046.github.io/keystone/
-- **Backend (Render):** `https://<paste-after-deploy>.onrender.com` *(optional; static demo is complete on its own)*
+- **Backend (Render, LIVE):** https://keystone-zt6c.onrender.com  (`/api/health` → ok; free instance, first hit after idle may take ~50s to wake)
 - **GitHub:** https://github.com/vaibhav4046/keystone
 - **GitLab (primary):** https://gitlab.com/lalwanivaibhav079/keystone
 - **Video:** `<paste unlisted YouTube/Vimeo URL>`

@@ -7,6 +7,7 @@ verification".
 - **Live demo:** https://vaibhav4046.github.io/keystone/  (serves the winner-ready landing after `git push origin main`)
 - **GitLab repo (PRIMARY — required by the rules):** https://gitlab.com/lalwanivaibhav079/keystone
 - **GitHub mirror:** https://github.com/vaibhav4046/keystone
+- **Live backend (Render, real agent + live orbit sql cross-check):** https://keystone-zt6c.onrender.com  (health: /api/health)
 - **Track:** GitLab Transcend Hackathon — Showcase · **License:** MIT
 - **The one command:** `python skills/keystone/run_review.py demo`
 
