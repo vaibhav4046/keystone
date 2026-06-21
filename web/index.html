@@ -191,6 +191,12 @@
           <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations - collision, blast graph, ledger tamper and restore - on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
         </div>
 
+        <!-- HERO #1 MOMENT: scan a real repo, find a real collision, live - then open the guard PR. -->
+        <button onClick="{{ heroCollision }}" title="Keystone scans a real public repo live and finds a real cross-MR collision Git cannot see" style="display:flex; align-items:center; gap:13px; width:100%; max-width:580px; margin:18px 0 4px; padding:15px 18px; border-radius:11px; cursor:pointer; background:linear-gradient(100deg, rgba(255,122,26,0.12), rgba(240,72,10,0.06)); border:1px solid rgba(255,122,26,0.5); text-align:left" style-hover="border-color:#FF7A1A; background:linear-gradient(100deg, rgba(255,122,26,0.18), rgba(240,72,10,0.09))">
+          <span style="flex:none; width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#FFC24D,#FF7A1A); color:#150a02; font:700 17px/1 'JetBrains Mono',monospace">⚡</span>
+          <span style="flex:1; min-width:0"><span style="display:block; font:700 14px/1.3 'Space Grotesk',sans-serif; color:#F6EFE6">Find a real collision in a real repo →</span><span style="display:block; font:400 11.5px/1.45 'Inter',sans-serif; color:#A6907B; margin-top:2px">Scan pallets/click (or yours) live - watch Keystone find two functions that break together, then open the guard PR</span></span>
+        </button>
+
         <!-- Simplified hero: one clear action above; all proof/detail collapsed into a native <details> so the first screen is not a wall. -->
         <details style="margin:20px 0 0; max-width:580px">
           <summary style="cursor:pointer; display:inline-flex; align-items:center; gap:10px; padding:11px 16px; border-radius:10px; background:rgba(255,122,26,0.06); border:1px solid rgba(255,122,26,0.28); font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.05em; color:#FFB14D">Proof, live backend &amp; how it works <span style="color:#7a5e48; font-weight:400">- deterministic, no LLM, 124 tests</span></summary>
@@ -209,7 +215,7 @@
           <button onClick="{{ goDemoClick }}" title="Same engine on a real GitLab Orbit index of pallets/click (1,841 defs) - a library Keystone did not write." style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">or see it on pallets/click →</button>
           <button onClick="{{ goLedger }}" style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">verify it yourself →</button>
           <span style="color:#7a5e48; font-weight:400">no signup · runs in your browser</span>
-          <span style="flex-basis:100%; color:#6f5640; font:400 11.5px/1.5 'Inter',sans-serif; letter-spacing:0; margin-top:2px">For teams reviewing many parallel merge requests on a large shared codebase. Not for a solo repo or a single linear change, where there is nothing to collide.</span>
+          <span style="flex-basis:100%; color:#6f5640; font:400 11.5px/1.5 'Inter',sans-serif; letter-spacing:0; margin-top:2px">Built for the age of AI coding agents: when bots open merge requests faster than humans can cross-review, the call graph is the only surface that catches what breaks together.</span>
         </div>
 
         <!-- REAL GitHub connectivity: analyze ANY public repo live, in the browser. -->
@@ -1468,6 +1474,7 @@ class Component extends DCLogic {
       goLedger: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'ledger' }),
       goDemoClick: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksLoadOrbit) setTimeout(function () { window.__ksLoadOrbit('orbit_snapshot_click.json'); }, 60); },
       openScan: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksAskRepo) setTimeout(function () { window.__ksAskRepo(); }, 80); },
+      heroCollision: () => { if (typeof window !== 'undefined' && window.__ksHeroCollision) window.__ksHeroCollision('pallets/click'); },
       signInLabel: (typeof window !== 'undefined' && window.__ksUser) ? ('● ' + (window.__ksUser.login || 'signed in')) : 'Sign in with GitHub',
       signInClick: () => { if (typeof window === 'undefined') return; if (window.__ksUser) { if (window.__ksAskRepo) window.__ksAskRepo(); } else if (window.__ksSignIn) window.__ksSignIn(); },
       watchRun: () => this.startTour(),
@@ -1721,6 +1728,65 @@ class Component extends DCLogic {
   // Agent fix: transparent, approval-gated PR opener. Plans the deterministic co-change
   // guard (no LLM), streams every step like a cloud agent, and opens a REAL pull request
   // via the backend only after the user approves. Writes use the signed-in user's token.
+  // HERO: scan a real repo live -> find a REAL cross-MR collision -> hand the agent the fix.
+  window.__ksHeroCollision = function (repo0) {
+    var KS = (typeof KS_BACKEND !== 'undefined') ? KS_BACKEND : 'https://keystone-zt6c.onrender.com';
+    repo0 = repo0 || 'pallets/click';
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px';
+    var card = document.createElement('div');
+    card.style.cssText = 'width:min(720px,96vw);max-height:92vh;overflow:auto;background:#0b0806;border:1px solid rgba(255,122,26,0.34);border-radius:14px;padding:24px;box-shadow:0 40px 90px -30px #000;font-family:Inter,sans-serif;color:#F6EFE6';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+      '<span style="width:9px;height:9px;border-radius:50%;background:#FF7A1A;box-shadow:0 0 10px #FF7A1A"></span>' +
+      '<div style="font:600 16px/1 \'Space Grotesk\',sans-serif">Find a REAL collision in a REAL repo</div>' +
+      '<button id="ksh-x" style="margin-left:auto;background:none;border:none;color:#8B9099;font-size:22px;cursor:pointer;line-height:1">&times;</button></div>' +
+      '<div style="font:400 12.5px/1.6 Inter,sans-serif;color:#A6907B;margin-bottom:14px">Keystone fetches the repo, builds its GitLab Orbit call graph live (no pre-indexing), and finds the highest-risk pair of functions that would <b style="color:#F6EFE6">break together if changed in two parallel merge requests</b> - the hazard Git, CODEOWNERS, and merge trains cannot see. Deterministic, no LLM.</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#0c0805;border:1px solid rgba(255,122,26,0.3);border-radius:9px;padding:10px 12px;margin-bottom:12px"><span style="color:#FF7A1A;font:600 12px/1 \'JetBrains Mono\',monospace">repo</span><input id="ksh-repo" placeholder="owner/repo" value="' + String(repo0).replace(/"/g, '') + '" autocomplete="off" spellcheck="false" style="flex:1;min-width:140px;background:none;border:none;outline:none;color:#F6EFE6;font:400 13px/1 \'JetBrains Mono\',monospace"/><span style="font:500 10px/1 \'JetBrains Mono\',monospace;color:#6f5640">try pallets/click, psf/requests, benjaminp/six</span></div>' +
+      '<div id="ksh-log" style="background:#070504;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;min-height:64px;max-height:170px;overflow:auto;margin-bottom:12px"></div>' +
+      '<div id="ksh-result" style="display:none;margin-bottom:12px"></div>' +
+      '<pre id="ksh-diff" style="display:none;background:#070504;border:1px solid rgba(52,211,153,0.22);border-radius:10px;padding:12px 14px;max-height:150px;overflow:auto;font:400 11px/1.55 \'JetBrains Mono\',monospace;color:#9DEFC4;white-space:pre-wrap;margin-bottom:12px"></pre>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button id="ksh-go" style="flex:1;min-width:160px;padding:14px 18px;border-radius:9px;border:none;cursor:pointer;font:700 13px/1 \'JetBrains Mono\',monospace;letter-spacing:0.06em;text-transform:uppercase;color:#150a02;background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A)">Find the collision</button>' +
+      '<button id="ksh-pr" style="display:none;padding:14px 18px;border-radius:9px;border:none;cursor:pointer;font:700 13px/1 \'JetBrains Mono\',monospace;letter-spacing:0.04em;color:#0c1410;background:#4AD6A0">Open this PR on my repo &rarr;</button></div>';
+    ov.appendChild(card); document.body.appendChild(ov);
+    var logEl = card.querySelector('#ksh-log'), resEl = card.querySelector('#ksh-result'), diffEl = card.querySelector('#ksh-diff'),
+      goBtn = card.querySelector('#ksh-go'), prBtn = card.querySelector('#ksh-pr'), repoIn = card.querySelector('#ksh-repo');
+    var lastFinding = null;
+    function close() { try { ov.remove(); } catch (e) {} }
+    card.querySelector('#ksh-x').addEventListener('click', close);
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    function log(t, kind) { var d = document.createElement('div'); d.style.cssText = 'font:500 12px/1.65 \'JetBrains Mono\',monospace;opacity:0;transition:opacity .3s;color:' + (kind === 'ok' ? '#4AD6A0' : kind === 'err' ? '#FF6A3D' : '#C9CDD4'); d.textContent = (kind === 'ok' ? '✓ ' : kind === 'err' ? '✕ ' : '› ') + t; logEl.appendChild(d); requestAnimationFrame(function () { d.style.opacity = '1'; }); logEl.scrollTop = logEl.scrollHeight; }
+    function reveal(steps, cb) { var i = 0; (function nx() { if (i >= steps.length) { cb && cb(); return; } var s = steps[i]; log(s.t, s.k === 'collide' ? 'ok' : ''); i++; setTimeout(nx, 520); })(); }
+    goBtn.addEventListener('click', function () {
+      var repo = (repoIn.value || '').trim();
+      if (!repo || repo.indexOf('/') < 0) { log('Enter a public repo as owner/repo.', 'err'); return; }
+      goBtn.disabled = true; goBtn.textContent = 'Scanning...'; resEl.style.display = 'none'; diffEl.style.display = 'none'; prBtn.style.display = 'none'; logEl.innerHTML = '';
+      log('POST /api/scan-collision  -  ' + repo, '');
+      fetch(KS + '/api/scan-collision', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo: repo }) })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          var d = res.d || {};
+          if (!res.ok) { log((d.detail && d.detail.hint) || 'Scan failed - try another public Python repo.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Find the collision'; return; }
+          reveal(d.steps || [], function () {
+            if (!d.collision) { log('No collision in the top symbols - this repo is safe to parallelize.', 'ok'); goBtn.disabled = false; goBtn.textContent = 'Find the collision'; return; }
+            var c = d.collision;
+            resEl.style.display = 'block';
+            resEl.innerHTML = '<div style="background:rgba(255,106,61,0.07);border:1px solid rgba(255,106,61,0.34);border-radius:11px;padding:16px 18px">' +
+              '<div style="font:700 10px/1 \'JetBrains Mono\',monospace;letter-spacing:0.13em;text-transform:uppercase;color:#FF8A66;margin-bottom:10px">Silent collision found in ' + d.repo + '</div>' +
+              '<div style="font:400 14px/1.6 Inter,sans-serif;color:#E7E9EC">Changing <b style="color:#FFC24D">' + c.a + '</b> and <b style="color:#FFC24D">' + c.b + '</b> - different functions, <b>no Git conflict</b> - both ripple into <b style="color:#FF6A3D">' + c.shared_count + ' shared runtime dependents</b>. Two merge requests that pass review and break together.</div>' +
+              '<div style="display:flex;gap:18px;margin-top:12px;font:600 11px/1 \'JetBrains Mono\',monospace;color:#A6907B"><span>blast ' + c.blast_a + ' / ' + c.blast_b + '</span><span>shared: ' + (c.shared || []).slice(0, 5).join(', ') + '</span></div></div>';
+            if (d.plan && d.plan.files && d.plan.files[0]) { diffEl.style.display = 'block'; diffEl.textContent = d.plan.files[0].content; }
+            lastFinding = d.finding;
+            if (lastFinding) prBtn.style.display = 'inline-block';
+            goBtn.style.display = 'none';
+            log('Done. The agent can open this guard PR on a repo you own.', 'ok');
+          });
+        })
+        .catch(function () { log('Scan failed - backend may be warming. Try again.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Find the collision'; });
+    });
+    prBtn.addEventListener('click', function () { if (lastFinding && window.__ksAgentFix) { close(); window.__ksAgentFix(lastFinding); } });
+  };
+
   window.__ksAgentFix = function (finding) {
     finding = finding || {};
     var KS = (typeof KS_BACKEND !== 'undefined') ? KS_BACKEND : 'https://keystone-zt6c.onrender.com';
