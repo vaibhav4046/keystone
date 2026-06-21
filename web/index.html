@@ -153,12 +153,13 @@
 
         <p style="font:400 clamp(15px,1.4vw,18px)/1.6 'Inter',sans-serif; color:#B59B86; margin:0 0 34px; max-width:50ch; text-wrap:pretty">Git sees files. Orbit sees the call graph. <span style="color:#F6EFE6; font-weight:600">Keystone vetoes the merge before it breaks — and logs the decision in a tamper-evident ledger.</span></p>
 
-        <!-- ONE dominant CTA. Secondary actions are small text links below it. -->
-        <div style="margin-bottom:12px">
+        <!-- ONE dominant gradient CTA + an outline 'watch it run' (hands-free auto-demo). -->
+        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:12px">
           <button onClick="{{ goDemo }}" style="display:inline-flex; align-items:center; gap:11px; padding:18px 34px; min-height:52px; border-radius:4px; border:none; cursor:pointer; font:700 15px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#150a02; background:linear-gradient(135deg,#FFC24D 0%,#FF7A1A 52%,#F0480A 100%); box-shadow:0 14px 40px -12px rgba(240,72,10,0.75)" style-hover="filter:brightness(1.08)" style-active="transform:scale(0.985)">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="#150a02"><path d="M8 5v14l11-7z"></path></svg>
             Try the live demo
           </button>
+          <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations — collision, blast graph, ledger tamper and restore — on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
         </div>
         <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:28px; font:600 12.5px/1 'JetBrains Mono',monospace">
           <button onClick="{{ goDemoClick }}" title="Same engine on a real GitLab Orbit index of pallets/click (1,841 defs) — a library Keystone did not write." style="min-height:44px; border:none; background:none; cursor:pointer; color:#A6907B; letter-spacing:0.04em; padding:0" style-hover="color:#FFB14D">or see it on pallets/click →</button>
@@ -786,7 +787,7 @@
   &quot;startView&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Landing&quot;, &quot;Dashboard&quot;], &quot;default&quot;: &quot;Landing&quot;, &quot;tsType&quot;: &quot;string&quot; }
 }">
 class Component extends DCLogic {
-  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false };
+  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false };
 
   componentDidMount() {
     this._lastView = this.state.view;
@@ -815,9 +816,28 @@ class Component extends DCLogic {
     this._lastView = this.state.view;
   }
 
-  componentWillUnmount() { if (this._raf) cancelAnimationFrame(this._raf); if (this._demoTimer) clearInterval(this._demoTimer); }
+  componentWillUnmount() { if (this._raf) cancelAnimationFrame(this._raf); if (this._demoTimer) clearInterval(this._demoTimer); if (this._tourTimer) clearInterval(this._tourTimer); }
+
+  // Auto-demo tour: hands-free cycle through the real operations for a visitor/judge.
+  startTour() {
+    this.stopTour();
+    this.setState({ view: 'dashboard', showConsent: false, panel: 'overview', tampered: false, autoTour: true });
+    const steps = [
+      { panel: 'overview', tampered: false }, { panel: 'cockpit', tampered: false },
+      { panel: 'ledger', tampered: false }, { panel: 'ledger', tampered: true },
+      { panel: 'ledger', tampered: false }, { panel: 'harness', tampered: false }
+    ];
+    let i = 0;
+    this._tourTimer = setInterval(() => {
+      i = (i + 1) % steps.length;
+      this.setState({ panel: steps[i].panel, tampered: steps[i].tampered });
+      try { window.scrollTo(0, 0); } catch (e) {}
+    }, 3600);
+  }
+  stopTour() { if (this._tourTimer) { clearInterval(this._tourTimer); this._tourTimer = null; } if (this.state.autoTour) this.setState({ autoTour: false }); }
 
   setPanel(p) {
+    this.stopTour();
     if (this._demoTimer) { clearInterval(this._demoTimer); this._demoTimer = null; }
     this.setState({ panel: p, demoPlaying: p === 'demo', demoStep: p === 'demo' ? 0 : this.state.demoStep }, () => { if (p === 'demo') this.demoPlay(); });
     try { window.scrollTo(0, 0); } catch (e) {}
@@ -1226,6 +1246,8 @@ class Component extends DCLogic {
       goCockpit: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'cockpit' }),
       goLedger: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'ledger' }),
       goDemoClick: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksLoadOrbit) setTimeout(function () { window.__ksLoadOrbit('orbit_snapshot_click.json'); }, 60); },
+      watchRun: () => this.startTour(),
+      autoTour: this.state.autoTour,
       goLanding: () => this.setState({ view: 'landing' }),
       onArtMove: (e) => { const t = e.currentTarget; const r = t.getBoundingClientRect(); const x = e.clientX - r.left, y = e.clientY - r.top; t.style.setProperty('--mx', (x / r.width - 0.5).toFixed(3)); t.style.setProperty('--my', (y / r.height - 0.5).toFixed(3)); t.style.setProperty('--px', x + 'px'); t.style.setProperty('--py', y + 'px'); t.style.setProperty('--torch', '1'); },
       onArtLeave: (e) => { const t = e.currentTarget; t.style.setProperty('--mx', '0'); t.style.setProperty('--my', '0'); t.style.setProperty('--torch', '0'); },
