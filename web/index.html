@@ -206,6 +206,37 @@
           </div>
         </div>
 
+        <!-- LIVE BACKEND PROOF: reads the deployed engine on load; honest snapshot fallback when cold. -->
+        <div style="margin:0 0 30px; padding:16px 18px; border-radius:10px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.1); max-width:580px">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:13px">
+            <span style="width:8px; height:8px; border-radius:50%; background:{{ backendProofDot }}; box-shadow:0 0 8px {{ backendProofDot }}"></span>
+            <span style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; text-transform:uppercase; color:{{ backendProofColor }}">{{ backendProofStatus }}</span>
+            <a href="https://keystone-zt6c.onrender.com/api/status" target="_blank" rel="noopener" title="Open the deployed engine status JSON" style="margin-left:auto; font:600 11px/1 'JetBrains Mono',monospace; color:#8B9099; text-decoration:none" style-hover="color:#C9CDD4">/api/status →</a>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(116px,1fr)); gap:12px 16px">
+            <div>
+              <div style="font:500 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; color:#5F636D; margin-bottom:6px">Source mode</div>
+              <div style="font:600 13px/1.2 'JetBrains Mono',monospace; color:{{ backendProofSrcC }}; font-variant-numeric:tabular-nums">{{ backendProofSrcV }}</div>
+            </div>
+            <div>
+              <div style="font:500 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; color:#5F636D; margin-bottom:6px">Definitions</div>
+              <div style="font:600 13px/1.2 'JetBrains Mono',monospace; color:{{ backendProofDefsC }}; font-variant-numeric:tabular-nums">{{ backendProofDefsV }}</div>
+            </div>
+            <div>
+              <div style="font:500 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; color:#5F636D; margin-bottom:6px">Audit chain</div>
+              <div style="font:600 13px/1.2 'JetBrains Mono',monospace; color:{{ backendProofChainC }}; font-variant-numeric:tabular-nums">{{ backendProofChainV }}</div>
+            </div>
+            <div>
+              <div style="font:500 10px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; text-transform:uppercase; color:#5F636D; margin-bottom:6px">LLM on verdict</div>
+              <div style="font:600 13px/1.2 'JetBrains Mono',monospace; color:#4AD6A0; font-variant-numeric:tabular-nums">none</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; margin-top:14px; flex-wrap:wrap">
+            <button onClick="{{ recheckBackend }}" style="min-height:38px; padding:8px 14px; border-radius:7px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; color:#C9CDD4; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.14); letter-spacing:0.04em" style-hover="background:rgba(255,255,255,0.1); color:#fff">Re-check backend</button>
+            <span style="flex:1; min-width:160px; font:400 11px/1.45 'Inter',sans-serif; color:#6f5640">{{ backendProofNote }}</span>
+          </div>
+        </div>
+
         <!-- External-repo story: what is indexed on pallets/click and why it matters. -->
         <div style="margin:0 0 30px; padding:15px 17px; border-radius:10px; background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.2); max-width:580px">
           <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF8A2B; text-transform:uppercase; margin-bottom:9px">Not tuned to our own repo</div>
@@ -1249,6 +1280,8 @@ class Component extends DCLogic {
     const impactStyle = { High: ['#FF6A3D', 'rgba(255,106,61,0.14)'], Medium: ['#F5A623', 'rgba(245,166,35,0.14)'], Low: ['#8B9099', 'rgba(255,255,255,0.05)'] };
     // Live analyzer data (set by runScan via window.__ksScan); falls back to the sample when no scan has run.
     const _SC = (typeof window !== 'undefined' && window.__ksScan) || null;
+    const _bpState = this.state.backend || { status: 'checking' };
+    const _bp = { b: _bpState, live: _bpState.status === 'live', checking: _bpState.status === 'checking' };
     // Fallbacks below are the REAL Keystone self-index numbers (web/orbit_snapshot.json:
     // 262 defs, max blast 12 on compute_blast_radius, the compute_blast_radius × verify
     // collision with 5 shared dependents). The dashboard auto-loads that snapshot on entry,
@@ -1330,6 +1363,17 @@ class Component extends DCLogic {
         if (b.status === 'live') return { text: '● Live backend verified', color: '#4AD6A0', bg: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.32)', tip: 'Reached the deployed FastAPI engine at keystone-zt6c.onrender.com. Source ' + b.mode + ', ' + b.defs + ' definitions indexed, audit chain ' + (b.chain ? 'verified' : 'present') + '. The page itself runs from a committed snapshot; this badge confirms the live engine answers.' };
         return { text: '● Backend asleep, snapshot live', color: '#FFC24D', bg: 'rgba(255,194,77,0.1)', border: 'rgba(255,194,77,0.32)', tip: 'The free-tier backend is cold-starting or asleep. Everything on this page runs from a committed Orbit snapshot, so the demo works with no backend at all.' };
       })(this.state.backend),
+      backendProofStatus: (_bp.live ? 'Live backend verified' : (_bp.checking ? 'Checking live backend' : 'Backend asleep')),
+      backendProofColor: (_bp.live ? '#4AD6A0' : '#FFC24D'),
+      backendProofDot: (_bp.live ? '#4AD6A0' : '#FFC24D'),
+      backendProofNote: (_bp.live ? 'Read live from the deployed Render engine on page load.' : (_bp.checking ? 'Probing the deployed engine...' : 'Free tier is cold. The demo runs from the committed snapshot. Re-check to wake it.')),
+      backendProofSrcV: _bp.live ? (_bp.b.mode || 'LIVE') : 'snapshot',
+      backendProofSrcC: _bp.live ? '#E7E9EC' : '#8B9099',
+      backendProofDefsV: _bp.live ? String(_bp.b.defs) : '262 (snapshot)',
+      backendProofDefsC: _bp.live ? '#E7E9EC' : '#8B9099',
+      backendProofChainV: _bp.live ? (_bp.b.chain ? 'verified' : 'present') : 'snapshot',
+      backendProofChainC: _bp.live ? (_bp.b.chain ? '#4AD6A0' : '#FFC24D') : '#8B9099',
+      recheckBackend: () => { this._backendProbed = false; this.setState({ backend: { status: 'checking' } }, () => { try { this.probeBackend(); } catch (e) {} }); },
       stopTour: () => this.stopTour(),
       tourDots: [0, 1, 2, 3, 4, 5].map((k) => ({ color: k === (this.state.tourStep || 0) ? '#FF7A1A' : 'rgba(255,255,255,0.18)', scale: k === (this.state.tourStep || 0) ? '1.35' : '1' })),
       goLanding: () => this.setState({ view: 'landing' }),
