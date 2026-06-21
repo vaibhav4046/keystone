@@ -76,6 +76,34 @@ def _classify(a: dict, b: dict) -> dict:
             "shared": label(same | cross | blast)}
 
 
+def find_top_collision(graph, top_k: int = 12, max_depth: int = 3) -> Optional[dict]:
+    """Find the highest-severity LATENT collision in a single repo: the pair of symbols that,
+    if changed in two parallel merge requests, would break the most shared dependents. A real,
+    deterministic hazard read straight from the repo's own call graph - no open MRs required.
+    Returns {a, b, shared, shared_count, kind, severity, blast_a, blast_b} or None."""
+    names = graph.all_definition_names(limit=max(top_k, 4))
+    fps = {}
+    for n in names:
+        fp = _footprint(graph, [n], max_depth)
+        if fp["affected"]:                       # only symbols that actually have dependents can collide
+            fps[n] = fp
+    cand = list(fps.items())
+    best = None
+    for i in range(len(cand)):
+        for j in range(i + 1, len(cand)):
+            na, fa = cand[i]
+            nb, fb = cand[j]
+            c = _classify(fa, fb)
+            shared = c.get("shared") if c else None
+            if not shared:
+                continue
+            if best is None or c["severity"] > best["severity"]:
+                best = {"a": na, "b": nb, "shared": shared, "shared_count": len(shared),
+                        "kind": c["kind"], "severity": c["severity"],
+                        "blast_a": len(fa["affected"]), "blast_b": len(fb["affected"])}
+    return best
+
+
 def _directional_edges(mrs_fp: list) -> list:
     """Edges A -> B meaning 'A changes a symbol that B's change DEPENDS ON', so A should
     merge first and B re-review against it.
