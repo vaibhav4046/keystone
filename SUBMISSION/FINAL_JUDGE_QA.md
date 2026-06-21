@@ -34,3 +34,21 @@ oneCTA=1, deep-links land, tamper→restore, cockpit 17/17, pallets 1,841, no ov
 backend routes 200 + clean 404s + all security headers; 115 tests; CLI 0/2/0/2/2). Every residual < 9.5
 is External (Impact/Idea/Tech-preference) or Login/recording (the three submission steps). This is the
 convergence stop condition.
+
+---
+
+## 2026-06-21 update - three judge-lens gaps closed (live)
+
+- **Demo clarity / First-90s:** the hands-free tour now has a visible narrated
+  caption HUD, so a judge watching "Watch it run" always knows what is happening.
+- **Dynamic / real-data feel:** a live "Live backend verified" badge probes the
+  deployed Render engine on load, replacing the "this is just a static page"
+  read with visible proof the engine answers.
+- **Agentic governance story:** a deterministic Agent fix plan now appears on a
+  blocked bot MR, so the harness explains the remediation, not just the verdict -
+  while the ADVISORY chip preserves "no model decides".
+
+All three CDP-verified on the live deploy; zero console errors; no overflow
+320-1440px. Honest weighted self-score this session ~8.5/10 (up from ~8.4):
+Demo clarity and Dynamic-data feel rose; Impact (TAM) and the user-gated
+submission caps (video, Devpost, OIDC) are unchanged. Not a fabricated 10.

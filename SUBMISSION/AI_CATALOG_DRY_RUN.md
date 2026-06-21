@@ -26,3 +26,13 @@ verified this pass.
 ## Status
 - Completed: all fields verified, links resolve.
 - Waiting for user login or approval: GitLab AI Catalog sign-in to publish.
+
+---
+
+## 2026-06-21 - agentic-governance framing strengthened
+
+The Agent fix plan card makes the "Keystone governs AI-agent merge requests"
+story concrete: a blocked bot MR now gets a deterministic remediation plan
+(stack, test, safe merge order, re-run gates, record to ledger) with an explicit
+"advisory - gate is deterministic" disclosure. Good material for the AI Catalog
+capability description.

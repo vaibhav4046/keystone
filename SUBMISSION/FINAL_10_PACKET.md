@@ -92,3 +92,40 @@ AI coding agents now increase merge velocity - more parallel MRs than any review
 [ ] 5. Post-submit: reopen Devpost, confirm status SUBMITTED, links resolve, video plays
 [ ] 6. Post-hackathon: rotate the four .env keys
 ```
+
+---
+
+## 2026-06-21 - winner-mode session additions (live + verified)
+
+Three high-impact additions shipped and verified on the live deploy
+(https://vaibhav4046.github.io/keystone/), GitHub + GitLab at the same HEAD,
+CI green (run 27893658209):
+
+1. **Visible guided-demo caption HUD.** "Watch it run" now drives a fixed
+   bottom-center AUTO-DEMO banner that narrates each of the 6 steps, shows live
+   step-progress dots, and has an EXIT control. Previously the caption was set in
+   state but never rendered. CDP-verified live: HUD shows, captions advance
+   ("Two safe-looking MRs..." -> "Blast-radius graph..."), EXIT dismisses, zero
+   console errors.
+
+2. **Live backend status badge.** The landing probes the deployed Render engine
+   (/api/status) on mount and shows an honest pill: green "Live backend verified"
+   (with source mode + 262 indexed defs + chain state in the tooltip) when it
+   answers, or "Backend asleep, snapshot live" on a cold free-tier start. Hard 9s
+   timeout + catch means a sleeping backend never blocks the page. CDP-verified
+   live: badge reads "Live backend verified". Directly answers the "feels static"
+   critique - the live engine is now visibly reachable.
+
+3. **Agent fix plan.** The Engineering Harness now surfaces a deterministic
+   remediation card on a blocked bot MR: why it was blocked (the shared
+   dependents), a 4-step ordered plan (stack the MRs, add an integration test over
+   both symbols, merge in the topological safe order, re-run shadow-merge + memory
+   gate + record to the ledger), and the agent status. An "ADVISORY - GATE IS
+   DETERMINISTIC" chip keeps the honesty line. CDP-verified live: card present, all
+   4 steps render.
+
+Also: stripped all 52 em/en dashes the recent redesign reintroduced into the
+landing copy, back to the repo's hyphen convention.
+
+Tests: 115 passed / 2 skipped. CLI: demo / shadow-merge / shadow-merge --safe /
+memory-gate --prove / external pallets-click graph all exit with the right codes.

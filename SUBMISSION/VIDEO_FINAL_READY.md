@@ -46,3 +46,14 @@ live URL → Try the live demo → (rail) Reviewer Cockpit → (rail) Audit Ledg
 - [ ] Pre-run `pytest` so the `115 passed` line is visible without a 15s wait
 - [ ] Render free instance may be asleep — hit https://keystone-zt6c.onrender.com once ~60s before recording to wake it (only if filming the backend; the static site needs no warm-up)
 - [ ] ≤ 2:30 · upload Unlisted · paste URL back to wire into all docs
+
+---
+
+## 2026-06-21 note - new beats worth filming
+
+- Open on "Watch it run": the AUTO-DEMO caption HUD now narrates each step on
+  screen, so the hands-free tour reads as a guided product demo.
+- Point the camera at the landing proof row: the green "Live backend verified"
+  badge proves the deployed engine answers (hover shows source mode + 262 defs).
+- In the Engineering Harness, scroll to the Agent fix plan card after the BLOCK
+  verdict: it shows the deterministic remediation, then the ADVISORY chip.
