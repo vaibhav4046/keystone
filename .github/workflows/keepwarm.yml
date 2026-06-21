@@ -1,0 +1,25 @@
+name: keep-warm
+
+# Pings the deployed Render free-tier backend every 14 minutes so it never hits the
+# 15-minute idle spin-down. A judge's first "Verify on the LIVE backend" / "Gate as an
+# AI-agent MR" click then lands on a warm, live engine instead of a ~50s cold start.
+# Non-fatal: a transient non-200 (mid-wake) does not fail the run.
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/health
+        run: |
+          ok=0
+          for i in 1 2 3 4; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 70 https://keystone-zt6c.onrender.com/api/health || echo 000)
+            echo "attempt $i -> HTTP $code"
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep 15
+          done
+          if [ "$ok" = "1" ]; then echo "backend warm"; else echo "backend still waking (non-fatal)"; fi
