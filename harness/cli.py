@@ -31,7 +31,10 @@ def _init_graph(fixture: bool = False, graph_path: str = None):
     """Initialize the graph, preferring the committed self-index for real data."""
     self_graph = os.path.join(_ROOT, "data", "keystone_self_graph.duckdb")
     if graph_path:
-        return graph_mod.Graph(path=graph_path)
+        try:
+            return graph_mod.Graph(path=graph_path)
+        except ValueError as e:
+            raise SystemExit("ERROR: " + str(e))   # bad/missing --graph -> clean message, not a traceback
     if not fixture and os.path.exists(self_graph):
         return graph_mod.Graph(path=self_graph)
     return graph_mod.Graph(prefer_live=not fixture)
