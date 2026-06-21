@@ -18,7 +18,7 @@ from typing import Literal, Optional
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from fastapi import FastAPI, HTTPException, Header, Path, Query
+from fastapi import FastAPI, HTTPException, Header, Path, Query, Cookie, Response
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -66,6 +66,7 @@ app = FastAPI(title="Keystone", version="1.0.0", lifespan=lifespan)
 _origins = os.environ.get("KEYSTONE_CORS_ORIGINS",
                           "http://127.0.0.1:8787,http://localhost:8787,https://vaibhav4046.github.io").split(",")
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins if o.strip()],
+                   allow_credentials=True,   # the SPA sends the HttpOnly ks_sid cookie cross-site
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 
 
@@ -658,12 +659,20 @@ def gh_callback(code: str = Query(default=""), state: str = Query(default="")):
     sid = _secrets.token_urlsafe(18)
     _gh_sessions[sid] = {"login": me.get("login"), "name": me.get("name"),
                          "avatar": me.get("avatar_url"), "token": tok}
-    return RedirectResponse(_FRONTEND_URL + "#ks_session=" + sid)
+    # Defence in depth: hand the session id back as an HttpOnly, Secure, SameSite=None
+    # cookie (cross-site, so the github.io SPA's credentialed fetch can send it) AND keep
+    # the #ks_session fragment as a guaranteed fallback for browsers that block third-party
+    # cookies. The cookie keeps the sid out of JS (sessionStorage); the fragment is stripped
+    # from the URL on arrival. Either path resolves the same opaque, server-side-only sid.
+    resp = RedirectResponse(_FRONTEND_URL + "#ks_session=" + sid)
+    resp.set_cookie("ks_sid", sid, max_age=86400, httponly=True, secure=True,
+                    samesite="none", path="/")
+    return resp
 
 
 @app.get("/api/me")
-def gh_me(sid: str = Query(default="")):
-    s = _gh_sessions.get(sid)
+def gh_me(sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
+    s = _gh_sessions.get(sid or ks_sid)   # HttpOnly cookie preferred; ?sid is the fallback
     if not s:
         raise HTTPException(status_code=401, detail={"error": "NOT_SIGNED_IN"})
     try:
@@ -678,8 +687,9 @@ def gh_me(sid: str = Query(default="")):
 
 
 @app.post("/api/auth/logout")
-def gh_logout(sid: str = Query(default="")):
-    _gh_sessions.pop(sid, None)
+def gh_logout(response: Response, sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
+    _gh_sessions.pop(sid or ks_sid, None)
+    response.delete_cookie("ks_sid", path="/")
     return {"ok": True}
 
 

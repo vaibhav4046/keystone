@@ -1725,9 +1725,15 @@ class Component extends DCLogic {
       else { try { sid = sessionStorage.getItem('ks_sid'); } catch (e) {} }
       if (/ks_auth=error/.test(h)) history.replaceState(null, '', location.pathname + location.search);
       if (sid) {
-        fetch(KS_BACKEND + '/api/me?sid=' + encodeURIComponent(sid)).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (u) {
-          window.__ksUser = u; if (window.__ksRerender) window.__ksRerender();
-        }).catch(function () { try { sessionStorage.removeItem('ks_sid'); } catch (e) {} });
+        var meUrl = KS_BACKEND + '/api/me?sid=' + encodeURIComponent(sid);
+        var asJson = function (r) { return r.ok ? r.json() : Promise.reject(); };
+        // Prefer the HttpOnly cookie (credentialed); fall back to the plain ?sid request so
+        // sign-in NEVER breaks if third-party cookies are blocked or the backend predates the
+        // allow-credentials change. Either path resolves the same server-side session.
+        fetch(meUrl, { credentials: 'include' }).then(asJson)
+          .catch(function () { return fetch(meUrl).then(asJson); })
+          .then(function (u) { window.__ksUser = u; if (window.__ksRerender) window.__ksRerender(); })
+          .catch(function () { try { sessionStorage.removeItem('ks_sid'); } catch (e) {} });
       }
     } catch (e) {}
   })();
