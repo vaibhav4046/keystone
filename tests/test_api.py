@@ -51,6 +51,19 @@ def test_proof_endpoint_is_self_describing_and_live():
     assert p["timestamp"].endswith("Z")                    # real ISO-8601 UTC
 
 
+def test_status_repo_label_does_not_leak_abspath():
+    from backend.app import _clean_repo
+    # an absolute index-time path is reduced to its basename, never surfaced raw
+    assert _clean_repo("D:\\project\\keystone") == "keystone"
+    assert _clean_repo("/home/runner/work/keystone") == "keystone"
+    # a clean repo label passes through unchanged
+    assert _clean_repo("pallets/click") == "pallets/click"
+    assert _clean_repo(None) is None
+    # the live endpoint never exposes a drive letter or backslash in repo
+    repo = str(client.get("/api/status").json().get("repo") or "")
+    assert "\\" not in repo and ":" not in repo
+
+
 def test_definitions_and_impact():
     names = client.get("/api/definitions").json()["names"]
     assert "tokenize" in names
