@@ -600,7 +600,7 @@ _FRONTEND_URL = os.environ.get("KEYSTONE_FRONTEND_URL", "https://vaibhav4046.git
 _OAUTH_CALLBACK = os.environ.get("KEYSTONE_OAUTH_CALLBACK",
                                  "https://keystone-zt6c.onrender.com/api/auth/github/callback")
 _gh_sessions: dict = {}     # sid -> {login, name, avatar, token}
-_gh_states: set = set()     # one-shot CSRF state tokens
+_gh_states: dict = {}       # state -> issued-at epoch; insertion-ordered, FIFO-bounded one-shot CSRF tokens
 
 
 def _gh_configured() -> bool:
@@ -629,9 +629,9 @@ def gh_login():
         raise HTTPException(status_code=503, detail={"error": "OAUTH_NOT_CONFIGURED",
                             "hint": "Set KEYSTONE_GH_CLIENT_ID and KEYSTONE_GH_CLIENT_SECRET; see SUBMISSION/GITHUB_OAUTH_SETUP.md"})
     state = _secrets.token_urlsafe(16)
-    _gh_states.add(state)
-    if len(_gh_states) > 512:                            # bound the set; drop oldest-ish
-        _gh_states.pop()
+    _gh_states[state] = datetime.datetime.now().timestamp()
+    while len(_gh_states) > 512:
+        _gh_states.pop(next(iter(_gh_states)), None)     # evict the OLDEST inserted, not an arbitrary set element
     params = _uparse.urlencode({"client_id": _GH_CLIENT_ID, "redirect_uri": _OAUTH_CALLBACK,
                                 "scope": "read:user public_repo", "state": state, "allow_signup": "true"})
     return RedirectResponse("https://github.com/login/oauth/authorize?" + params)
@@ -641,9 +641,9 @@ def gh_login():
 def gh_callback(code: str = Query(default=""), state: str = Query(default="")):
     if not _gh_configured():
         raise HTTPException(status_code=503, detail={"error": "OAUTH_NOT_CONFIGURED"})
-    if not code or state not in _gh_states:
-        return RedirectResponse(_FRONTEND_URL + "#ks_auth=error")
-    _gh_states.discard(state)
+    issued = _gh_states.pop(state, None)                 # one-shot consume
+    if not code or issued is None or (datetime.datetime.now().timestamp() - issued) > 600:
+        return RedirectResponse(_FRONTEND_URL + "#ks_auth=error")    # unknown, replayed, or >10min-old state
     body = _uparse.urlencode({"client_id": _GH_CLIENT_ID, "client_secret": _GH_CLIENT_SECRET,
                               "code": code, "redirect_uri": _OAUTH_CALLBACK}).encode()
     req = _urequest.Request("https://github.com/login/oauth/access_token", data=body,
@@ -671,8 +671,11 @@ def gh_callback(code: str = Query(default=""), state: str = Query(default="")):
 
 
 @app.get("/api/me")
-def gh_me(sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
-    s = _gh_sessions.get(sid or ks_sid)   # HttpOnly cookie preferred; ?sid is the fallback
+def gh_me(ks_sid: str = Cookie(default=""), x_keystone_session: str = Header(default="")):
+    # HttpOnly cookie preferred; the X-Keystone-Session HEADER is the cookie-blocked fallback
+    # (Safari/Brave). The sid is a credential-equivalent secret, so it is never accepted from
+    # the query string, where it would land in access logs and browser history.
+    s = _gh_sessions.get(ks_sid or x_keystone_session)
     if not s:
         raise HTTPException(status_code=401, detail={"error": "NOT_SIGNED_IN"})
     try:
@@ -687,8 +690,8 @@ def gh_me(sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
 
 
 @app.post("/api/auth/logout")
-def gh_logout(response: Response, sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
-    _gh_sessions.pop(sid or ks_sid, None)
+def gh_logout(response: Response, ks_sid: str = Cookie(default=""), x_keystone_session: str = Header(default="")):
+    _gh_sessions.pop(ks_sid or x_keystone_session, None)
     response.delete_cookie("ks_sid", path="/")
     return {"ok": True}
 
@@ -783,11 +786,12 @@ def agent_plan(f: AgentFinding):
 
 
 @app.post("/api/agent/apply")
-def agent_apply(f: AgentFinding, sid: str = Query(default=""), ks_sid: str = Cookie(default="")):
+def agent_apply(f: AgentFinding, ks_sid: str = Cookie(default=""), x_keystone_session: str = Header(default="")):
     """Performs the REAL GitHub branch + commit + PR using the signed-in user's token.
-    Call only after the user approved in the UI."""
+    Call only after the user approved in the UI. Auth via HttpOnly cookie or the
+    X-Keystone-Session header (never a query param - the sid gates the OAuth token)."""
     import base64 as _b64
-    s = _gh_sessions.get(sid or ks_sid)
+    s = _gh_sessions.get(ks_sid or x_keystone_session)
     if not s or not s.get("token"):
         raise HTTPException(status_code=401, detail={"error": "NOT_SIGNED_IN",
                             "hint": "Sign in with GitHub (public_repo scope) so the agent can open a PR."})
@@ -826,7 +830,8 @@ def agent_apply(f: AgentFinding, sid: str = Query(default=""), ks_sid: str = Coo
     except HTTPException:
         raise
     except Exception as e:
-        steps.append({"k": "error", "t": "GitHub API error: " + str(e)[:200], "ok": False})
+        print("agent_apply error:", repr(e))   # server-side log only; never echo raw upstream/SSL/socket text to the client
+        steps.append({"k": "error", "t": "GitHub write failed", "ok": False})
         raise HTTPException(status_code=502, detail={"error": "GITHUB_WRITE_FAILED", "steps": steps,
                             "hint": "Check the repo is public and you own it (public_repo scope)."})
 
