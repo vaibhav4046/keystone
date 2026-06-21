@@ -842,6 +842,23 @@ def agent_apply(f: AgentFinding, ks_sid: str = Cookie(default=""), x_keystone_se
                             "hint": "Check the repo is public and you own it (public_repo scope)."})
 
 
+_HERO_CACHE = None
+
+
+def _hero_cache() -> dict:
+    """Precomputed REAL collisions for the famous demo repos (data/hero_collisions.json) so the
+    hero flow is instant and never blocked by GitHub's unauthenticated rate limit on the host."""
+    global _HERO_CACHE
+    if _HERO_CACHE is None:
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "..", "data", "hero_collisions.json"),
+                      "r", encoding="utf-8") as fh:
+                _HERO_CACHE = _json.load(fh)
+        except Exception:
+            _HERO_CACHE = {}
+    return _HERO_CACHE
+
+
 class ScanCollisionReq(BaseModel):
     repo: str = Field(max_length=200)
 
@@ -856,6 +873,9 @@ def scan_collision(r: ScanCollisionReq):
     repo = r.repo.strip().strip("/")
     if not _re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
         raise HTTPException(status_code=400, detail={"error": "BAD_REPO", "hint": "Use owner/repo."})
+    cached = _hero_cache().get(repo.lower())
+    if cached:                                   # precomputed real collision for demo repos: instant, never rate-limited
+        return cached
     try:
         g, stats = _rs.scan_repo(repo)
     except Exception as e:
