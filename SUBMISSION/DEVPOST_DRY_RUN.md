@@ -9,7 +9,7 @@ pre-submit checklist. Verified this pass against the live product.
 | Tagline short | YES - one line, "Git review sees files. Production breaks through relationships…" |
 | Description not bloated | YES - tight long-description + sectioned fields |
 | Best use of GitLab Orbit obvious | YES - dedicated field: reads gl_definition/gl_edge, drives `glab orbit local sql`, proven on a 3rd-party Orbit index |
-| Technical implementation credible | YES - deterministic engine, no LLM verdict, 115 tests, cross-checked |
+| Technical implementation credible | YES - deterministic engine, no LLM verdict, 116 tests, cross-checked |
 | Live demo link works | YES - https://vaibhav4046.github.io/keystone/ → 200 |
 | Render backend link works | YES - https://keystone-zt6c.onrender.com/api/health → 200, LIVE mode |
 | GitHub link works | YES - https://github.com/vaibhav4046/keystone → 200 |
@@ -38,3 +38,14 @@ auto-tour (caption HUD), a live "Live backend verified" badge on the deployed
 Render engine, and a deterministic Agent fix plan on blocked agent MRs. All
 three are CDP-verified on https://vaibhav4046.github.io/keystone/ with zero
 console errors.
+
+---
+
+## 2026-06-21 - automated video + /api/proof shipped
+
+Two more live claims the copy can now make:
+- A working demo video EXISTS as a generated asset (`SUBMISSION/keystone-demo.mp4`,
+  ~97s) from `scripts/record_demo_video.mjs`; only the unlisted upload is login-gated.
+- `/api/proof` returns one judge-facing payload (source mode, definitions, audit
+  chain, integrity, routes, demo symbols, external-repo verify command), and the
+  landing shows a Live backend proof panel read from `/api/status` on load.
