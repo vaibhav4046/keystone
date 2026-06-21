@@ -65,21 +65,24 @@ def test_github_oauth_degrades_safely_when_unconfigured():
     assert client.post("/api/auth/logout?sid=whatever").json()["ok"] is True
 
 
-def test_session_resolves_from_httponly_cookie_or_query_sid():
-    # the session id is accepted from the HttpOnly cookie (hardened path) AND the legacy
-    # ?sid query (so the verified sign-in flow never breaks); neither -> 401.
+def test_session_resolves_from_httponly_cookie_or_header_not_query():
+    # the session id is accepted from the HttpOnly cookie (hardened path) AND the
+    # X-Keystone-Session header (cookie-blocked fallback), but NEVER from the query string
+    # (a credential-equivalent secret must not land in URLs/access logs); neither -> 401.
     from backend.app import _gh_sessions
     sid = "test-sid-cookie-xyz"
     _gh_sessions[sid] = {"login": "octocat", "name": "Octo", "avatar": "", "token": "x"}
     try:
         r1 = client.get("/api/me", cookies={"ks_sid": sid})
         assert r1.status_code == 200 and r1.json()["login"] == "octocat"
-        r2 = client.get("/api/me?sid=" + sid)
+        r2 = client.get("/api/me", headers={"X-Keystone-Session": sid})
         assert r2.status_code == 200 and r2.json()["login"] == "octocat"
+        # the sid is NOT accepted from the query string anymore (anti-log-leak hardening)
+        assert client.get("/api/me?sid=" + sid).status_code == 401
         assert client.get("/api/me").status_code == 401
         # logout via cookie clears the session
         assert client.post("/api/auth/logout", cookies={"ks_sid": sid}).json()["ok"] is True
-        assert client.get("/api/me?sid=" + sid).status_code == 401
+        assert client.get("/api/me", headers={"X-Keystone-Session": sid}).status_code == 401
     finally:
         _gh_sessions.pop(sid, None)
 

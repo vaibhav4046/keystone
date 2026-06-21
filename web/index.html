@@ -224,7 +224,7 @@
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● Real Orbit graph</span>
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#FFC24D; background:rgba(255,122,26,0.09); border:1px solid rgba(255,122,26,0.32); border-radius:999px; padding:7px 12px">● Deterministic gate</span>
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#FFC24D; background:rgba(255,122,26,0.09); border:1px solid rgba(255,122,26,0.32); border-radius:999px; padding:7px 12px">● No LLM on the verdict</span>
-          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● 116 tests green</span>
+          <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● 124 tests green</span>
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● Proven on pallets/click</span>
           <span title="{{ backendBadge.tip }}" style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:{{ backendBadge.color }}; background:{{ backendBadge.bg }}; border:1px solid {{ backendBadge.border }}; border-radius:999px; padding:7px 12px; cursor:help">{{ backendBadge.text }}</span>
         </div>
@@ -244,7 +244,7 @@
         <!-- VERIFY THIS IS REAL: proof links + plain-language how-to. -->
         <div style="margin:0 0 30px; padding:15px 17px; border-radius:10px; background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.24); max-width:580px">
           <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#4AD6A0; text-transform:uppercase; margin-bottom:10px">Verify this is real</div>
-          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9CDD4; margin-bottom:12px">No trust required. The verdict is a deterministic graph computation - <b style="color:#E7E9EC">no model decides anything</b>. Every number is computed from a real <code style="color:#9DEFC4">orbit index</code> and cross-checked by Orbit's own <code style="color:#9DEFC4">orbit sql</code> (120/120 match). 116 tests pass.</div>
+          <div style="font:400 13px/1.7 'Inter',sans-serif; color:#C9CDD4; margin-bottom:12px">No trust required. The verdict is a deterministic graph computation - <b style="color:#E7E9EC">no model decides anything</b>. Every number is computed from a real <code style="color:#9DEFC4">orbit index</code> and cross-checked by Orbit's own <code style="color:#9DEFC4">orbit sql</code> (120/120 match). 124 tests pass.</div>
           <div style="display:flex; flex-wrap:wrap; gap:10px">
             <button onClick="{{ goLedger }}" style="min-height:44px; padding:10px 16px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; color:#0c1410; background:#4AD6A0; border:none; letter-spacing:0.04em" style-hover="filter:brightness(1.08)">Audit ledger + tamper proof →</button>
             <button onClick="{{ goDemoClick }}" style="min-height:44px; padding:10px 16px; border-radius:7px; cursor:pointer; font:600 12px/1 'JetBrains Mono',monospace; color:#A6F0CC; background:transparent; border:1px solid rgba(52,211,153,0.4); letter-spacing:0.04em" style-hover="background:rgba(52,211,153,0.1)">External-repo proof (pallets/click) →</button>
@@ -1619,7 +1619,7 @@ class Component extends DCLogic {
     var nodes = document.querySelectorAll("div,span,button,a");
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i]; if (el.__wired) continue;
-      var t = (el.textContent || "").replace(/s+/g, " ").trim().toUpperCase();
+      var t = (el.textContent || "").replace(/\s+/g, " ").trim().toUpperCase();
       if (el.childElementCount <= 3 && /SIGN IN/.test(t) && t.length < 30) {
         el.__wired = 1; /* removed: do not silently hijack Sign-in to app.html; the markup onClick (openConsent) routes to the honest consent modal */
       }
@@ -1693,7 +1693,7 @@ class Component extends DCLogic {
   function rerender() { if (window.__ksRerender) { window.__ksRerender(); return; } var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
   function indicator(text, kind) {
     var el = document.getElementById("ks-scan-ind");
-    if (!el) { el = document.createElement("div"); el.id = "ks-scan-ind"; el.style.cssText = "position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;font:600 12.5px/1 'JetBrains Mono',monospace;padding:11px 20px;border-radius:999px;letter-spacing:0.02em;transition:opacity .45s ease;box-shadow:0 10px 34px -8px rgba(0,0,0,0.7);pointer-events:none;max-width:92vw"; document.body.appendChild(el); }
+    if (!el) { el = document.createElement("div"); el.id = "ks-scan-ind"; el.style.cssText = "position:fixed;bottom:92px;left:50%;transform:translateX(-50%);z-index:90;font:600 12.5px/1 'JetBrains Mono',monospace;padding:11px 20px;border-radius:999px;letter-spacing:0.02em;transition:opacity .45s ease;box-shadow:0 10px 34px -8px rgba(0,0,0,0.7);pointer-events:none;max-width:92vw"; document.body.appendChild(el); }
     var done = kind === "done", fail = kind === "fail";
     el.textContent = text;
     el.style.background = fail ? "rgba(255,106,61,0.16)" : (done ? "rgba(52,211,153,0.16)" : "rgba(255,122,26,0.16)");
@@ -1797,7 +1797,10 @@ class Component extends DCLogic {
         }
         phase = 'applying'; goBtn.disabled = true; goBtn.textContent = 'Opening PR...';
         log('Approved. POST /api/agent/apply (writing to ' + body.repo + ' as ' + (window.__ksUser.login || 'you') + ')', 'wait');
-        fetch(KS + '/api/agent/apply', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        var _sid = (function () { try { return sessionStorage.getItem('ks_sid') || ''; } catch (e) { return ''; } })();
+        var _ah = { 'Content-Type': 'application/json' };
+        if (_sid) _ah['X-Keystone-Session'] = _sid;   // cookie-blocked fallback so an already signed-in user can still write
+        fetch(KS + '/api/agent/apply', { method: 'POST', credentials: 'include', headers: _ah, body: JSON.stringify(body) })
           .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
           .then(function (res) {
             var d = res.d || {};
@@ -1836,13 +1839,13 @@ class Component extends DCLogic {
       else { try { sid = sessionStorage.getItem('ks_sid'); } catch (e) {} }
       if (/ks_auth=error/.test(h)) history.replaceState(null, '', location.pathname + location.search);
       if (sid) {
-        var meUrl = KS_BACKEND + '/api/me?sid=' + encodeURIComponent(sid);
+        var meUrl = KS_BACKEND + '/api/me';
+        var hdr = { 'X-Keystone-Session': sid };   // sid travels in a header, never the URL/query (no access-log leak)
         var asJson = function (r) { return r.ok ? r.json() : Promise.reject(); };
-        // Prefer the HttpOnly cookie (credentialed); fall back to the plain ?sid request so
-        // sign-in NEVER breaks if third-party cookies are blocked or the backend predates the
-        // allow-credentials change. Either path resolves the same server-side session.
-        fetch(meUrl, { credentials: 'include' }).then(asJson)
-          .catch(function () { return fetch(meUrl).then(asJson); })
+        // Prefer the HttpOnly cookie (credentialed); also send the sid header so sign-in NEVER
+        // breaks when third-party cookies are blocked (Safari/Brave). Same server-side session.
+        fetch(meUrl, { credentials: 'include', headers: hdr }).then(asJson)
+          .catch(function () { return fetch(meUrl, { headers: hdr }).then(asJson); })
           .then(function (u) { window.__ksUser = u; if (window.__ksRerender) window.__ksRerender(); })
           .catch(function () { try { sessionStorage.removeItem('ks_sid'); } catch (e) {} });
       }
@@ -1852,6 +1855,11 @@ class Component extends DCLogic {
     url = url || "orbit_snapshot.json";
     indicator("⟳  Loading the real GitLab Orbit graph…", "run");
     fetch(url, { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      d = d || {};   // never trust a fetched snapshot's shape: coerce required arrays so a partial/malformed file can't blank the dashboard
+      d.top = Array.isArray(d.top) ? d.top : [];
+      d.chain = Array.isArray(d.chain) ? d.chain : [];
+      d.collisionList = Array.isArray(d.collisionList) ? d.collisionList : [];
+      d.safeOrder = Array.isArray(d.safeOrder) ? d.safeOrder : [];
       window.__ksScan = d;
       indicator("✓  Live · " + (d.repo || "GitLab Orbit") + " · " + d.defs + " defs · " + d.collisions + " collisions", "done");
       setTimeout(rerender, 150); orbitBadge();
