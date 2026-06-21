@@ -57,3 +57,28 @@ live URL → Try the live demo → (rail) Reviewer Cockpit → (rail) Audit Ledg
   badge proves the deployed engine answers (hover shows source mode + 262 defs).
 - In the Engineering Harness, scroll to the Agent fix plan card after the BLOCK
   verdict: it shows the deterministic remediation, then the ADVISORY chip.
+
+---
+
+## 2026-06-21 - AUTOMATED VIDEO ASSET GENERATED
+
+An automated, self-narrated demo video now exists in the repo:
+
+- Asset: `SUBMISSION/keystone-demo.mp4` (H.264, 1280x800, ~97s, ~2 MB)
+- Generator: `scripts/record_demo_video.mjs` (headless Chrome over CDP + ffmpeg;
+  re-run any time with `node scripts/record_demo_video.mjs`)
+- Narration: on-screen caption overlay burned into each beat (no voice needed)
+- Beats verified frame-by-frame: landing hook, "try the live demo", silent
+  collision, Reviewer Cockpit blast graph, Audit Ledger, tamper -> CHAIN BROKEN,
+  restore, Engineering Harness BLOCK + Agent fix plan, pallets/click external
+  proof (1,841 defs), close on the landing with the live backend badge and the
+  "Git sees files. Orbit sees relationships. Keystone sees consequences." line.
+
+### Upload (user, needs login)
+1. Open YouTube Studio, Create -> Upload video, select `SUBMISSION/keystone-demo.mp4`.
+2. Visibility: Unlisted. Title: "Keystone - merge requests that break together".
+3. Copy the watch URL into the Devpost video field (replaces VIDEO_URL_PENDING).
+
+This is under the 3-minute hard cap and judged-ready as-is. The user may instead
+record a voiced screen capture using the same storyboard if preferred; the script
+asset guarantees a working video exists regardless.

@@ -58,3 +58,6 @@ _cdpshot.cjs
 _repotest.cjs
 _breaktest.cjs
 _tourtest.cjs
+
+# demo-recording frame scratch
+_recframes/
