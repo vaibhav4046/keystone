@@ -731,6 +731,7 @@
             </div>
             <h3 style="font:600 18px/1.1 'Space Grotesk',sans-serif; color:#F6EFE6; margin:0">Agent fix plan</h3>
             <span title="These remediation steps are generated deterministically from the collision packet, not by a model. The merge verdict itself is a deterministic graph computation; no LLM decides it. The plan is advisory; the gate is binding." style="font:600 9px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:5px 9px; border-radius:999px; color:#D7B89A; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.28); cursor:help">ADVISORY · GATE IS DETERMINISTIC</span>
+            <button onClick="{{ copyFixPlan }}" title="Copy the fix plan to your clipboard" style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:8px; cursor:pointer; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#FFB14D; background:rgba(255,122,26,0.1); border:1px solid rgba(255,122,26,0.32)" style-hover="background:rgba(255,122,26,0.18); color:#FFC24D">Copy fix plan</button>
           </div>
           <p style="font:400 14.5px/1.55 'Inter',sans-serif; color:#D8C8B8; margin:0 0 20px; max-width:74ch"><b style="color:#FF8A66">Blocked because</b> {{ fixPlanWhy }}</p>
           <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px">
@@ -1282,6 +1283,15 @@ class Component extends DCLogic {
     const _SC = (typeof window !== 'undefined' && window.__ksScan) || null;
     const _bpState = this.state.backend || { status: 'checking' };
     const _bp = { b: _bpState, live: _bpState.status === 'live', checking: _bpState.status === 'checking' };
+    const _fpA = _SC ? _SC.a : 'compute_blast_radius', _fpB = _SC ? _SC.b : 'verify', _fpShared = _SC ? _SC.shared : 5;
+    const _fpOrder = (_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join(' -> ') : 'precedent -> verify -> compute_blast_radius';
+    const _fixPlanText = ['KEYSTONE AGENT FIX PLAN (advisory; the gate is deterministic)', '',
+      'Blocked because: ' + _fpShared + ' functions depend on both ' + _fpA + ' and ' + _fpB + '. Merge both merge requests and those dependents break together, with no Git conflict to flag it.', '',
+      '1. Stack the two merge requests into a single review so one reviewer sees every shared dependent at once.',
+      '2. Add an integration test that exercises ' + _fpA + ' and ' + _fpB + ' together before either is merged.',
+      '3. Merge in the order Keystone derived by topological sort: ' + _fpOrder + '.',
+      '4. Re-run shadow-merge and the memory gate, then record the decision in the tamper-evident ledger.', '',
+      'Agent status: copilot-workspace auto-merge stays overruled until these checks pass.'].join('\n');
     // Fallbacks below are the REAL Keystone self-index numbers (web/orbit_snapshot.json:
     // 262 defs, max blast 12 on compute_blast_radius, the compute_blast_radius × verify
     // collision with 5 shared dependents). The dashboard auto-loads that snapshot on entry,
@@ -1451,6 +1461,7 @@ class Component extends DCLogic {
         { n: '4', text: 'Re-run shadow-merge and the memory gate, then record the decision in the tamper-evident ledger.' }
       ],
       fixPlanStatus: 'copilot-workspace auto-merge stays overruled until these checks pass. Keystone proposes the plan; a human decides; the ledger records it.',
+      copyFixPlan: (e) => { var btn = e && e.currentTarget; var orig = btn ? btn.textContent : ''; try { if (navigator.clipboard && navigator.clipboard.writeText) { var pr = navigator.clipboard.writeText(_fixPlanText); if (pr && pr.catch) pr.catch(function () {}); } } catch (err) {} if (btn) { btn.textContent = 'Copied'; setTimeout(function () { try { btn.textContent = orig; } catch (e2) {} }, 1600); } },
 
       panel: this.state.panel,
       isOverview: this.state.panel === 'overview',
