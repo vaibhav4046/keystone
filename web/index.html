@@ -190,6 +190,11 @@
           </button>
           <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations - collision, blast graph, ledger tamper and restore - on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
         </div>
+
+        <!-- Simplified hero: one clear action above; all proof/detail collapsed into a native <details> so the first screen is not a wall. -->
+        <details style="margin:20px 0 0; max-width:580px">
+          <summary style="cursor:pointer; display:inline-flex; align-items:center; gap:10px; padding:11px 16px; border-radius:10px; background:rgba(255,122,26,0.06); border:1px solid rgba(255,122,26,0.28); font:600 12px/1 'JetBrains Mono',monospace; letter-spacing:0.05em; color:#FFB14D">Proof, live backend &amp; how it works <span style="color:#7a5e48; font-weight:400">- deterministic, no LLM, 124 tests</span></summary>
+          <div style="margin-top:20px">
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:22px 0 4px; max-width:52ch">
           <div style="background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.16); border-radius:10px; padding:13px 15px">
             <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; color:#FF7A1A; text-transform:uppercase; margin-bottom:7px">New capability</div>
@@ -336,6 +341,7 @@
             <span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>Cross-checked 120/120 symbols against GitLab Orbit CLI (v0.74.0) - exact match&nbsp;<span style="color:#6b8f7e">› run a live query</span>
           </div>
         </div>
+          </div></details>
       </div>
 
       <!-- BLAST ARTIFACT right (medium-big) -->
