@@ -21,6 +21,7 @@ python skills/keystone/run_review.py demo              # THE WHOLE STORY in one 
 python skills/keystone/run_review.py shadow-merge                       # THE hook: MR-204 x MR-207 - no Git conflict, a DIRECTIONAL change_in_blast collision -> BLOCK (exit 2)
 python skills/keystone/run_review.py shadow-merge --safe                # the safe counter-example: non-overlapping pair -> ALLOW (exit 0)
 python skills/keystone/run_review.py memory-gate compute_blast_radius --prove   # records a REAL reject live, then OVERRULES an AI agent's APPROVE from it (exit 2)
+git diff | python skills/keystone/run_review.py changed-symbols --fail-on-block  # AUTONOMOUS: reads a real diff -> extracts the changed symbols by line range -> gates them (no symbol named by hand)
 python skills/keystone/run_review.py harness sample    # the full review for MR-204
 ```
 
