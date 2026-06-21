@@ -1986,5 +1986,21 @@ class Component extends DCLogic {
   window.addEventListener("load", function () { setTimeout(function () { try { fetch(BACKEND + "/api/health", { mode: "cors" }).catch(function () { }); } catch (e) { } }, 1200); });
 })();
 </script>
+<script>
+// React (the dc-runtime) sets `muted` as an ATTRIBUTE but not the DOM PROPERTY, so the
+// hero <video autoplay muted> is treated as unmuted and the browser blocks autoplay.
+// Force muted as a property + call play() after each mount so it actually autoplays, no click.
+(function () {
+  function forcePlay() {
+    var v = document.querySelector('video');
+    if (!v) return;
+    try { v.muted = true; v.defaultMuted = true; v.setAttribute('muted', ''); } catch (e) {}
+    try { var p = v.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+  }
+  [300, 1000, 2200, 4000, 6500].forEach(function (ms) { setTimeout(forcePlay, ms); });
+  window.addEventListener('load', forcePlay);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) forcePlay(); });
+})();
+</script>
 </body>
 </html>
