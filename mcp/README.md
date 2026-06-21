@@ -94,6 +94,13 @@ server, call `get_handoff`, and continue exactly where you left off.
 | `save_memory(title, body, type?)` | Save/update a durable fact or decision (dedup by title). |
 | `recall(query?)` | All memories, or those matching a query. |
 | `add_todo(text)` / `complete_todo(id)` | Track next steps. |
+| `seed_from_memory(memory_dir?)` | Auto-import an existing `MEMORY.md` index (Claude file-memory format) as memories - dedupes by title, safe to re-run. |
+
+Seed it once from your existing memory, then carry it everywhere:
+
+```
+python mcp/continuity_server.py --seed "/path/to/.claude/projects/<id>/memory"
+```
 
 Storage is one JSON file at `KEYSTONE_CONTEXT_STORE` (default `mcp/continuity_store.json`),
 so the state is portable and survives across tools and runs. Verified with

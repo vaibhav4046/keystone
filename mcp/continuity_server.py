@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -153,7 +154,56 @@ def get_handoff() -> dict:
             "handoff_text": "\n".join(lines)}
 
 
-for _fn in (set_summary, save_memory, recall, add_todo, complete_todo, get_handoff):
+def seed_from_memory(memory_dir: str = "") -> dict:
+    """Auto-seed the store from an existing MEMORY.md index (the Claude file-memory format:
+    lines like '- [Title](file.md) - hook'). Each entry becomes a memory; when the linked
+    file exists its frontmatter type and body are pulled in too. Dedupes by title, so it is
+    safe to re-run. memory_dir defaults to the KEYSTONE_MEMORY_DIR env var.
+    """
+    mdir = memory_dir or os.environ.get("KEYSTONE_MEMORY_DIR", "")
+    if not mdir:
+        return {"ok": False, "error": "no_memory_dir", "hint": "Pass memory_dir or set KEYSTONE_MEMORY_DIR."}
+    index = os.path.join(mdir, "MEMORY.md")
+    if not os.path.exists(index):
+        return {"ok": False, "error": "no_MEMORY.md", "path": index}
+    with open(index, "r", encoding="utf-8") as fh:
+        text = fh.read()
+    rows = re.findall(r"^-\s*\[([^\]]+)\]\(([^)]+)\)\s*[—\-]\s*(.*)$", text, re.M)
+    data = _load()
+    imported = 0
+    for title, fname, hook in rows:
+        title = title.strip()
+        body = hook.strip()
+        mtype = "reference"
+        fpath = os.path.join(mdir, fname.strip())
+        if os.path.exists(fpath):
+            try:
+                with open(fpath, "r", encoding="utf-8") as fh:
+                    raw = fh.read()
+                mt = re.search(r"type:\s*([A-Za-z|/ ]+)", raw)
+                if mt:
+                    mtype = mt.group(1).split("|")[0].strip()
+                bodytext = re.sub(r"^---.*?---\s*", "", raw, count=1, flags=re.S).strip()
+                if bodytext:
+                    body = (hook.strip() + "\n\n" + bodytext) if hook.strip() else bodytext
+            except Exception:
+                pass
+        body = body[:4000]
+        existing = next((m for m in data["memories"] if m.get("title") == title), None)
+        if existing:
+            existing.update({"body": body, "type": mtype, "ts": _now()})
+        else:
+            data["memories"].append({"id": _next_id(data["memories"]), "title": title,
+                                     "body": body, "type": mtype, "ts": _now()})
+        imported += 1
+    if not data.get("summary"):
+        data["summary"] = ("Seeded %d memories from MEMORY.md. Latest project context "
+                           "imported for cross-tool handoff." % imported)
+    _save(data)
+    return {"ok": True, "imported": imported, "source": index, "store": _store_path()}
+
+
+for _fn in (set_summary, save_memory, recall, add_todo, complete_todo, get_handoff, seed_from_memory):
     mcp.tool()(_fn)
 
 
@@ -180,6 +230,11 @@ def _selftest() -> int:
 
 
 if __name__ == "__main__":
+    if "--seed" in sys.argv:
+        _i = sys.argv.index("--seed")
+        _md = sys.argv[_i + 1] if len(sys.argv) > _i + 1 else ""
+        print(json.dumps(seed_from_memory(_md), indent=2))
+        raise SystemExit(0)
     if "--selftest" in sys.argv:
         raise SystemExit(_selftest())
     mcp.run()
