@@ -569,6 +569,72 @@ def _shadow_merge(argv):
     return exit_code
 
 
+def _scan_repo(argv):
+    """ZERO pre-indexing: fetch ANY public repo, build its Orbit-shaped graph on the fly,
+    and run the deterministic gate on it - so the gate is a CI control any team can drop
+    in, not one only a GitLab-Ultimate-with-Orbit-Local org can run."""
+    import argparse
+    import json as _json
+    ap = argparse.ArgumentParser(prog="run_review.py scan-repo",
+                                 description="Build an Orbit graph from any public repo and gate it.")
+    ap.add_argument("repo", help="owner/repo or a github URL")
+    ap.add_argument("--diff", help="unified diff file -> gate only the changed symbols")
+    ap.add_argument("--json", action="store_true", dest="as_json")
+    ap.add_argument("--fail-on-block", action="store_true",
+                    help="exit non-zero if the strictest verdict is HOLD or BLOCK")
+    a = ap.parse_args(argv)
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    sys.path.insert(0, root)
+    from core import repo_scan, impact as impact_mod, policy as policy_mod, diff_symbols
+    token = os.environ.get("KEYSTONE_GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    print("KEYSTONE scan-repo : fetching " + a.repo + " from GitHub and building its Orbit graph on the fly...")
+    try:
+        g, stats = repo_scan.scan_repo(a.repo, token=token)
+    except Exception as e:
+        print("  ERROR: " + str(e))
+        return 1
+    print("  built: " + stats["repo"] + " - " + str(stats["files"]) + " files, "
+          + str(stats["definitions"]) + " definitions (no pre-indexing, no Orbit binary)")
+    rank = {"ALLOW": 0, "HOLD": 1, "BLOCK": 2}
+
+    def _gate(name):
+        imp = impact_mod.compute_blast_radius(g, name)
+        if imp is None:
+            return None
+        d = imp.to_dict()
+        pol = policy_mod.evaluate(d)
+        return {"name": name, "file": (d.get("epicenter") or {}).get("file", "?"),
+                "blast": d["counts"]["total_affected"], "tier": pol.get("tier", "ISOLATED"),
+                "action": pol.get("action", "ALLOW")}
+
+    items, worst = [], "ALLOW"
+    if a.diff:
+        with open(a.diff, "r", encoding="utf-8", errors="replace") as fh:
+            diff_text = fh.read()
+        for s in diff_symbols.changed_symbols(g, diff_text):
+            it = _gate(s["name"])
+            if it:
+                items.append(it)
+        head = "changed symbols from the diff, gated"
+    else:
+        names = g.all_definition_names(limit=400)
+        scored = [it for it in (_gate(n) for n in names) if it]
+        items = sorted(scored, key=lambda x: -x["blast"])[:8]
+        head = "top blast-radius symbols, gated"
+    for it in items:
+        if rank.get(it["action"], 0) > rank.get(worst, 0):
+            worst = it["action"]
+    if a.as_json:
+        print(_json.dumps({"repo": stats["repo"], "definitions": stats["definitions"],
+                           "gated": items, "verdict": worst}, indent=2))
+    else:
+        print("  " + head + ":")
+        for it in items:
+            print("    %s:%s  blast %s  -> %s / %s" % (it["file"], it["name"], it["blast"], it["tier"], it["action"]))
+        print("  VERDICT          : " + worst + "   (deterministic, no LLM, computed on a graph built seconds ago)")
+    return (2 if (a.fail_on_block and rank.get(worst, 0) >= 1) else 0)
+
+
 def _changed_symbols(argv):
     """Autonomous gate: read a real unified diff, extract the changed symbols (no
     hand-naming), and run the deterministic governance gate on each."""
@@ -797,6 +863,8 @@ def main(argv=None):
         return _shadow_merge(raw[1:])
     if raw and raw[0] == "changed-symbols":
         return _changed_symbols(raw[1:])
+    if raw and raw[0] == "scan-repo":
+        return _scan_repo(raw[1:])
     if raw and raw[0] == "memory-gate":
         return _memory_gate(raw[1:])
     if raw and raw[0] in ("review-mr", "review"):
