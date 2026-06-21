@@ -9,7 +9,7 @@
      console (app.html) and the backend run under a STRICT, no-eval CSP. Every external origin is
      allow-listed and pinned (React, ReactDOM and Babel load from unpkg with Subresource Integrity);
      a static host cannot mint per-request nonces, hence 'unsafe-inline'. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com https://keystone-zt6c.onrender.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
@@ -180,6 +180,7 @@
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#FFC24D; background:rgba(255,122,26,0.09); border:1px solid rgba(255,122,26,0.32); border-radius:999px; padding:7px 12px">● No LLM on the verdict</span>
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● 115 tests green</span>
           <span style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:#4AD6A0; background:rgba(52,211,153,0.1); border:1px solid rgba(52,211,153,0.32); border-radius:999px; padding:7px 12px">● Proven on pallets/click</span>
+          <span title="{{ backendBadge.tip }}" style="font:600 11px/1.3 'JetBrains Mono',monospace; letter-spacing:0.03em; color:{{ backendBadge.color }}; background:{{ backendBadge.bg }}; border:1px solid {{ backendBadge.border }}; border-radius:999px; padding:7px 12px; cursor:help">{{ backendBadge.text }}</span>
         </div>
 
         <!-- JUDGE DEMO: numbered 90-second path; steps 3-4 are clickable. -->
@@ -814,7 +815,7 @@
   &quot;startView&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;Landing&quot;, &quot;Dashboard&quot;], &quot;default&quot;: &quot;Landing&quot;, &quot;tsType&quot;: &quot;string&quot; }
 }">
 class Component extends DCLogic {
-  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false, tourStep: 0, tourCaption: '' };
+  state = { view: 'landing', affected: 0, showConsent: false, panel: 'overview', tampered: false, demoStep: 0, demoPlaying: false, autoTour: false, tourStep: 0, tourCaption: '', backend: { status: 'checking' } };
 
   componentDidMount() {
     this._lastView = this.state.view;
@@ -825,6 +826,25 @@ class Component extends DCLogic {
     if (this.props && this.props.startView === 'Dashboard' && this.state.view === 'landing') {
       this.setState({ view: 'dashboard' });
     }
+    this.probeBackend();
+  }
+
+  // Probe the deployed FastAPI backend on Render so the UI can show an honest LIVE/asleep status.
+  // The page data is a committed Orbit snapshot; this only reports whether the live engine answers.
+  // Hard timeout + catch means a cold (sleeping) free-tier backend never blocks or errors the page.
+  probeBackend() {
+    if (this._backendProbed || typeof window === 'undefined' || !window.fetch) return;
+    this._backendProbed = true;
+    var self = this;
+    var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var to = setTimeout(function () { if (ctl) try { ctl.abort(); } catch (e) {} }, 9000);
+    window.fetch('https://keystone-zt6c.onrender.com/api/status', ctl ? { signal: ctl.signal } : {})
+      .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('http ' + r.status)); })
+      .then(function (d) {
+        clearTimeout(to);
+        self.setState({ backend: { status: 'live', mode: d.source_mode || 'LIVE', defs: d.definitions || 0, chain: !!(d.audit_chain && d.audit_chain.ok) } });
+      })
+      .catch(function () { clearTimeout(to); self.setState({ backend: { status: 'asleep' } }); });
   }
 
   componentDidUpdate() {
@@ -1281,6 +1301,11 @@ class Component extends DCLogic {
       autoTour: this.state.autoTour,
       tourCaption: this.state.tourCaption || '',
       tourStepLabel: 'Step ' + ((this.state.tourStep || 0) + 1) + ' of 6',
+      backendBadge: (function (b) {
+        if (!b || b.status === 'checking') return { text: '● Live backend: checking', color: '#FFC24D', bg: 'rgba(255,194,77,0.1)', border: 'rgba(255,194,77,0.32)', tip: 'Probing the deployed FastAPI backend on Render (free tier may cold-start).' };
+        if (b.status === 'live') return { text: '● Live backend verified', color: '#4AD6A0', bg: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.32)', tip: 'Reached the deployed FastAPI engine at keystone-zt6c.onrender.com. Source ' + b.mode + ', ' + b.defs + ' definitions indexed, audit chain ' + (b.chain ? 'verified' : 'present') + '. The page itself runs from a committed snapshot; this badge confirms the live engine answers.' };
+        return { text: '● Backend asleep, snapshot live', color: '#FFC24D', bg: 'rgba(255,194,77,0.1)', border: 'rgba(255,194,77,0.32)', tip: 'The free-tier backend is cold-starting or asleep. Everything on this page runs from a committed Orbit snapshot, so the demo works with no backend at all.' };
+      })(this.state.backend),
       stopTour: () => this.stopTour(),
       tourDots: [0, 1, 2, 3, 4, 5].map((k) => ({ color: k === (this.state.tourStep || 0) ? '#FF7A1A' : 'rgba(255,255,255,0.18)', scale: k === (this.state.tourStep || 0) ? '1.35' : '1' })),
       goLanding: () => this.setState({ view: 'landing' }),
