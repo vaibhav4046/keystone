@@ -1765,9 +1765,12 @@ class Component extends DCLogic {
       var _sid = (function () { try { return sessionStorage.getItem('ks_sid') || ''; } catch (e) { return ''; } })();
       var _h = { 'Content-Type': 'application/json' };
       if (_sid) _h['X-Keystone-Session'] = _sid;   // signed-in -> the scan uses YOUR token (real repos, no rate limit)
-      fetch(KS + '/api/scan-collision', { method: 'POST', credentials: 'include', headers: _h, body: JSON.stringify({ repo: repo }) })
+      var _ac = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var _to = _ac ? setTimeout(function () { _ac.abort(); }, 30000) : null;   // don't freeze on a cold dyno / huge repo
+      fetch(KS + '/api/scan-collision', { method: 'POST', credentials: 'include', headers: _h, body: JSON.stringify({ repo: repo }), signal: _ac ? _ac.signal : undefined })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (res) {
+          if (_to) clearTimeout(_to);
           var d = res.d || {};
           if (!res.ok) { log((d.detail && d.detail.hint) || 'Scan failed - try another public Python repo.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Find the collision'; return; }
           reveal(d.steps || [], function () {
@@ -1785,9 +1788,9 @@ class Component extends DCLogic {
             log('Done. The agent can open this guard PR on a repo you own.', 'ok');
           });
         })
-        .catch(function () { log('Scan failed - backend may be warming. Try again.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Find the collision'; });
+        .catch(function (e) { if (_to) clearTimeout(_to); var aborted = e && e.name === 'AbortError'; log(aborted ? 'Scan timed out - try a known library like pallets/click, or sign in to scan your own repo.' : 'Scan failed - backend may be warming. Try again.', 'err'); goBtn.disabled = false; goBtn.textContent = 'Find the collision'; });
     });
-    prBtn.addEventListener('click', function () { if (lastFinding && window.__ksAgentFix) { close(); window.__ksAgentFix(lastFinding); } });
+    prBtn.addEventListener('click', function () { if (lastFinding && window.__ksAgentFix) { var f = {}; for (var k in lastFinding) f[k] = lastFinding[k]; f.repo = ''; close(); window.__ksAgentFix(f); } });
   };
 
   window.__ksAgentFix = function (finding) {

@@ -10,7 +10,7 @@ import tempfile
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from core.audit import Ledger
-from core import repo_scan, graph as graph_mod
+from core import repo_scan, graph as graph_mod, collision
 
 
 def _tmp(name: str) -> str:
@@ -69,3 +69,29 @@ def test_build_graph_duckdb_reusable_path():
     repo_scan.build_graph_duckdb(src, p, "demo/repo")   # second call on the same path must not crash
     g = graph_mod.Graph(path=p, mode="LIVE")
     assert g.total_definitions() == 1
+
+
+def _collgraph(src):
+    p = _tmp("coll.duckdb")
+    repo_scan.build_graph_duckdb(src, p, "demo/repo")
+    return graph_mod.Graph(path=p, mode="LIVE")
+
+
+def test_find_top_collision_is_independent_pair_with_honest_count():
+    # x and y are independent (neither calls the other) but are BOTH called by c1/c2/c3,
+    # so their shared dependents are exactly {c1,c2,c3} - and must NOT include x or y.
+    src = {"m.py": ("def x():\n    return 1\n\ndef y():\n    return 1\n\n"
+                    "def c1():\n    return x() + y()\n\ndef c2():\n    return x() + y()\n\n"
+                    "def c3():\n    return x() + y()\n")}
+    top = collision.find_top_collision(_collgraph(src))
+    assert top is not None
+    assert {top["a"], top["b"]} == {"x", "y"}
+    assert top["kind"] == "blast_overlap"
+    assert top["a"] not in top["shared"] and top["b"] not in top["shared"]   # honest count: not the changed symbols
+    assert top["shared_count"] == 3 and set(top["shared"]) == {"c1", "c2", "c3"}
+
+
+def test_find_top_collision_none_and_deterministic():
+    assert collision.find_top_collision(_collgraph({"m.py": "def a():\n    return 1\n"})) is None
+    g = _collgraph({"m.py": "def x():\n    return 1\n\ndef y():\n    return 1\n\ndef c():\n    return x() + y()\n"})
+    assert collision.find_top_collision(g) == collision.find_top_collision(g)   # deterministic
