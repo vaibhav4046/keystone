@@ -17,6 +17,15 @@
 <title>Keystone - stop merge requests that break production together</title>
 <script src="./support.js"></script>
 <script src="repo-analyzer.js?v=7"></script>
+<style>
+  /* Judge fix (Design): responsive collapse + visible keyboard focus. The dc renders
+     two-column grids via inline styles, so target them by attribute with !important. */
+  @media (max-width: 860px) {
+    [style*="grid-template-columns"] { grid-template-columns: 1fr !important; gap: 16px !important; }
+  }
+  :focus-visible { outline: 2px solid #FF7A1A !important; outline-offset: 2px; border-radius: 3px; }
+  input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #34D399 !important; outline-offset: 2px; }
+</style>
 </head>
 <body>
 <x-dc>
@@ -299,7 +308,10 @@
         </div>
         <p style="font:400 11px/1.5 'Inter',sans-serif; color:#5f4836; margin:13px 0 0; max-width:50ch">This in-browser demo parses the call graph client-side (Python today). The production engine reads the live <b style="color:#8a6c52">GitLab Orbit</b> graph (gl_definition / gl_edge) and drives <b style="color:#8a6c52">glab orbit local</b>. The blast-radius logic is <b style="color:#8a6c52">language-agnostic</b> - it runs on Orbit's symbol graph, not on any one language's syntax, so it covers every language Orbit indexes. See the repo + demo video.</p>
         <div style="margin:22px 0 0; max-width:52ch; background:#0c0805; border:1px solid rgba(255,122,26,0.18); border-radius:11px; padding:16px 18px">
-          <div style="font:600 10.5px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF7A1A; text-transform:uppercase; margin-bottom:11px">Run it on your own Orbit graph</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:11px">
+            <div style="font:600 10.5px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FF7A1A; text-transform:uppercase">Run it on your own Orbit graph</div>
+            <button id="ks-copy-install" data-copy="glab orbit local index .&#10;python -m uvicorn backend.app:app" title="Copy the commands" style="font:600 10px/1 'JetBrains Mono',monospace; letter-spacing:0.06em; text-transform:uppercase; color:#C9A98F; background:rgba(255,122,26,0.08); border:1px solid rgba(255,122,26,0.25); border-radius:6px; padding:6px 10px; cursor:pointer">Copy</button>
+          </div>
           <pre style="margin:0; font:500 12px/1.7 'JetBrains Mono',monospace; color:#C9A98F; white-space:pre-wrap"><span style="color:#6b5440">$</span> glab orbit local index .            <span style="color:#5f4836"># build the call graph</span>
 <span style="color:#6b5440">$</span> python -m uvicorn backend.app:app   <span style="color:#5f4836"># start the engine</span>
 <span style="color:#6b5440">$</span> open keystone - sign in, scan, review</pre>
@@ -1774,6 +1786,15 @@ class Component extends DCLogic {
     }
   }
   window.addEventListener("load", function () { [800, 1800, 3500].forEach(function (ms) { setTimeout(wireNav, ms); }); });
+  // Judge fix (Design): copyable install commands.
+  document.addEventListener("click", function (e) {
+    var t = e.target; while (t && t !== document.body) { if (t.getAttribute && t.getAttribute("data-copy") != null) break; t = t.parentNode; }
+    if (!t || t === document.body) return;
+    var txt = t.getAttribute("data-copy"), old = t.textContent;
+    function done() { t.textContent = "Copied ✓"; setTimeout(function () { t.textContent = old; }, 1600); }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(done, done); }
+    else { try { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (_) { } }
+  }, false);
 })();
 </script>
 <script>
@@ -1870,7 +1891,10 @@ class Component extends DCLogic {
     Promise.all([
       fetch("orbit_provenance.json").then(function (r) { return r.json(); }),
       fetch("orbit_graph_full.json").then(function (r) { return r.json(); })
-    ]).then(function (res) { prov = res[0]; graph = res[1]; buildIndex(graph); open(); }).catch(function () {});
+    ]).then(function (res) { prov = res[0]; graph = res[1]; buildIndex(graph); open(); }).catch(function () {
+      var c = document.getElementById("ks-xcheck");
+      if (c && !document.getElementById("ks-xcheck-err")) { var e = document.createElement("span"); e.id = "ks-xcheck-err"; e.style.cssText = "color:#FF8A66;font-weight:400;margin-left:6px"; e.textContent = "(couldn't load the Orbit graph — retry)"; c.appendChild(e); setTimeout(function () { if (e.parentNode) e.parentNode.removeChild(e); }, 4000); }
+    });
   }
   document.addEventListener("click", function (e) {
     var t = e.target; while (t && t !== document.body) { if (t.id === "ks-xcheck") { show(); return; } t = t.parentNode; }
