@@ -465,7 +465,7 @@ def _shadow_merge(argv):
     else:
         verdict, exit_code = "HOLD", 2
 
-    cmd = (f"python skills/keystone/run_review.py shadow-merge"
+    cmd = ("python skills/keystone/run_review.py shadow-merge"
            + ("" if not a.safe else " --safe")
            + (f" --a {sym_a} --b {sym_b}" if (a.a or a.b) else ""))
     shared_str = ", ".join(shared[:8]) if shared else "(none)"
@@ -486,8 +486,8 @@ def _shadow_merge(argv):
               f"{sym_a}()'s changed contract and breaks. Git saw two unrelated files.")
     print(f"  VERDICT           : {verdict}")
     if exit_code and not a.safe:
-        print(f"  safe alternative  : python skills/keystone/run_review.py shadow-merge --safe  "
-              f"(non-overlapping pair -> ALLOW, exit 0)")
+        print("  safe alternative  : python skills/keystone/run_review.py shadow-merge --safe  "
+              "(non-overlapping pair -> ALLOW, exit 0)")
     print()
 
     # ---- decision packet (markdown) ----
@@ -527,7 +527,7 @@ def _shadow_merge(argv):
     lines += [
         "",
         f"## CI result: exit {exit_code} ({'fails the pipeline' if exit_code else 'passes'})",
-        f"## Reproduce", f"```", cmd, "```",
+        "## Reproduce", "```", cmd, "```",
         "",
         "## Paste-ready GitLab MR comment",
         "```markdown",
