@@ -1685,7 +1685,7 @@ class Component extends DCLogic {
   function rerender() { if (window.__ksRerender) { window.__ksRerender(); return; } var r = document.querySelectorAll("[title]"); for (var i = 0; i < r.length; i++) { if (/^Dashboard$/i.test(r[i].getAttribute("title") || "")) { r[i].click(); return; } } }
   function indicator(text, kind) {
     var el = document.getElementById("ks-scan-ind");
-    if (!el) { el = document.createElement("div"); el.id = "ks-scan-ind"; el.style.cssText = "position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:99999;font:600 12.5px/1 'JetBrains Mono',monospace;padding:11px 20px;border-radius:999px;letter-spacing:0.02em;transition:opacity .45s ease;box-shadow:0 10px 34px -8px rgba(0,0,0,0.7);pointer-events:none"; document.body.appendChild(el); }
+    if (!el) { el = document.createElement("div"); el.id = "ks-scan-ind"; el.style.cssText = "position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;font:600 12.5px/1 'JetBrains Mono',monospace;padding:11px 20px;border-radius:999px;letter-spacing:0.02em;transition:opacity .45s ease;box-shadow:0 10px 34px -8px rgba(0,0,0,0.7);pointer-events:none;max-width:92vw"; document.body.appendChild(el); }
     var done = kind === "done", fail = kind === "fail";
     el.textContent = text;
     el.style.background = fail ? "rgba(255,106,61,0.16)" : (done ? "rgba(52,211,153,0.16)" : "rgba(255,122,26,0.16)");
