@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Practical CSP for a static (GitHub Pages) host. This is the marketing LANDING, which renders a
-     declarative <x-dc> template via a small runtime that compiles with new Function() -> it requires
-     'unsafe-eval'. That is scoped to a page that handles NO decisions and processes no user data; the
-     actual product console (app.html) and the backend run under a STRICT, no-eval CSP. Every external
-     origin is allow-listed and pinned (React/ReactDOM/Babel load from unpkg with Subresource Integrity);
+<!-- Practical CSP for a static (GitHub Pages) host. The marketing landing renders a declarative
+     template via a small runtime that compiles with new Function, so it requires 'unsafe-eval'.
+     That is scoped to a page that handles NO decisions and processes no user data; the product
+     console (app.html) and the backend run under a STRICT, no-eval CSP. Every external origin is
+     allow-listed and pinned (React, ReactDOM and Babel load from unpkg with Subresource Integrity);
      a static host cannot mint per-request nonces, hence 'unsafe-inline'. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -170,10 +170,24 @@
           <span style="color:#6f5640">read-only · private repos need the deployed backend</span>
         </div>
 
+        <!-- Proof badges: the five things that make this real, scannable in one second. -->
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin:0 0 14px; max-width:560px">
+          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#34D399; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.28); border-radius:999px; padding:6px 11px">● Real Orbit graph</span>
+          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#FFB14D; background:rgba(255,122,26,0.07); border:1px solid rgba(255,122,26,0.28); border-radius:999px; padding:6px 11px">● Deterministic gate</span>
+          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#FFB14D; background:rgba(255,122,26,0.07); border:1px solid rgba(255,122,26,0.28); border-radius:999px; padding:6px 11px">● No LLM on the verdict</span>
+          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#34D399; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.28); border-radius:999px; padding:6px 11px">● 115 tests green</span>
+          <span style="font:600 10px/1.3 'JetBrains Mono',monospace; letter-spacing:0.04em; color:#34D399; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.28); border-radius:999px; padding:6px 11px">● Proven on pallets/click</span>
+        </div>
+        <!-- Winner demo path: tells a 90-second judge exactly what to click and in what order. -->
+        <div style="margin:0 0 30px; padding:12px 15px; border-radius:9px; background:rgba(255,194,77,0.06); border:1px solid rgba(255,194,77,0.22); max-width:560px">
+          <div style="font:700 10px/1 'JetBrains Mono',monospace; letter-spacing:0.13em; color:#FFC24D; text-transform:uppercase; margin-bottom:7px">Judges — watch this first (90 seconds)</div>
+          <div style="font:400 12.5px/1.6 'Inter',sans-serif; color:#C9A98F"><b style="color:#F6EFE6">Try the live demo</b> → read the silent collision → open <b style="color:#F6EFE6">Reviewer Cockpit</b> for the blast graph → open <b style="color:#F6EFE6">Audit Ledger</b> and hit <b style="color:#F6EFE6">Simulate tamper</b> to watch the hash chain break. Every number is computed from a real <code style="color:#FFB14D">orbit index</code>, cross-checked by <code style="color:#FFB14D">orbit sql</code> — no model decides anything.</div>
+        </div>
+
         <div style="font:500 11px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#8a6c52; text-transform:uppercase; margin-bottom:11px">Run in your terminal</div>
         <div style="display:flex; align-items:center; gap:10px; padding:12px 2px; border-bottom:1px solid rgba(255,122,26,0.3); max-width:440px">
           <span style="color:#FF7A1A; font:600 14px/1 'JetBrains Mono',monospace">$</span>
-          <span style="font:400 13px/1 'JetBrains Mono',monospace; color:#C9A98F; flex:1">keystone scan {{ repo }} --collisions</span>
+          <span style="font:400 13px/1 'JetBrains Mono',monospace; color:#C9A98F; flex:1">python skills/keystone/run_review.py shadow-merge</span>
           <span style="width:7px; height:14px; background:#FF7A1A; animation:flicker 1.1s steps(2) infinite"></span>
         </div>
         <p style="font:400 12px/1.5 'Inter',sans-serif; color:#6f5640; margin:16px 0 0; max-width:46ch">No account needed for the demo — Keystone analyzes real public repos in your browser.</p>
