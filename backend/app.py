@@ -68,6 +68,29 @@ _origins = os.environ.get("KEYSTONE_CORS_ORIGINS",
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins if o.strip()],
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 
+
+# Security headers on every response from the live backend. The static deploy carries an
+# equivalent CSP via <meta> (web/index.html, web/app.html); this is the server-side counterpart
+# for the Render/Docker deployment, where a real header (not a meta tag) is honored by browsers.
+@app.middleware("http")
+async def _security_headers(request, call_next):
+    resp = await call_next(request)
+    resp.headers.setdefault(
+        "Content-Security-Policy",
+        # 'unsafe-eval' is required only by the landing's <x-dc> template runtime (new Function);
+        # app.html ships a stricter meta CSP without it, and the browser enforces the intersection,
+        # so the decision-handling console stays eval-free.
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; "
+        "connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com; "
+        "object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return resp
+
 # one shared graph + ledger for the process. KEYSTONE_GRAPH_PATH lets the one-command
 # launcher point the backend at the committed real self-index (data/keystone_self_graph.duckdb)
 # so a local demo shows the SAME real Orbit graph as the public deploy, in LIVE mode with a
