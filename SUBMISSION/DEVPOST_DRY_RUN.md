@@ -28,3 +28,13 @@ pre-submit checklist. Verified this pass against the live product.
 ## Status
 - Completed: all fields + links verified; only the video URL is outstanding.
 - Waiting for user login or approval: Devpost sign-in + the video URL (final submit is irreversible and requires the video field).
+
+---
+
+## 2026-06-21 - copy now supports three live claims
+
+The live demo now visibly backs these submission lines: a narrated hands-free
+auto-tour (caption HUD), a live "Live backend verified" badge on the deployed
+Render engine, and a deterministic Agent fix plan on blocked agent MRs. All
+three are CDP-verified on https://vaibhav4046.github.io/keystone/ with zero
+console errors.
