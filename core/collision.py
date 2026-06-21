@@ -73,33 +73,49 @@ def _classify(a: dict, b: dict) -> dict:
     return {"kind": kind, "severity": sev,
             "same_change": label(same), "change_in_blast": label(cross),
             "blast_overlap": label(blast),
-            "shared": label(same | cross | blast)}
+            # the shared DEPENDENTS must exclude the two changed symbols themselves
+            "shared": label((same | cross | blast) - a["touched"] - b["touched"])}
 
 
-def find_top_collision(graph, top_k: int = 12, max_depth: int = 3) -> Optional[dict]:
-    """Find the highest-severity LATENT collision in a single repo: the pair of symbols that,
-    if changed in two parallel merge requests, would break the most shared dependents. A real,
-    deterministic hazard read straight from the repo's own call graph - no open MRs required.
-    Returns {a, b, shared, shared_count, kind, severity, blast_a, blast_b} or None."""
+def find_top_collision(graph, top_k: int = 25, max_depth: int = 3) -> Optional[dict]:
+    """Find the worst GENUINELY-INDEPENDENT collision among a repo's most-consequential symbols:
+    a pair where NEITHER symbol sits in the other's blast radius - so two parallel MRs changing
+    them have no Git conflict and neither review sees the other - yet they SHARE the most runtime
+    dependents. The textbook "both pass review, break together" hazard, with an honest count that
+    excludes the two changed symbols themselves. Deterministic, from the repo's own call graph.
+    Returns {a, b, shared, shared_count, kind='blast_overlap', severity, blast_a, blast_b} or None."""
     names = graph.all_definition_names(limit=max(top_k, 4))
     fps = {}
     for n in names:
         fp = _footprint(graph, [n], max_depth)
-        if fp["affected"]:                       # only symbols that actually have dependents can collide
+        if fp["affected"]:                       # only symbols with dependents can collide
             fps[n] = fp
     cand = list(fps.items())
-    best = None
+    best, best_key = None, (-1, -1)
     for i in range(len(cand)):
         for j in range(i + 1, len(cand)):
             na, fa = cand[i]
             nb, fb = cand[j]
-            c = _classify(fa, fb)
-            shared = c.get("shared") if c else None
+            # genuine independence: neither symbol is in the other's blast radius (no call edge between them),
+            # which is exactly what makes the two MRs look conflict-free to Git and to each reviewer.
+            if (fa["touched"] & fb["affected"]) or (fb["touched"] & fa["affected"]):
+                continue
+            shared = (fa["affected"] & fb["affected"]) - fa["touched"] - fb["touched"]
             if not shared:
                 continue
-            if best is None or c["severity"] > best["severity"]:
-                best = {"a": na, "b": nb, "shared": shared, "shared_count": len(shared),
-                        "kind": c["kind"], "severity": c["severity"],
+            names_map = {**fa["names"], **fb["names"]}
+            # report distinct dependent NAMES, excluding the two changed symbols themselves (a repo can
+            # hold several same-named defs, so exclude by name too, not just by the chosen epicenter ids).
+            shared_names = sorted({names_map.get(x, str(x)) for x in shared} - {na, nb})
+            if not shared_names:
+                continue
+            weight = {**fa["weight"], **fb["weight"]}
+            sev = sum(1 + weight.get(x, 0) for x in shared)
+            key = (len(shared_names), sev)       # most shared dependents, then most depended-on
+            if key > best_key:
+                best_key = key
+                best = {"a": na, "b": nb, "shared": shared_names,
+                        "shared_count": len(shared_names), "kind": "blast_overlap", "severity": sev,
                         "blast_a": len(fa["affected"]), "blast_b": len(fb["affected"])}
     return best
 

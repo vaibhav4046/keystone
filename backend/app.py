@@ -849,13 +849,15 @@ def _hero_cache() -> dict:
     """Precomputed REAL collisions for the famous demo repos (data/hero_collisions.json) so the
     hero flow is instant and never blocked by GitHub's unauthenticated rate limit on the host."""
     global _HERO_CACHE
-    if _HERO_CACHE is None:
-        try:
-            with open(os.path.join(os.path.dirname(__file__), "..", "data", "hero_collisions.json"),
-                      "r", encoding="utf-8") as fh:
-                _HERO_CACHE = _json.load(fh)
-        except Exception:
-            _HERO_CACHE = {}
+    if isinstance(_HERO_CACHE, dict):
+        return _HERO_CACHE
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "..", "data", "hero_collisions.json"),
+                  "r", encoding="utf-8") as fh:
+            data = _json.load(fh)
+        _HERO_CACHE = data if isinstance(data, dict) else {}
+    except Exception:
+        return {}                # transient read failure: don't poison the cache, retry next call
     return _HERO_CACHE
 
 
@@ -892,16 +894,23 @@ def scan_collision(r: ScanCollisionReq, ks_sid: str = Cookie(default=""), x_keys
         steps.append({"k": "none", "t": "No cross-MR collision in the top symbols - safe to parallelize."})
         return {"ok": True, "repo": stats["repo"], "definitions": stats["definitions"],
                 "collision": None, "steps": steps}
+    def _fileof(name):
+        try:
+            d = g.find_definition(name)
+            return (d or {}).get("file", "") or ""
+        except Exception:
+            return ""
+    fa, fb = _fileof(top["a"]), _fileof(top["b"])
     finding = AgentFinding(repo=stats["repo"], symbolA=top["a"], symbolB=top["b"],
-                           dependents=top["shared_count"], verdict="BLOCK")
+                           fileA=fa, fileB=fb, dependents=top["shared_count"], verdict="BLOCK")
     plan = _build_fix_plan(finding)
-    steps.append({"k": "collide", "t": "Real collision: %s x %s share %d runtime dependents (Git sees no conflict)"
+    steps.append({"k": "collide", "t": "Real collision: %s and %s are independent (neither calls the other) yet share %d runtime dependents"
                   % (top["a"], top["b"], top["shared_count"])})
     steps.append({"k": "guard", "t": "Drafted the deterministic co-change guard: %s" % plan["files"][0]["path"]})
     return {"ok": True, "repo": stats["repo"], "definitions": stats["definitions"],
             "collision": top, "plan": plan, "steps": steps,
             "finding": {"repo": stats["repo"], "symbolA": top["a"], "symbolB": top["b"],
-                        "dependents": top["shared_count"], "verdict": "BLOCK"}}
+                        "fileA": fa, "fileB": fb, "dependents": top["shared_count"], "verdict": "BLOCK"}}
 
 
 # static web hero (mounted last so /api/* wins)
