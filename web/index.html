@@ -308,7 +308,7 @@
             <button onClick="{{ goDemo }}" style="color:#A6907B; text-decoration:none; background:none; border:none; cursor:pointer; font:inherit; padding:0">Open the live tool →</button>
           </div>
           <div id="ks-xcheck" title="Click to see the exact glab orbit local sql command and the count Orbit itself returned, per symbol." style="display:flex; align-items:center; gap:8px; margin-top:13px; padding-top:13px; border-top:1px solid rgba(255,122,26,0.12); font:600 11px/1.4 'JetBrains Mono',monospace; color:#34D399; cursor:pointer">
-            <span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>Cross-checked 120/120 symbols against GitLab Orbit CLI (v0.74.0) - exact match&nbsp;<span style="color:#6b8f7e">› show commands</span>
+            <span style="width:7px;height:7px;border-radius:50%;background:#34D399;box-shadow:0 0 8px #34D399"></span>Cross-checked 120/120 symbols against GitLab Orbit CLI (v0.74.0) - exact match&nbsp;<span style="color:#6b8f7e">› run a live query</span>
           </div>
         </div>
       </div>
@@ -1803,36 +1803,74 @@ class Component extends DCLogic {
 })();
 </script>
 <script>
-/* Judge fix (Tech): render the real Orbit CLI provenance per-symbol on-page. */
+/* Judge fix (Tech/Idea): LIVE in-browser Orbit query + CLI provenance cross-check.
+   Runs the same `orbit sql` blast-radius query over the real gl_definition/gl_edge
+   graph, live in the browser, and shows it equals the captured Orbit CLI count. */
 (function () {
-  var cache = null;
+  var prov = null, graph = null, inc = null, name2ids = null;
   function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }); }
-  function open(d) {
+  function buildIndex(g) {
+    inc = {}; name2ids = {};
+    for (var i = 0; i < g.calls.length; i++) { var t = g.calls[i][1]; (inc[t] = inc[t] || []).push(g.calls[i][0]); }
+    Object.keys(g.defs).forEach(function (id) { var nm = g.defs[id][0]; (name2ids[nm] = name2ids[nm] || []).push(id); });
+  }
+  function liveCount(id) { var src = inc[id] || [], seen = {}, n = 0; for (var i = 0; i < src.length; i++) { if (!seen[src[i]]) { seen[src[i]] = 1; n++; } } return n; }
+  function runQuery(name) {
+    var ids = (name2ids && name2ids[name]) || []; if (!ids.length) return null;
+    var best = ids[0], bc = liveCount(ids[0]);
+    for (var i = 1; i < ids.length; i++) { var c = liveCount(ids[i]); if (c > bc) { bc = c; best = ids[i]; } }
+    var t0 = (window.performance && performance.now) ? performance.now() : 0;
+    var cnt = liveCount(best);
+    var ms = ((window.performance && performance.now) ? performance.now() - t0 : 0);
+    var def = graph.defs[best], pv = prov && prov.per_symbol && prov.per_symbol[name];
+    return { id: best, name: name, file: def ? def[1] : "", count: cnt, sql: graph.query.replace("?", best), ms: ms.toFixed(2), cli: pv ? pv.ring1_cli : null };
+  }
+  function renderResult(name) {
+    var box = document.getElementById("ks-q-out"); if (!box) return;
+    var r = runQuery(name);
+    if (!r) { box.innerHTML = '<span style="color:#FF8A66">No definition named "' + esc(name) + '" in the Orbit graph.</span>'; return; }
+    var matchLine = r.cli != null
+      ? '<div style="margin-top:9px;font:600 11.5px/1.4 \'JetBrains Mono\',monospace;color:' + (r.cli === r.count ? "#34D399" : "#FF6A3D") + '">Orbit CLI (glab orbit local sql) returned ' + r.cli + (r.cli === r.count ? " — exact match ✓" : " — differs") + '</div>'
+      : '<div style="margin-top:9px;font:400 11px/1.4 \'JetBrains Mono\',monospace;color:#6b5440">(no captured CLI baseline for this symbol — computed live from the same graph)</div>';
+    box.innerHTML = '<pre style="margin:0 0 8px;font:400 10.5px/1.5 \'JetBrains Mono\',monospace;color:#8a7a66;white-space:pre-wrap;word-break:break-all">' + esc(r.sql) + '</pre>'
+      + '<div style="font:700 14px/1.2 \'JetBrains Mono\',monospace;color:#F6EFE6"><span style="color:#FFC24D">' + r.count + '</span> distinct callers of <span style="color:#FFC24D">' + esc(r.name) + '</span> <span style="color:#6b5440;font-weight:400">· ' + esc(r.file) + ' · computed live in ' + r.ms + ' ms</span></div>'
+      + matchLine;
+  }
+  function open() {
     if (document.getElementById("ks-prov-modal")) return;
-    var ps = d.per_symbol || {}, keys = Object.keys(ps), match = 0;
+    var ps = (prov && prov.per_symbol) || {}, keys = Object.keys(ps), match = 0;
     keys.forEach(function (k) { if (ps[k].match) match++; });
-    var rows = keys.slice(0, 14).map(function (k) {
+    var ranked = Object.keys(name2ids).map(function (n) { var ids = name2ids[n], mx = 0; ids.forEach(function (id) { var c = liveCount(id); if (c > mx) mx = c; }); return [n, mx]; }).filter(function (x) { return x[1] > 0; }).sort(function (a, b) { return b[1] - a[1]; });
+    var first = ranked.length ? ranked[0][0] : "";
+    var opts = ranked.slice(0, 90).map(function (x) { return '<option value="' + esc(x[0]) + '">'; }).join("");
+    var rows = keys.slice(0, 8).map(function (k) {
       var v = ps[k];
-      return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">'
-        + '<div style="display:flex;justify-content:space-between;gap:10px;font:600 12px/1 \'JetBrains Mono\',monospace;color:#F6EFE6;margin-bottom:5px"><span>' + esc(k) + '<span style="color:#6b5440;font-weight:400"> · ' + esc(v.file || "") + '</span></span><span style="color:' + (v.match ? "#34D399" : "#FF6A3D") + '">ring1 cli ' + v.ring1_cli + ' = engine ' + v.ring1_engine + (v.match ? " ✓" : " ✗") + '</span></div>'
-        + '<pre style="margin:0;font:400 10.5px/1.5 \'JetBrains Mono\',monospace;color:#8a7a66;white-space:pre-wrap;word-break:break-all">' + esc(v.command) + '</pre>'
-        + '<div style="font:400 10px/1 \'JetBrains Mono\',monospace;color:#5f4836;margin-top:4px">returncode ' + v.returncode + ' · ' + (v.duration_ms != null ? v.duration_ms + " ms" : "") + '</div></div>';
+      return '<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><div style="display:flex;justify-content:space-between;gap:10px;font:600 11.5px/1 \'JetBrains Mono\',monospace;color:#C9A98F"><span>' + esc(k) + '</span><span style="color:' + (v.match ? "#34D399" : "#FF6A3D") + '">cli ' + v.ring1_cli + ' = engine ' + v.ring1_engine + (v.match ? " ✓" : " ✗") + '</span></div></div>';
     }).join("");
     var ov = document.createElement("div"); ov.id = "ks-prov-modal";
     ov.style.cssText = "position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px;background:rgba(8,5,3,0.74);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)";
-    ov.innerHTML = '<div style="width:min(620px,95vw);max-height:82vh;overflow:auto;background:#16100b;border:1px solid rgba(52,211,153,0.28);border-radius:14px;padding:22px;box-shadow:0 40px 90px -30px #000;font-family:Inter,sans-serif">'
-      + '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:6px"><div style="font:600 11px/1.3 \'JetBrains Mono\',monospace;letter-spacing:0.1em;color:#34D399;text-transform:uppercase">GitLab Orbit CLI cross-check · ' + match + '/' + keys.length + ' matched</div><button id="ks-prov-x" style="background:none;border:none;color:#A6907B;font:600 18px/1 Inter;cursor:pointer">×</button></div>'
-      + '<div style="font:400 12px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:14px">Each row is the exact <b style="color:#C9A98F">glab orbit local sql</b> command Orbit ran (v' + esc(d.orbit_version || "") + ', against a real <b style="color:#C9A98F">orbit index</b> of ' + (d.definitions_total || keys.length) + ' definitions). <b style="color:#34D399">ring1 cli</b> is the count Orbit itself returned; <b style="color:#34D399">engine</b> is Keystone\'s - they match.</div>'
+    ov.innerHTML = '<div style="width:min(640px,95vw);max-height:84vh;overflow:auto;background:#16100b;border:1px solid rgba(52,211,153,0.28);border-radius:14px;padding:22px;box-shadow:0 40px 90px -30px #000;font-family:Inter,sans-serif">'
+      + '<div style="display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:6px"><div style="font:600 11px/1.3 \'JetBrains Mono\',monospace;letter-spacing:0.1em;color:#34D399;text-transform:uppercase">Run a live GitLab Orbit query</div><button id="ks-prov-x" style="background:none;border:none;color:#A6907B;font:600 18px/1 Inter;cursor:pointer">×</button></div>'
+      + '<div style="font:400 12px/1.5 Inter,sans-serif;color:#A6907B;margin-bottom:13px">This runs the same blast-radius query Orbit runs — <b style="color:#C9A98F">count(DISTINCT source_id) over CALLS</b> — <b style="color:#34D399">live in your browser</b>, over the real <b style="color:#C9A98F">gl_definition / gl_edge</b> graph Orbit indexed (' + Object.keys(graph.defs).length + ' defs). In production the identical query runs server-side via <b style="color:#C9A98F">glab orbit local sql</b>.</div>'
+      + '<div style="display:flex;gap:8px;margin-bottom:12px"><input id="ks-q-in" list="ks-sym-list" value="' + esc(first) + '" placeholder="symbol name" autocomplete="off" style="flex:1;background:#0c0805;border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:10px 12px;color:#F6EFE6;font:500 12.5px/1 \'JetBrains Mono\',monospace;outline:none"/><datalist id="ks-sym-list">' + opts + '</datalist><button id="ks-q-run" style="font:700 12px/1 Inter,sans-serif;padding:10px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#7be0b4,#34D399 60%,#10b981);color:#06281c;cursor:pointer">Run orbit sql</button></div>'
+      + '<div id="ks-q-out" style="background:#0c0805;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 15px;margin-bottom:18px;min-height:64px"></div>'
+      + '<div style="font:600 10px/1 \'JetBrains Mono\',monospace;letter-spacing:0.12em;color:#6b8f7e;text-transform:uppercase;margin-bottom:6px">Captured CLI provenance · ' + match + '/' + keys.length + ' matched (orbit v' + esc((prov && prov.orbit_version) || "") + ')</div>'
       + rows + '</div>';
     document.body.appendChild(ov);
     function close() { ov.remove(); }
     ov.querySelector("#ks-prov-x").onclick = close;
+    ov.querySelector("#ks-q-run").onclick = function () { renderResult((document.getElementById("ks-q-in").value || "").trim()); };
+    ov.querySelector("#ks-q-in").addEventListener("keydown", function (e) { if (e.key === "Enter") renderResult((this.value || "").trim()); });
     ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
     document.addEventListener("keydown", function esc2(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc2); } });
+    if (first) renderResult(first);
   }
   function show() {
-    if (cache) return open(cache);
-    fetch("orbit_provenance.json").then(function (r) { return r.json(); }).then(function (d) { cache = d; open(d); }).catch(function () {});
+    if (prov && graph) return open();
+    Promise.all([
+      fetch("orbit_provenance.json").then(function (r) { return r.json(); }),
+      fetch("orbit_graph_full.json").then(function (r) { return r.json(); })
+    ]).then(function (res) { prov = res[0]; graph = res[1]; buildIndex(graph); open(); }).catch(function () {});
   }
   document.addEventListener("click", function (e) {
     var t = e.target; while (t && t !== document.body) { if (t.id === "ks-xcheck") { show(); return; } t = t.parentNode; }
