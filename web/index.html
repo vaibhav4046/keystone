@@ -139,7 +139,8 @@
       </div>
       <nav style="display:flex; align-items:center; gap:30px; justify-content:flex-end">
         <a href="https://github.com/vaibhav4046/keystone" target="_blank" rel="noopener" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; text-decoration:none" style-hover="color:#FF7A1A">SOURCE</a>
-        <button onClick="{{ goDemo }}" style="font:500 12px/1 'JetBrains Mono',monospace; letter-spacing:0.2em; color:#C9A98F; background:none; border:none; cursor:pointer; padding:0" style-hover="color:#FF7A1A">LIVE DEMO →</button>
+        <button onClick="{{ signInClick }}" title="Sign in with GitHub to scan your own repositories" style="display:inline-flex; align-items:center; gap:7px; font:600 11px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; color:#FFB14D; background:rgba(255,122,26,0.08); border:1px solid rgba(255,122,26,0.4); border-radius:7px; padding:8px 13px; cursor:pointer" style-hover="background:rgba(255,122,26,0.15); border-color:#FF7A1A">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="#FFB14D"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.82 1.19 3.08 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path></svg>{{ signInLabel }}</button>
       </nav>
     </header>
 
@@ -167,16 +168,14 @@
           </button>
           <button onClick="{{ watchRun }}" title="Hands-free: auto-runs the operations - collision, blast graph, ledger tamper and restore - on a loop." style="display:inline-flex; align-items:center; gap:9px; padding:16px 24px; min-height:52px; border-radius:4px; cursor:pointer; font:700 13px/1 'JetBrains Mono',monospace; letter-spacing:0.1em; text-transform:uppercase; color:#FFB14D; background:transparent; border:1px solid rgba(255,122,26,0.45)" style-hover="background:rgba(255,122,26,0.08); border-color:#FF7A1A" style-active="transform:scale(0.985)">▶ Watch it run</button>
         </div>
-
-        <!-- Impact + novel-capability framing (Idea + Impact levers) -->
         <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; margin:22px 0 4px; max-width:52ch">
           <div style="background:rgba(255,122,26,0.05); border:1px solid rgba(255,122,26,0.16); border-radius:10px; padding:13px 15px">
             <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; color:#FF7A1A; text-transform:uppercase; margin-bottom:7px">New capability</div>
-            <div style="font:400 12.5px/1.5 'Inter',sans-serif; color:#C9A98F">The first <b style="color:#F6EFE6">merge gate for AI coding agents</b>. When a bot opens an MR, Orbit's call graph — not a text diff — decides ALLOW / HOLD / BLOCK.</div>
+            <div style="font:400 12.5px/1.5 'Inter',sans-serif; color:#C9A98F">The first <b style="color:#F6EFE6">merge gate for AI coding agents</b>. When a bot opens an MR, Orbit's call graph (not a text diff) decides ALLOW / HOLD / BLOCK.</div>
           </div>
           <div style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.16); border-radius:10px; padding:13px 15px">
             <div style="font:700 11px/1 'JetBrains Mono',monospace; letter-spacing:0.12em; color:#34D399; text-transform:uppercase; margin-bottom:7px">Why it matters</div>
-            <div style="font:400 12.5px/1.5 'Inter',sans-serif; color:#C9A98F">Every silent collision caught is a <b style="color:#F6EFE6">2am production incident that never happens</b> — and a rollback, a hotfix, and an incident review that never get written.</div>
+            <div style="font:400 12.5px/1.5 'Inter',sans-serif; color:#C9A98F">Every silent collision caught is a <b style="color:#F6EFE6">2am production incident that never happens</b>: no rollback, no hotfix, no incident review.</div>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:28px; font:600 12.5px/1 'JetBrains Mono',monospace">
@@ -1432,6 +1431,8 @@ class Component extends DCLogic {
       goLedger: () => this.setState({ view: 'dashboard', showConsent: false, panel: 'ledger' }),
       goDemoClick: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksLoadOrbit) setTimeout(function () { window.__ksLoadOrbit('orbit_snapshot_click.json'); }, 60); },
       openScan: () => { this.setState({ view: 'dashboard', showConsent: false, panel: 'overview' }); if (typeof window !== 'undefined' && window.__ksAskRepo) setTimeout(function () { window.__ksAskRepo(); }, 80); },
+      signInLabel: (typeof window !== 'undefined' && window.__ksUser) ? ('● ' + (window.__ksUser.login || 'signed in')) : 'Sign in with GitHub',
+      signInClick: () => { if (typeof window === 'undefined') return; if (window.__ksUser) { if (window.__ksAskRepo) window.__ksAskRepo(); } else if (window.__ksSignIn) window.__ksSignIn(); },
       watchRun: () => this.startTour(),
       autoTour: this.state.autoTour,
       tourPauseLabel: this.state.tourPaused ? '▶ Play' : '⎉ Pause',
@@ -1676,6 +1677,30 @@ class Component extends DCLogic {
   }
   window.__ksLoadOrbit = loadOrbit;
   window.__ksAskRepo = function () { askRepo(); };   // prominent, React-callable entry to the live GitHub repo scanner
+  var KS_BACKEND = 'https://keystone-zt6c.onrender.com';
+  // Sign in with GitHub: only redirect when the backend OAuth is actually configured;
+  // otherwise the button is never broken - it opens the public scanner (same engine).
+  window.__ksSignIn = function () {
+    fetch(KS_BACKEND + '/api/auth/status').then(function (r) { return r.json(); }).then(function (d) {
+      if (d && d.configured) { window.location.href = KS_BACKEND + '/api/auth/github/login'; }
+      else { askRepo(); indicator('GitHub sign-in is being configured. Meanwhile, scan any public repo - same engine.', 'run'); }
+    }).catch(function () { askRepo(); });
+  };
+  // Handle the OAuth return (#ks_session=<sid>) and restore an existing session.
+  (function () {
+    try {
+      var sid = null, h = (location.hash || '');
+      var m = h.match(/ks_session=([A-Za-z0-9_\-]+)/);
+      if (m) { sid = m[1]; try { sessionStorage.setItem('ks_sid', sid); } catch (e) {} history.replaceState(null, '', location.pathname + location.search); }
+      else { try { sid = sessionStorage.getItem('ks_sid'); } catch (e) {} }
+      if (/ks_auth=error/.test(h)) history.replaceState(null, '', location.pathname + location.search);
+      if (sid) {
+        fetch(KS_BACKEND + '/api/me?sid=' + encodeURIComponent(sid)).then(function (r) { return r.ok ? r.json() : Promise.reject(); }).then(function (u) {
+          window.__ksUser = u; if (window.__ksRerender) window.__ksRerender();
+        }).catch(function () { try { sessionStorage.removeItem('ks_sid'); } catch (e) {} });
+      }
+    } catch (e) {}
+  })();
   function loadOrbit(url) {
     url = url || "orbit_snapshot.json";
     indicator("⟳  Loading the real GitLab Orbit graph…", "run");
@@ -1708,7 +1733,9 @@ class Component extends DCLogic {
       + '<div style="display:flex;gap:10px;justify-content:flex-end"><button id="ks-repo-cancel" style="font:600 12px/1 Inter,sans-serif;padding:10px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#A6907B;cursor:pointer">Cancel</button><button id="ks-repo-go" style="font:600 12px/1 Inter,sans-serif;padding:10px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,#FFC24D,#FF7A1A 55%,#F0480A);color:#150a02;cursor:pointer">Scan →</button></div></div>';
     document.body.appendChild(ov);
     var ex = ov.querySelector("#ks-repo-ex"), inp = ov.querySelector("#ks-repo-in");
-    ["pallets/click", "psf/requests", "pallets/flask", "tiangolo/typer"].forEach(function (r) { var b = document.createElement("button"); b.textContent = r; b.style.cssText = "font:500 11px/1 'JetBrains Mono',monospace;padding:6px 10px;border-radius:7px;border:1px solid rgba(255,122,26,0.25);background:rgba(255,122,26,0.06);color:#C9A98F;cursor:pointer"; b.onclick = function () { inp.value = r; }; ex.appendChild(b); });
+    var _exRepos = (window.__ksUser && window.__ksUser.repos && window.__ksUser.repos.length) ? window.__ksUser.repos.map(function (r) { return r.full_name; }).slice(0, 8) : ["pallets/click", "psf/requests", "pallets/flask", "tiangolo/typer"];
+    if (window.__ksUser && _exRepos.length) { var lbl = document.createElement("div"); lbl.textContent = "your repositories"; lbl.style.cssText = "flex-basis:100%;font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:#5F636D;margin-bottom:2px"; ex.appendChild(lbl); if (_exRepos[0]) inp.value = _exRepos[0]; }
+    _exRepos.forEach(function (r) { var b = document.createElement("button"); b.textContent = r; b.style.cssText = "font:500 11px/1 'JetBrains Mono',monospace;padding:6px 10px;border-radius:7px;border:1px solid rgba(255,122,26,0.25);background:rgba(255,122,26,0.06);color:#C9A98F;cursor:pointer"; b.onclick = function () { inp.value = r; }; ex.appendChild(b); });
     function close() { ov.remove(); }
     function go() { var v = (inp.value || "").trim(); if (v) { close(); window.__ksScan = null; runScan(v); } }
     ov.querySelector("#ks-repo-cancel").onclick = close;
