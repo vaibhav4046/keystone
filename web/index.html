@@ -691,6 +691,30 @@
             </div>
           </div>
         </section>
+
+        <!-- Agent fix plan: deterministic remediation surfaced when an agent MR is blocked. -->
+        <section style="margin-top:18px; background:linear-gradient(180deg,rgba(255,194,77,0.06),rgba(20,16,11,0.5)); border:1px solid rgba(255,194,77,0.28); border-radius:14px; padding:24px; overflow:hidden">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap">
+            <div style="width:34px; height:34px; flex:none; border-radius:9px; display:flex; align-items:center; justify-content:center; background:rgba(255,194,77,0.14); border:1px solid rgba(255,194,77,0.34)">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFC24D" stroke-width="1.6"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"></path></svg>
+            </div>
+            <h3 style="font:600 18px/1.1 'Space Grotesk',sans-serif; color:#F6EFE6; margin:0">Agent fix plan</h3>
+            <span title="These remediation steps are generated deterministically from the collision packet, not by a model. The merge verdict itself is a deterministic graph computation; no LLM decides it. The plan is advisory; the gate is binding." style="font:600 9px/1 'JetBrains Mono',monospace; letter-spacing:0.08em; padding:5px 9px; border-radius:999px; color:#D7B89A; background:rgba(245,166,35,0.1); border:1px solid rgba(245,166,35,0.28); cursor:help">ADVISORY · GATE IS DETERMINISTIC</span>
+          </div>
+          <p style="font:400 14.5px/1.55 'Inter',sans-serif; color:#D8C8B8; margin:0 0 20px; max-width:74ch"><b style="color:#FF8A66">Blocked because</b> {{ fixPlanWhy }}</p>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px">
+            <sc-for list="{{ fixPlanSteps }}" as="s" hint-placeholder-count="4">
+              <div style="display:flex; gap:13px; align-items:flex-start">
+                <span style="flex:none; width:25px; height:25px; border-radius:7px; display:flex; align-items:center; justify-content:center; background:rgba(255,122,26,0.12); border:1px solid rgba(255,122,26,0.3); color:#FFB14D; font:600 12px/1 'JetBrains Mono',monospace">{{ s.n }}</span>
+                <span style="font:400 14px/1.5 'Inter',sans-serif; color:#C9CDD4">{{ s.text }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:flex-start; gap:11px; padding:14px 16px; border-radius:10px; background:rgba(255,106,61,0.07); border:1px solid rgba(255,106,61,0.25)">
+            <svg viewBox="0 0 24 24" width="17" height="17" style="flex:none; margin-top:1px" fill="none" stroke="#FF8A66" stroke-width="1.7"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+            <span style="font:400 13px/1.5 'Inter',sans-serif; color:#E7C7B5">{{ fixPlanStatus }}</span>
+          </div>
+        </section>
         </sc-if>
 
         <!-- ===== AUDIT LEDGER ===== -->
@@ -1374,6 +1398,15 @@ class Component extends DCLogic {
         { t: '11:52:30', text: 'Indexed 262 definitions from keystone self-index', dot: '#34D399' }
       ]),
       perms: ['Read repository contents and metadata', 'Read merge requests and diffs', 'No write access · no secrets · no code execution'],
+
+      fixPlanWhy: (_SC ? (_SC.shared + ' functions depend on both ' + _SC.a + ' and ' + _SC.b + '. Merge both merge requests and those dependents break together, with no Git conflict to flag it.') : '5 functions depend on both compute_blast_radius and verify. Merge both merge requests and those dependents break together, with no Git conflict to flag it.'),
+      fixPlanSteps: [
+        { n: '1', text: 'Stack the two merge requests into a single review so one reviewer sees every shared dependent at once.' },
+        { n: '2', text: (_SC ? ('Add an integration test that exercises ' + _SC.a + ' and ' + _SC.b + ' together before either is merged.') : 'Add an integration test that exercises compute_blast_radius and verify together before either is merged.') },
+        { n: '3', text: 'Merge in the order Keystone derived by topological sort: ' + ((_SC && _SC.safeOrder && _SC.safeOrder.length) ? _SC.safeOrder.slice(0, 6).join('  →  ') : 'precedent  →  verify  →  compute_blast_radius') + '.' },
+        { n: '4', text: 'Re-run shadow-merge and the memory gate, then record the decision in the tamper-evident ledger.' }
+      ],
+      fixPlanStatus: 'copilot-workspace auto-merge stays overruled until these checks pass. Keystone proposes the plan; a human decides; the ledger records it.',
 
       panel: this.state.panel,
       isOverview: this.state.panel === 'overview',
