@@ -22,6 +22,7 @@ python skills/keystone/run_review.py shadow-merge                       # THE ho
 python skills/keystone/run_review.py shadow-merge --safe                # the safe counter-example: non-overlapping pair -> ALLOW (exit 0)
 python skills/keystone/run_review.py memory-gate compute_blast_radius --prove   # records a REAL reject live, then OVERRULES an AI agent's APPROVE from it (exit 2)
 git diff | python skills/keystone/run_review.py changed-symbols --fail-on-block  # AUTONOMOUS: reads a real diff -> extracts the changed symbols by line range -> gates them (no symbol named by hand)
+python skills/keystone/run_review.py scan-repo benjaminp/six                     # ZERO pre-indexing: fetches ANY public repo, builds its Orbit graph on the fly (ast), gates it - a CI control any team can run, not just Orbit-Local orgs
 python skills/keystone/run_review.py harness sample    # the full review for MR-204
 ```
 
