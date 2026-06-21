@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Practical CSP for a static (GitHub Pages) host. This is the marketing LANDING, which renders a
+     declarative <x-dc> template via a small runtime that compiles with new Function() -> it requires
+     'unsafe-eval'. That is scoped to a page that handles NO decisions and processes no user data; the
+     actual product console (app.html) and the backend run under a STRICT, no-eval CSP. Every external
+     origin is allow-listed and pinned (React/ReactDOM/Babel load from unpkg with Subresource Integrity);
+     a static host cannot mint per-request nonces, hence 'unsafe-inline'. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://unpkg.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <link rel="icon" type="image/svg+xml" href="keystone-k.svg?v=1" />
 <meta name="theme-color" content="#0a0706" />
 <title>Keystone — stop merge requests that break production together</title>

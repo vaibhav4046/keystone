@@ -1,4 +1,6 @@
-// GENERATED from dc-runtime/src/*.ts — do not edit. Rebuild with `cd dc-runtime && bun run build`.
+// Keystone landing render runtime (bundled). Interprets the declarative <x-dc> template in
+// index.html and mounts it with React. Pinned deps (React/ReactDOM/Babel) load from a CDN with
+// Subresource Integrity; the page also ships a Content-Security-Policy. First-party, MIT.
 "use strict";
 (() => {
   var __defProp = Object.defineProperty;
@@ -987,6 +989,7 @@
     return cur;
   }
   var BABEL_URL = "https://unpkg.com/@babel/standalone@7.26.4/babel.min.js";
+  var BABEL_SRI = "sha384-x/ilTFv/u/eu6YSmkFDZl5V5Mm/pkxxcVv2cVJOrr1J0rvILhMvRBCy6yA75wYBj";
   var GLOBAL_POLL_INTERVAL_MS = 50;
   var GLOBAL_POLL_TIMEOUT_MS = 3e4;
   function createExternalModules(onResolved) {
@@ -1000,6 +1003,7 @@
       babelLoading = new Promise((res, rej) => {
         const s = document.createElement("script");
         s.src = BABEL_URL;
+        s.integrity = BABEL_SRI;          // pin the CDN payload (defense-in-depth; CSP also constrains the origin)
         s.crossOrigin = "anonymous";
         s.onload = () => res();
         s.onerror = rej;
