@@ -419,7 +419,8 @@ def test_strict_require_signed_mode_and_approve_mr_signature(monkeypatch):
 def test_orbit_remote_enrichment_gates():
     # the three Orbit Remote SDLC gates run over the committed fixture: ownership-entropy,
     # pipeline-health, dependency-quarantine - real gate logic on the real Orbit Remote schema.
-    r = client.get("/api/orbit-remote/compute_blast_radius")
+    # uses tokenize (a fixture-graph symbol) since compute_blast_radius is only on the self-index
+    r = client.get("/api/orbit-remote/tokenize")
     assert r.status_code == 200
     e = r.json()
     assert e["available"] is True and e["source"] == "ORBIT_REMOTE_FIXTURE" and e["synthetic"] is True
