@@ -63,6 +63,30 @@ def test_requests_secondary_hero_number_reproduces():
     assert top["shared_count"] == 48
 
 
+AXIOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "axios_graph.duckdb")
+CHALK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "chalk_graph.duckdb")
+
+
+def test_axios_javascript_collision_reproduces():
+    # the SAME engine finds a genuine cross-MR collision on a real, multi-file JavaScript library
+    # (axios), committed + pinned exactly like the Python repos - multi-language proven end-to-end.
+    assert os.path.exists(AXIOS), "committed data/axios_graph.duckdb missing (scripts/build_external_graphs.py)"
+    top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=AXIOS))
+    assert top is not None
+    assert {top["a"], top["b"]} == {"isBuffer", "isObject"}
+    assert top["shared_count"] == 62
+    # the shared dependents are real axios functions (not Array builtins like push/forEach)
+    assert all(name.isidentifier() for name in top["shared"]) and "push" not in top["shared"]
+
+
+def test_chalk_javascript_collision_reproduces():
+    assert os.path.exists(CHALK), "committed data/chalk_graph.duckdb missing (scripts/build_external_graphs.py)"
+    top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=CHALK))
+    assert top is not None
+    assert {top["a"], top["b"]} == {"stringEncaseCRLFWithFirstIndex", "stringReplaceAll"}
+    assert top["shared_count"] == 4
+
+
 def test_click_headline_pair_is_stable_in_default_window():
     # The headline is honestly "the worst among the top-K most-consequential symbols", so it must
     # be STABLE across the default window and never silently shift. A larger top_k can surface a
