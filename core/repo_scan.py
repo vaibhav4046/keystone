@@ -311,12 +311,19 @@ def _defs_and_edges(sources: Dict[str, str]):
         name_to_ids.setdefault(name, []).append(nid[0])
         name_file_to_ids.setdefault((name, path), []).append(nid[0])
 
+    from core import repo_scan_ts          # optional tree-sitter AST collector (graceful fallback)
     for path, src in sources.items():
         ext = os.path.splitext(path)[1].lower()
         if ext == ".py":
             _py_collect(src, path, add)
         elif ext in _JS_EXT:
-            _js_collect(src, path, add)
+            if repo_scan_ts.HAS_TREESITTER:
+                try:
+                    repo_scan_ts.collect(src, path, add)   # real parser: accurate defs + calls
+                except Exception:
+                    _js_collect(src, path, add)            # never let a parse error drop a file
+            else:
+                _js_collect(src, path, add)                # name-based regex fallback (zero-dep)
 
     edges: List[Tuple[int, int]] = []
     seen = set()

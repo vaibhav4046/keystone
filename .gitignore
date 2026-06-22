@@ -37,11 +37,11 @@ data/audit_ledger.jsonl
 # Built by scripts/build_external_graphs.py; pinned by tests/test_external_repo.py. No secrets.
 !data/six_graph.duckdb
 !data/requests_graph.duckdb
-# ...and two real JavaScript libraries, so the SAME engine is proven on JS end-to-end, not only
-# Python: axios (isBuffer x isObject, 62) and chalk (stringEncaseCRLFWithFirstIndex x
-# stringReplaceAll, 4). Built by scripts/build_external_graphs.py; pinned by tests. No secrets.
+# ...and two real JS/TS libraries (tree-sitter-parsed), so the SAME engine is proven on JS AND TS
+# end-to-end, not only Python: axios (JS, isObject x isBuffer, 24) and zod (TS, clone x mergeDefs,
+# 39). Built by scripts/build_external_graphs.py; pinned by tests. No secrets.
 !data/axios_graph.duckdb
-!data/chalk_graph.duckdb
+!data/zod_graph.duckdb
 schema_snapshot.local.json
 
 # os / editor
