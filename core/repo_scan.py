@@ -358,7 +358,7 @@ def scan_repo(spec: str, token: Optional[str] = None, out_dir: Optional[str] = N
     owner, repo, branch = parse_repo_spec(spec)
     sources = fetch_github_python(owner, repo, branch, token)
     if not sources:
-        raise RuntimeError("no Python files fetched for %s (private, empty, or rate-limited)" % spec)
+        raise RuntimeError("no source files fetched for %s (private, empty, or rate-limited)" % spec)
     out_dir = out_dir or tempfile.mkdtemp(prefix="ks-scan-")
     path = os.path.join(out_dir, "scan.duckdb")
     label = "%s/%s" % (owner, repo)

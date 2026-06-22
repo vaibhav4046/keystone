@@ -17,6 +17,22 @@ def _tmp(name: str) -> str:
     return os.path.join(tempfile.mkdtemp(), name)
 
 
+def test_audit_detects_tail_truncation():
+    # deleting the most recent rows leaves every per-row link intact, so the signed HEAD anchor is
+    # what catches it: the ledger that markets "no one can quietly remove a decision" must hold.
+    led = Ledger(path=_tmp("trunc.jsonl"))
+    for i in range(4):
+        led.append(actor="r", change_id="c%d" % i, target_symbols=["s"], blast_radius_set=[1],
+                   signature="sig", decision=("reject" if i == 3 else "approve"), rationale="x")
+    v = led.verify()
+    assert v["ok"] is True and v.get("tail_anchored") is True
+    lines = open(led.path, encoding="utf-8").read().splitlines()
+    with open(led.path, "w", encoding="utf-8") as f:    # attacker drops the most recent decision (the reject)
+        f.write("\n".join(lines[:-1]) + "\n")
+    v2 = led.verify()
+    assert v2["ok"] is False and v2.get("truncated") is True     # head anchor count(4) != rows(3)
+
+
 def test_audit_survives_and_flags_a_corrupt_line():
     led = Ledger(path=_tmp("ledger.jsonl"))
     led.append(actor="a", change_id="c1", target_symbols=["x"], blast_radius_set=[1, 2],
