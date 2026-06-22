@@ -155,16 +155,31 @@ def _py_collect(src: str, path: str, add) -> None:
     walk(tree, "")
 
 
+# A `/` begins a regex literal (not division) only when a value is NOT expected before it: right
+# after one of these chars, or after a regex-preceding keyword. Deliberately EXCLUDES `<` and `>`
+# so a JSX close tag `</div>` is never mistaken for a regex (which would swallow the tag + code
+# after it). Anything else - identifiers, `)`, `]`, `}`, digits, `.` - means `/` is division.
+_REGEX_ALLOWED_PREV = set("(,=:[!&|?{;+-*%^~")
+_REGEX_PRE_KEYWORDS = {"return", "typeof", "instanceof", "in", "of", "case", "do", "else",
+                       "yield", "await", "delete", "void", "throw", "new"}
+
+
 def _strip_js_noise(src: str) -> str:
-    """Blank JS/TS comments and string/template literals to whitespace, preserving every
-    newline and the total length so line numbers and brace offsets stay exact. This stops the
-    name regexes from matching a callee that appears ONLY inside a comment or a string - the
-    over-approximation a name-based pass is otherwise prone to (a fabricated CALLS edge inflates
-    the blast radius). Conservative by design: template `${...}` interpolations are blanked too,
-    so a call that appears only inside an interpolation is under-counted rather than over-counted
-    (the honest direction for a blast-radius estimate). Regex literals are not special-cased."""
+    """Blank JS/TS comments, string/template literals, AND regex literals to whitespace, preserving
+    every newline and the total length so line numbers and brace offsets stay exact. This stops the
+    name regexes from matching a callee that appears ONLY inside a comment, a string, or a regex -
+    the over-approximation a name-based pass is otherwise prone to (a fabricated CALLS edge inflates
+    the blast radius). Regex literals are handled so a quote inside one (e.g. /["']/g) is NOT misread
+    as a string delimiter that would swallow all the real code after it. Conservative by design:
+    template `${...}` interpolations are blanked, so a call that appears only inside an interpolation
+    is under-counted rather than over-counted (the honest direction). Regex-vs-division uses the
+    standard "is a value expected here" heuristic (and never fires on `</...` JSX); the rare
+    misclassification leaves a literal as code, it never deletes surrounding code."""
     out = []
-    i, n, state = 0, len(src), None        # state: None=code, line, block, sq, dq, tpl
+    i, n, state = 0, len(src), None     # state: None=code, line, block, sq, dq, tpl, regex
+    prev_sig = ""                        # last significant (non-space) char emitted while in code
+    word = ""                            # current identifier run in code (to spot regex keywords)
+    in_class = False                     # inside a [...] char class while scanning a regex
     while i < n:
         c = src[i]
         nxt = src[i + 1] if i + 1 < n else ""
@@ -173,9 +188,17 @@ def _strip_js_noise(src: str) -> str:
                 state = "line"; out.append("  "); i += 2; continue
             if c == "/" and nxt == "*":
                 state = "block"; out.append("  "); i += 2; continue
+            if c == "/":
+                if prev_sig == "" or prev_sig in _REGEX_ALLOWED_PREV or word in _REGEX_PRE_KEYWORDS:
+                    state = "regex"; in_class = False; out.append(" "); prev_sig = "/"; word = ""; i += 1; continue
+                out.append("/"); prev_sig = "/"; word = ""; i += 1; continue   # division, keep as code
             if c in "'\"`":
                 state = {"'": "sq", '"': "dq", "`": "tpl"}[c]; out.append(" "); i += 1; continue
-            out.append(c); i += 1; continue
+            out.append(c)
+            if not c.isspace():
+                prev_sig = c
+            word = (word + c) if (c.isalnum() or c in "_$") else ""
+            i += 1; continue
         if state == "line":
             if c == "\n":
                 state = None; out.append("\n")
@@ -188,10 +211,20 @@ def _strip_js_noise(src: str) -> str:
             else:
                 out.append("\n" if c == "\n" else " "); i += 1
             continue
+        if state == "regex":
+            if c == "\\":                   # escape: blank both chars, keep a newline if escaped
+                out.append(" \n" if nxt == "\n" else ("  " if nxt else " ")); i += 2; continue
+            if c == "[":
+                in_class = True; out.append(" "); i += 1; continue
+            if c == "]":
+                in_class = False; out.append(" "); i += 1; continue
+            if c == "/" and not in_class:   # unescaped, outside a [...] class -> end of regex
+                state = None; out.append(" "); prev_sig = "/"; word = ""; i += 1; continue
+            out.append("\n" if c == "\n" else " "); i += 1; continue
         if c == "\\":                       # escape inside a string: blank both chars, keep newline
             out.append(" \n" if nxt == "\n" else ("  " if nxt else " ")); i += 2; continue
         if c == {"sq": "'", "dq": '"', "tpl": "`"}[state]:
-            state = None; out.append(" "); i += 1; continue
+            state = None; out.append(" "); prev_sig = '"'; word = ""; i += 1; continue
         out.append("\n" if c == "\n" else " "); i += 1
     return "".join(out)
 
