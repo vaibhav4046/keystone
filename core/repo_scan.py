@@ -8,8 +8,12 @@ So `scan-repo owner/repo` turns "a control a tiny slice of orgs can run" into "a
 any team can drop in today", over the same deterministic engine.
 
 Call resolution is name-based (a def calls another def of the same name in the repo) -
-the honest call-graph approximation Orbit and the in-browser analyzer also concede
-(dynamic dispatch is under-approximated).
+the honest call-graph approximation Orbit and the in-browser analyzer also concede.
+It is approximate in BOTH directions: dynamic dispatch is under-approximated (a call
+through a variable is missed), and a bare-name match can over-attribute an edge to a
+same-named def in another file. For JS/TS the over-approximation from comments and string
+literals is removed up front (_strip_js_noise blanks them before any regex runs), so a
+name that only appears in a comment or a string never fabricates a def or a call edge.
 """
 from __future__ import annotations
 
@@ -42,7 +46,9 @@ _JS_DEF_PATTERNS = [
     (re.compile(r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
                 r"(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)"), "Function"),
     (re.compile(r"\bclass\s+([A-Za-z_$][\w$]*)"), "Class"),
-    (re.compile(r"(?m)^[ \t]*(?:async\s+|static\s+|get\s+|set\s+)*([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{"), "Method"),
+    # method/shorthand: `name(args) {` with an OPTIONAL TS return-type annotation (`): Type {`),
+    # so TypeScript methods like `run(id: number): Promise<Thing> {` are captured, not dropped.
+    (re.compile(r"(?m)^[ \t]*(?:async\s+|static\s+|get\s+|set\s+)*([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*(?::[^{;\n]+)?\{"), "Method"),
 ]
 _CALL_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*\(")
 
@@ -149,8 +155,52 @@ def _py_collect(src: str, path: str, add) -> None:
     walk(tree, "")
 
 
+def _strip_js_noise(src: str) -> str:
+    """Blank JS/TS comments and string/template literals to whitespace, preserving every
+    newline and the total length so line numbers and brace offsets stay exact. This stops the
+    name regexes from matching a callee that appears ONLY inside a comment or a string - the
+    over-approximation a name-based pass is otherwise prone to (a fabricated CALLS edge inflates
+    the blast radius). Conservative by design: template `${...}` interpolations are blanked too,
+    so a call that appears only inside an interpolation is under-counted rather than over-counted
+    (the honest direction for a blast-radius estimate). Regex literals are not special-cased."""
+    out = []
+    i, n, state = 0, len(src), None        # state: None=code, line, block, sq, dq, tpl
+    while i < n:
+        c = src[i]
+        nxt = src[i + 1] if i + 1 < n else ""
+        if state is None:
+            if c == "/" and nxt == "/":
+                state = "line"; out.append("  "); i += 2; continue
+            if c == "/" and nxt == "*":
+                state = "block"; out.append("  "); i += 2; continue
+            if c in "'\"`":
+                state = {"'": "sq", '"': "dq", "`": "tpl"}[c]; out.append(" "); i += 1; continue
+            out.append(c); i += 1; continue
+        if state == "line":
+            if c == "\n":
+                state = None; out.append("\n")
+            else:
+                out.append(" ")
+            i += 1; continue
+        if state == "block":
+            if c == "*" and nxt == "/":
+                state = None; out.append("  "); i += 2
+            else:
+                out.append("\n" if c == "\n" else " "); i += 1
+            continue
+        if c == "\\":                       # escape inside a string: blank both chars, keep newline
+            out.append(" \n" if nxt == "\n" else ("  " if nxt else " ")); i += 2; continue
+        if c == {"sq": "'", "dq": '"', "tpl": "`"}[state]:
+            state = None; out.append(" "); i += 1; continue
+        out.append("\n" if c == "\n" else " "); i += 1
+    return "".join(out)
+
+
 def _js_collect(src: str, path: str, add) -> None:
-    """Collect JS/TS defs + their called names via regex (name-based approximation)."""
+    """Collect JS/TS defs + their called names via regex (name-based approximation). Comments and
+    string/template literals are blanked first so neither a def nor a call edge can be fabricated
+    from text that is not code; dynamic dispatch is still under-approximated."""
+    src = _strip_js_noise(src)
     seen = set()
     for pat, dtype in _JS_DEF_PATTERNS:
         for m in pat.finditer(src):
