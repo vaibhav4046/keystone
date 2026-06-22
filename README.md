@@ -37,6 +37,13 @@ python skills/keystone/run_review.py shadow-merge --graph data/click_graph.duckd
 
 Both are genuine collisions the engine finds on third-party code. `tests/test_external_repo.py` asserts this in CI. The deployed site's **Demo on pallets/click** button loads the same indexed graph (`Context`, 127 dependents; the top shared-dependency collisions) so a judge can see the generality without a terminal.
 
+The headline blast-collision on `pallets/click` is `Parameter` x `HelpFormatter`, **64 shared dependents** - the worst collision **among the top-25 most-central symbols** (the default review window). Widening to `top_k=60` surfaces a bigger one (`HelpFormatter` x `ParameterSource`, 71) among less-central symbols; both are pinned by tests, so the framing is transparent, not cherry-picked. Reproduce the 64 verbatim:
+
+```bash
+python -c "import sys;sys.path.insert(0,'.');from core import collision as C, graph as G; g=G.Graph(prefer_live=True,path='data/click_graph.duckdb'); r=C.find_top_collision(g); print(r['a'],'x',r['b'],r['shared_count'])"
+# -> Parameter x HelpFormatter 64
+```
+
 Two more third-party graphs are committed and pinned the same way, so **every cited collision number recomputes on a committed artifact rather than living in a cache**: `benjaminp/six` (`_resolve` x `__get_module`, 3) and `psf/requests` (`values` x `set_cookie`, 48). `scripts/build_external_graphs.py` regenerates them and `tests/test_external_repo.py` pins them. Scanning is multi-language: Python is parsed with `ast` (sound call edges), while JavaScript and TypeScript use a name-based regex pass - an honest approximation that under-approximates dynamic dispatch and blanks comments and string literals up front so neither a definition nor a call edge is ever fabricated from non-code text.
 
 Two merge requests pass review, touch different files, have no merge conflict, and still break each other in production, because one changes a function the other depends on. Keystone calls that a Blast Collision, and it is exactly the risk the GitLab Orbit code knowledge graph can see and the normal review surface (Git, the MR diff, CODEOWNERS) structurally cannot. Keystone X-rays the graph for these hazards, then governs the change with a deterministic, tamper-evident gate. The lead is the hazard, not the gate. And as autonomous coding agents start authoring these merge requests, faster than any human can carefully review, a gate that binds every decision to a verifiable identity and refuses an agent approving outside its committed scope is exactly the missing control, which is why the addressable problem grows rather than stays niche.

@@ -95,6 +95,16 @@ def _row_hash(prev_hash: str, payload: dict) -> str:
                     hashlib.sha256).hexdigest()
 
 
+def _head_mac(count: int, last_hash: str) -> str:
+    """HMAC over (row count, last row_hash). The per-row chain binds each row to the PREVIOUS one,
+    so it catches edits and middle deletions - but NOT a tail truncation (dropping the most recent
+    rows leaves every remaining link intact). A signed external HEAD anchor closes that: an attacker
+    who truncates the ledger cannot forge a matching head without the key, and a stale head (old
+    count) no longer matches the shortened ledger - so the removed decisions are detected."""
+    return hmac.new(_ledger_key(), ("%d|%s" % (count, last_hash)).encode("utf-8"),
+                    hashlib.sha256).hexdigest()
+
+
 # Serialises append's read-prev-hash-then-write across threads in one process, so
 # two concurrent POST /api/approve calls cannot share a prev_hash and break the
 # chain. Multi-worker/multi-host deployments need an external mutex or a DB-backed
@@ -105,7 +115,35 @@ _APPEND_LOCK = threading.Lock()
 class Ledger:
     def __init__(self, path: str):
         self.path = path
+        self.head_path = path + ".head"   # signed external anchor: count + last row_hash (tail-truncation guard)
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+
+    def _write_head(self, count: int, last_hash: str) -> None:
+        """Persist a signed {count, last_row_hash} anchor atomically (temp + os.replace)."""
+        data = {"count": count, "last_row_hash": last_hash, "mac": _head_mac(count, last_hash)}
+        tmp = self.head_path + ".tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write(_canonical(data))
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, self.head_path)
+        except OSError:
+            pass   # a read-only home degrades to no-anchor (verify reports tail_anchored=False)
+
+    def _read_head(self):
+        """Return the head dict if its MAC is valid, 'TAMPERED' if the head was forged/edited, or
+        None when no anchor exists (then tail-truncation cannot be detected from the log alone)."""
+        if not os.path.exists(self.head_path):
+            return None
+        try:
+            with open(self.head_path, "r", encoding="utf-8") as f:
+                d = json.loads(f.read())
+        except (OSError, ValueError):
+            return "TAMPERED"
+        if not hmac.compare_digest(str(d.get("mac", "")), _head_mac(d.get("count", -1), d.get("last_row_hash", ""))):
+            return "TAMPERED"
+        return d
 
     def _read_raw(self) -> list:
         if not os.path.exists(self.path):
@@ -183,10 +221,17 @@ class Ledger:
                 f.write(_canonical(payload) + "\n")
                 f.flush()
                 os.fsync(f.fileno())
+            # update the signed tail anchor INSIDE the append lock so it always reflects the row
+            # just written (count = seq + 1, since seq is the 0-based index of this new row).
+            self._write_head(seq + 1, payload["row_hash"])
         return payload
 
     def verify(self) -> dict:
-        """Recompute the whole chain. Returns {ok, count, broken_index|None}."""
+        """Recompute the whole chain. Returns {ok, count, broken_index|None, tail_anchored}.
+
+        The per-row HMAC links catch edits + middle deletions; the signed HEAD anchor additionally
+        catches TAIL TRUNCATION (deleting the most recent rows). tail_anchored is False when no
+        anchor file exists yet (then truncation is undetectable from the log alone - disclosed)."""
         rows = self._read_raw()
         if getattr(self, "_corrupt_lines", 0):
             return {"ok": False, "count": len(rows), "broken_index": None, "corrupt": True}
@@ -199,7 +244,16 @@ class Ledger:
             if _row_hash(prev, payload) != stored:
                 return {"ok": False, "count": len(rows), "broken_index": idx}
             prev = stored
-        return {"ok": True, "count": len(rows), "broken_index": None}
+        # tail-truncation guard: the signed anchor must match the ledger's true length + last hash.
+        head = self._read_head()
+        if head == "TAMPERED":
+            return {"ok": False, "count": len(rows), "broken_index": None, "head_tampered": True}
+        if isinstance(head, dict):
+            expected_last = rows[-1]["row_hash"] if rows else GENESIS_PREV
+            if head.get("count") != len(rows) or head.get("last_row_hash") != expected_last:
+                return {"ok": False, "count": len(rows), "broken_index": None, "truncated": True}
+            return {"ok": True, "count": len(rows), "broken_index": None, "tail_anchored": True}
+        return {"ok": True, "count": len(rows), "broken_index": None, "tail_anchored": False}
 
     def precedent(self, *, target_symbols=None, signature: str = None, target_fqns=None,
                   signature_fqn: str = None) -> dict:

@@ -47,6 +47,8 @@ Thumbs.db
 
 # any ledger variant (runtime, seed) — regenerable
 data/*.jsonl
+# the signed tail-truncation anchor for the ledger (runtime state, regenerable)
+data/*.head
 
 # server logs (transient)
 data/*.log
