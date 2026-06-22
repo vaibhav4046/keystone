@@ -19,14 +19,23 @@ from typing import Optional
 AGENTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".keystone", "agents.json")
 AGENTS_PATH = os.path.abspath(AGENTS_PATH)
 
+# Fallback used ONLY when .keystone/agents.json is absent. Kept in sync with that committed
+# manifest so the in-code default gates against THIS repo's real layout (core/**, backend/**),
+# not a stale /src/** tree that would least-privilege-deny every real change if the file vanished.
 DEFAULT_REGISTRY = {
     "agents": {
         "claude-code": {
             "model": "claude-opus-4-8",
-            "allowed_paths": ["/src/**"],
-            "forbidden_paths": ["/src/cli/**", "**/config*.py"],
-            "max_blast_radius": 6,
-        }
+            "allowed_paths": ["core/**", "backend/**"],
+            "forbidden_paths": ["core/audit*", "core/gate*", "**/config*.py"],
+            "max_blast_radius": 15,
+        },
+        "dependabot": {
+            "model": None,
+            "allowed_paths": ["**/requirements.txt", "**/package-lock.json", "**/Cargo.lock"],
+            "forbidden_paths": ["/src/**"],
+            "max_blast_radius": None,
+        },
     }
 }
 
@@ -83,12 +92,14 @@ def _changed_files(impact_dict: dict) -> list:
 
 
 def _matches(path: str, pattern: str) -> bool:
-    """fnmatch that is robust to the leading-slash mismatch between the fixture
-    (/src/**) and a real Orbit graph (relative src/...). Both sides are normalised
-    so a forbidden pattern is never silently skipped on a real graph."""
+    """fnmatch on a SINGLE canonical form: both path and pattern have any leading slash stripped,
+    then matched once. This removes the normalization asymmetry of a multi-variant OR (where an
+    allowed and a forbidden glob could be evaluated against different forms depending on how each
+    was authored), so allowed/forbidden precedence is normalization-independent. It still bridges
+    the leading-slash mismatch between the fixture (/src/**) and a real Orbit graph (relative src/...)."""
     p = (path or "").lstrip("/")
     pat = (pattern or "").lstrip("/")
-    return fnmatch.fnmatch(p, pat) or fnmatch.fnmatch("/" + p, pattern) or fnmatch.fnmatch(path or "", pattern)
+    return fnmatch.fnmatch(p, pat)
 
 
 def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
