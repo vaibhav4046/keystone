@@ -49,6 +49,15 @@ OVERRIDE_TOKEN = os.environ.get("KEYSTONE_OVERRIDE_TOKEN")
 MAX_DEPTH_CAP = 8
 
 
+def _writes_allowed() -> bool:
+    """Decision-recording endpoints fail CLOSED by default. They run only when a token gates them
+    (KEYSTONE_APPROVE_TOKEN) OR open-demo mode is EXPLICITLY enabled (KEYSTONE_OPEN_DEMO=1). So a
+    reachable deployment never silently accepts anonymous approvals just because no token was set;
+    "open" is a deliberate, named choice, not the absence of configuration. Read at request time so
+    the posture is testable and a late env change is honored."""
+    return bool(os.environ.get("KEYSTONE_APPROVE_TOKEN")) or os.environ.get("KEYSTONE_OPEN_DEMO") == "1"
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
@@ -127,10 +136,14 @@ if not os.path.exists(LEDGER_PATH) or os.path.getsize(LEDGER_PATH) == 0:
                        extra={"seeded": True})   # historical precedent, excluded from live quorum counts
 
 
-if APPROVE_TOKEN is None:
-    print("KEYSTONE: OPEN MODE - no KEYSTONE_APPROVE_TOKEN set; any reachable caller can "
-          "record decisions. Set KEYSTONE_APPROVE_TOKEN (and KEYSTONE_OVERRIDE_TOKEN) for a gated deployment.",
+if APPROVE_TOKEN is None and os.environ.get("KEYSTONE_OPEN_DEMO") == "1":
+    print("KEYSTONE: OPEN DEMO - KEYSTONE_OPEN_DEMO=1, no token; any reachable caller can record "
+          "decisions. This is a deliberate demo opt-in. Set KEYSTONE_APPROVE_TOKEN for a gated deployment.",
           file=sys.stderr)
+elif APPROVE_TOKEN is None:
+    print("KEYSTONE: GATED (fail-closed) - no KEYSTONE_APPROVE_TOKEN and KEYSTONE_OPEN_DEMO not set; "
+          "decision-recording endpoints refuse writes (403). Set KEYSTONE_APPROVE_TOKEN to gate, or "
+          "KEYSTONE_OPEN_DEMO=1 for an explicit open demo.", file=sys.stderr)
 
 
 def _orbit_access() -> str:
@@ -225,8 +238,10 @@ def status():
                       # honest: a token proves possession, not identity. Cryptographic
                       # identity binding (GitLab OIDC sub claim) is future work.
                       "reviewer_verified": False,
-                      # fail-loud: no token => any reachable caller can record decisions
-                      "open_mode": APPROVE_TOKEN is None,
+                      # fail-loud: writes are gated by a token, OR an explicit open-demo opt-in,
+                      # else they fail closed (403). open_mode = the deliberate anonymous-write demo.
+                      "open_mode": APPROVE_TOKEN is None and os.environ.get("KEYSTONE_OPEN_DEMO") == "1",
+                      "writes_gated": not _writes_allowed(),
                       "override_token_required": OVERRIDE_TOKEN is not None,
                       # non-secret fingerprint of the integrity key, so a judge can confirm the
                       # deployment is NOT running on the published public sample key.
@@ -494,6 +509,9 @@ def _rate_ok() -> bool:
 @app.post("/api/approve")
 def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
             x_keystone_override_token: Optional[str] = Header(default=None)):
+    if not _writes_allowed():
+        raise HTTPException(403, {"error": "WRITE_GATED",
+                                  "hint": "set KEYSTONE_APPROVE_TOKEN (gated) or KEYSTONE_OPEN_DEMO=1 (explicit open demo)"})
     if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
         raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
     if d.override and OVERRIDE_TOKEN is not None and not hmac.compare_digest(x_keystone_override_token or "", OVERRIDE_TOKEN):
@@ -539,6 +557,9 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
     """Record ONE governed decision against a whole merge request (several touched symbols), bound
     to the MR signature and the full touched-symbol set via core/gate.evaluate_mr. The strictest
     constituent tier applies, and a prior identical-MR-signature rejection forces BLOCK."""
+    if not _writes_allowed():
+        raise HTTPException(403, {"error": "WRITE_GATED",
+                                  "hint": "set KEYSTONE_APPROVE_TOKEN (gated) or KEYSTONE_OPEN_DEMO=1 (explicit open demo)"})
     if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
         raise HTTPException(401, "invalid or missing X-Keystone-Token")
     if d.override and OVERRIDE_TOKEN is not None and not hmac.compare_digest(x_keystone_override_token or "", OVERRIDE_TOKEN):

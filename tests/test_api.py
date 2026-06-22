@@ -302,3 +302,17 @@ def test_approve_mr_returns_attestation_and_records_real_author_kind():
                                                "decision": "approve", "reviewer": "mystery-bot",
                                                "rationale": "auto-fix", "author_kind": "agent"})
     assert bad.status_code == 403 and bad.json()["detail"]["error"] == "UNREGISTERED_AGENT"
+
+
+def test_writes_fail_closed_without_token_or_open_demo(monkeypatch):
+    # default posture: no token AND no explicit KEYSTONE_OPEN_DEMO => decision endpoints refuse (403),
+    # so a reachable deploy never silently accepts anonymous approvals. _writes_allowed reads env at
+    # request time, so removing the opt-in here flips the live posture without a reimport.
+    monkeypatch.delenv("KEYSTONE_OPEN_DEMO", raising=False)
+    monkeypatch.delenv("KEYSTONE_APPROVE_TOKEN", raising=False)
+    r = client.post("/api/approve", json={"name": "tokenize", "decision": "approve",
+                                          "reviewer": "x", "rationale": "y"})
+    assert r.status_code == 403 and r.json()["detail"]["error"] == "WRITE_GATED"
+    r2 = client.post("/api/approve-mr", json={"symbols": ["tokenize"], "decision": "approve",
+                                              "reviewer": "x", "rationale": "y"})
+    assert r2.status_code == 403 and r2.json()["detail"]["error"] == "WRITE_GATED"
