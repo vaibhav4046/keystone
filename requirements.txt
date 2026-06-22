@@ -7,4 +7,10 @@ pytest>=8.0
 httpx>=0.27
 cryptography>=42.0          # RS256 verification of GitLab OIDC id_tokens (core/identity.py)
 google-genai>=2.8.0          # Gemini SDK (Interactions API)
+# Optional: a REAL JS/TS parser for scan-repo (core/repo_scan_ts.py). When absent the scanner
+# falls back to the name-based regex pass, so the offline/zero-dep path still works; when present
+# the JS/TS call graph is parsed from a true AST (accurate defs + calls, no regex approximation).
+tree_sitter>=0.21
+tree_sitter_javascript>=0.21
+tree_sitter_typescript>=0.21
 

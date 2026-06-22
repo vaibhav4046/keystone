@@ -64,27 +64,31 @@ def test_requests_secondary_hero_number_reproduces():
 
 
 AXIOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "axios_graph.duckdb")
-CHALK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "chalk_graph.duckdb")
+ZOD = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "zod_graph.duckdb")
 
 
 def test_axios_javascript_collision_reproduces():
     # the SAME engine finds a genuine cross-MR collision on a real, multi-file JavaScript library
-    # (axios), committed + pinned exactly like the Python repos - multi-language proven end-to-end.
+    # (axios), committed + pinned exactly like the Python repos. The graph was built with the real
+    # tree-sitter AST parser (core/repo_scan_ts.py), so this number is parser-accurate, not regex.
     assert os.path.exists(AXIOS), "committed data/axios_graph.duckdb missing (scripts/build_external_graphs.py)"
     top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=AXIOS))
     assert top is not None
     assert {top["a"], top["b"]} == {"isBuffer", "isObject"}
-    assert top["shared_count"] == 62
+    assert top["shared_count"] == 24
     # the shared dependents are real axios functions (not Array builtins like push/forEach)
     assert all(name.isidentifier() for name in top["shared"]) and "push" not in top["shared"]
 
 
-def test_chalk_javascript_collision_reproduces():
-    assert os.path.exists(CHALK), "committed data/chalk_graph.duckdb missing (scripts/build_external_graphs.py)"
-    top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=CHALK))
+def test_zod_typescript_collision_reproduces():
+    # TypeScript end-to-end on a major TS library (zod, 1258 defs parsed by tree-sitter): the same
+    # deterministic engine finds a genuine collision, committed + pinned. Proves the engine is not
+    # Python-only - it works on real JS AND TS, with a real parser.
+    assert os.path.exists(ZOD), "committed data/zod_graph.duckdb missing (scripts/build_external_graphs.py)"
+    top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=ZOD))
     assert top is not None
-    assert {top["a"], top["b"]} == {"stringEncaseCRLFWithFirstIndex", "stringReplaceAll"}
-    assert top["shared_count"] == 4
+    assert {top["a"], top["b"]} == {"clone", "mergeDefs"}
+    assert top["shared_count"] == 39
 
 
 def test_click_headline_pair_is_stable_in_default_window():

@@ -32,8 +32,8 @@ DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 TARGETS = [
     ("benjaminp/six", "six_graph.duckdb", ("_resolve", "__get_module", 3)),
     ("psf/requests", "requests_graph.duckdb", ("values", "set_cookie", 48)),
-    ("axios/axios", "axios_graph.duckdb", ("isBuffer", "isObject", 62)),     # JavaScript
-    ("chalk/chalk", "chalk_graph.duckdb", ("stringEncaseCRLFWithFirstIndex", "stringReplaceAll", 4)),  # JavaScript
+    ("axios/axios", "axios_graph.duckdb", ("isObject", "isBuffer", 24)),     # JavaScript (tree-sitter)
+    ("colinhacks/zod", "zod_graph.duckdb", ("clone", "mergeDefs", 39)),      # TypeScript (tree-sitter)
 ]
 
 
