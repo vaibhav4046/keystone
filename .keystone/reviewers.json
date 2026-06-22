@@ -1,0 +1,6 @@
+{
+  "_comment": "Registered reviewer Ed25519 PUBLIC keys (hex). A decision signed with the matching private key is recorded as cryptographically proven, not self-asserted. Public keys are public; never put a private key here. Generate one with: python scripts/sign_decision.py keygen",
+  "reviewers": {
+    "keystone-demo-reviewer": "e5711626c3349467055984f6655fe87f3a079ae1e1cbb027e5efc744e0e7815a"
+  }
+}

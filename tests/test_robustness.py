@@ -334,3 +334,20 @@ def test_js_builtin_method_calls_are_not_resolved_as_edges():
     assert {"forEach", "caller", "realHelper"} <= names
     assert ("caller", "forEach") not in edges       # builtin call not attributed to the repo def
     assert ("caller", "realHelper") in edges          # a genuine call still edges
+
+
+def test_ed25519_reviewer_signature_proves_identity_and_resists_replay():
+    # a decision signed with a registered reviewer's Ed25519 key is cryptographically proven (not
+    # self-asserted), and the signature is bound to WHO + the exact decision + symbols, so it cannot
+    # be replayed onto a different verdict or change. No external service.
+    from core import identity
+    priv, pub = identity.generate_keypair()
+    reg = {"alice": pub}
+    sig = identity.sign_decision(priv, identity.signing_payload("alice", "MR-9", "approve", ["x"]))
+    ident = identity.signed_identity("alice", "MR-9", "approve", ["x"], sig, registry=reg)
+    assert ident and ident["signature_verified"] is True and ident["source"] == "ed25519-signature"
+    assert identity.signed_identity("alice", "MR-9", "approve", ["y"], sig, registry=reg) is None   # wrong symbol
+    assert identity.signed_identity("alice", "MR-9", "reject", ["x"], sig, registry=reg) is None     # wrong decision
+    assert identity.signed_identity("alice", "MR-XX", "approve", ["x"], sig, registry=reg) is None    # wrong change
+    assert identity.signed_identity("bob", "MR-9", "approve", ["x"], sig, registry=reg) is None       # unregistered
+    assert identity.signed_identity("alice", "MR-9", "approve", ["x"], "00" * 64, registry=reg) is None  # bad sig
