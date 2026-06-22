@@ -85,6 +85,12 @@ def fetch_github_python(owner: str, repo: str, branch: str = "",
         pl = p.lower()
         if any(s in pl for s in ("node_modules/", "/dist/", "/build/", "/vendor/", ".min.js", ".d.ts")):
             return False
+        # Tests are NOT runtime dependents: a blast radius should measure production coupling, not
+        # how many tests touch a symbol. Excluding them keeps the collision counts honest + defensible.
+        base = pl.rsplit("/", 1)[-1]
+        if ("/test/" in pl or "/tests/" in pl or base.startswith("test_") or base.startswith("test.")
+                or base.endswith("_test.py") or ".spec." in base or ".test." in base or base == "conftest.py"):
+            return False
         return os.path.splitext(pl)[1] in _SOURCE_EXT
 
     paths = [n["path"] for n in tree.get("tree", [])
