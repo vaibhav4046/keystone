@@ -386,3 +386,31 @@ def test_signed_approval_is_cryptographically_verified(monkeypatch):
     un = client.post("/api/approve", json={"name": "tokenize", "decision": "approve", "reviewer": "carol",
                                            "rationale": "x", "change_id": "MR-UNS", "override": True})
     assert un.status_code == 200 and un.json()["reviewer_verified"] is False
+
+
+def test_strict_require_signed_mode_and_approve_mr_signature(monkeypatch):
+    # strict mode: every decision must be cryptographically signed; and the SAME enforcement applies
+    # to /api/approve-mr (not just /api/approve), so identity is uniform across both write paths.
+    import json as _json
+    import tempfile
+    from core import identity
+    priv, pub = identity.generate_keypair()
+    reg = os.path.join(tempfile.mkdtemp(), "reviewers.json")
+    with open(reg, "w", encoding="utf-8") as f:
+        f.write(_json.dumps({"reviewers": {"dave": pub}}))
+    monkeypatch.setenv("KEYSTONE_REVIEWERS", reg)
+    monkeypatch.setenv("KEYSTONE_REQUIRE_SIGNED", "1")
+    # unsigned -> refused on BOTH endpoints
+    u1 = client.post("/api/approve", json={"name": "serialize", "decision": "approve",
+                                           "reviewer": "dave", "rationale": "x", "change_id": "S1"})
+    assert u1.status_code == 403 and u1.json()["detail"]["error"] == "SIGNATURE_REQUIRED"
+    u2 = client.post("/api/approve-mr", json={"symbols": ["serialize"], "decision": "approve",
+                                              "reviewer": "dave", "rationale": "x", "change_id": "S2"})
+    assert u2.status_code == 403 and u2.json()["detail"]["error"] == "SIGNATURE_REQUIRED"
+    # signed approve-mr -> verified + recorded (proves approve-mr now enforces identity too)
+    sig = identity.sign_decision(priv, identity.signing_payload("dave", "S3", "approve", ["serialize"]))
+    ok = client.post("/api/approve-mr", headers={"X-Keystone-Signature": sig},
+                     json={"symbols": ["serialize"], "decision": "approve", "reviewer": "dave",
+                           "rationale": "signed mr", "change_id": "S3", "override": True})
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["reviewer_verified"] is True and ok.json()["row"]["signature_verified"] is True

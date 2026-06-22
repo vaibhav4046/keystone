@@ -517,6 +517,32 @@ def _override_uncredentialed(want_override: bool) -> bool:
     return bool(want_override) and OVERRIDE_TOKEN is None and APPROVE_TOKEN is not None
 
 
+def _resolve_signed_identity(reviewer, change_id, decision, symbols, signature):
+    """Verify a reviewer's Ed25519 signature over the decision and return the PROVEN identity dict,
+    or None when the decision is unsigned (self-asserted). Raises 401 on a signature that does not
+    verify (a bad claim is rejected, never silently downgraded) and 403 when KEYSTONE_REQUIRE_SIGNED=1
+    and no valid signature was supplied (strict mode: every decision must be cryptographically signed).
+    Shared by /api/approve and /api/approve-mr so identity is enforced uniformly on both write paths."""
+    if signature:
+        ident = identity_mod.signed_identity(reviewer, change_id or "", decision, symbols, signature)
+        if ident is None:
+            raise HTTPException(401, {"error": "INVALID_SIGNATURE",
+                                      "hint": "X-Keystone-Signature did not verify against this reviewer's registered Ed25519 public key"})
+        return ident
+    if os.environ.get("KEYSTONE_REQUIRE_SIGNED") == "1":
+        raise HTTPException(403, {"error": "SIGNATURE_REQUIRED",
+                                  "hint": "KEYSTONE_REQUIRE_SIGNED=1: every decision must carry a valid X-Keystone-Signature (scripts/sign_decision.py)"})
+    return None
+
+
+def _identity_extra(signed_ident, signature):
+    """The cryptographic-identity fields to bind into the signed ledger row (empty when unsigned)."""
+    if not signed_ident:
+        return {}
+    return {"signature_verified": True, "identity_source": "ed25519-signature",
+            "reviewer_signature": signature, "reviewer_pubkey": signed_ident["public_key"]}
+
+
 # NOTE: _rate_ok is a GLOBAL per-process backstop (a coarse flood cap), NOT per-actor/per-IP abuse
 # protection - one client can consume the shared minute budget. It guards the single-instance demo;
 # real multi-tenant abuse protection belongs at the gateway/identity layer. Documented in the
@@ -543,13 +569,7 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
     # Cryptographic reviewer identity: when a signature is supplied it MUST verify against this
     # reviewer's registered Ed25519 public key (a bad signature is a rejected identity claim, not a
     # silent downgrade). Absent => the self-asserted path (honest). Proven => recorded in the ledger.
-    signed_ident = None
-    if x_keystone_signature:
-        signed_ident = identity_mod.signed_identity(d.reviewer, d.change_id or "", d.decision,
-                                                    [d.name], x_keystone_signature)
-        if signed_ident is None:
-            raise HTTPException(401, {"error": "INVALID_SIGNATURE",
-                                      "hint": "X-Keystone-Signature did not verify against this reviewer's registered Ed25519 public key"})
+    signed_ident = _resolve_signed_identity(d.reviewer, d.change_id, d.decision, [d.name], x_keystone_signature)
     if _override_uncredentialed(d.override):
         raise HTTPException(403, {"error": "OVERRIDE_UNCREDENTIALED",
                                   "hint": "override of a BLOCK/self-approval needs a separate KEYSTONE_OVERRIDE_TOKEN on a gated deployment"})
@@ -565,12 +585,7 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
         raise HTTPException(res["status"], res.get("detail") or res["error"])
 
     sig, change_id, pol, out = res["sig"], res["change_id"], res["policy"], res["impact"]
-    extra = dict(res["row_extra"])
-    if signed_ident:   # bind the cryptographic identity proof into the signed, tamper-evident row
-        extra["signature_verified"] = True
-        extra["identity_source"] = "ed25519-signature"
-        extra["reviewer_signature"] = x_keystone_signature
-        extra["reviewer_pubkey"] = signed_ident["public_key"]
+    extra = dict(res["row_extra"]); extra.update(_identity_extra(signed_ident, x_keystone_signature))
     row = _ledger.append(
         actor=d.reviewer, change_id=change_id, target_symbols=[d.name], target_fqns=res["target_fqns"],
         blast_radius_set=res["blast_set"], signature=sig, decision=d.decision, rationale=d.rationale,
@@ -600,7 +615,8 @@ class MRDecision(BaseModel):
 
 @app.post("/api/approve-mr")
 def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=None),
-               x_keystone_override_token: Optional[str] = Header(default=None)):
+               x_keystone_override_token: Optional[str] = Header(default=None),
+               x_keystone_signature: Optional[str] = Header(default=None)):
     """Record ONE governed decision against a whole merge request (several touched symbols), bound
     to the MR signature and the full touched-symbol set via core/gate.evaluate_mr. The strictest
     constituent tier applies, and a prior identical-MR-signature rejection forces BLOCK."""
@@ -617,16 +633,18 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
     if not _rate_ok():
         raise HTTPException(429, "too many approvals; slow down")
     clean = [s for s in (s.strip() for s in d.symbols) if s][:40]
+    signed_ident = _resolve_signed_identity(d.reviewer, d.change_id, d.decision, clean, x_keystone_signature)
     res = gate_mod.evaluate_mr(_graph, _ledger, names=clean, decision=d.decision, reviewer=d.reviewer,
                                change_id=d.change_id, change_author=d.change_author,
                                author_kind=d.author_kind,
                                override=d.override, max_depth=d.max_depth)
     if not res["ok"]:
         raise HTTPException(res["status"], res.get("detail") or res["error"])
+    extra = dict(res["row_extra"]); extra.update(_identity_extra(signed_ident, x_keystone_signature))
     row = _ledger.append(
         actor=d.reviewer, change_id=res["change_id"], target_symbols=res["target_symbols"],
         target_fqns=res["target_fqns"], blast_radius_set=res["blast_set"], signature=res["sig"],
-        decision=d.decision, rationale=d.rationale, extra=res["row_extra"],
+        decision=d.decision, rationale=d.rationale, extra=extra,
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     )
     # MR-level attestation: same in-toto/SLSA-VSA shape as the single-symbol path, bound to the
@@ -635,7 +653,9 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
     att = attest_mod.build_attestation(impact_dict=res["impact_dict"], policy_eval=res["union"],
                                        row=row, source_mode=_graph.source.mode)
     return {"row": row, "verify": _ledger.verify(), "union": res["union"], "per_symbol": res["per_symbol"],
-            "self_asserted": res.get("self_asserted", True),
+            "self_asserted": (res.get("self_asserted", True) and signed_ident is None),
+            "reviewer_verified": signed_ident is not None,
+            "identity_source": signed_ident["source"] if signed_ident else "self-asserted",
             "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")},
             "attestation": att}
 
