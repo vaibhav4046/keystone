@@ -211,3 +211,23 @@ def test_strip_js_noise_invariants_and_jsx_safety():
     assert s.count("\n") == out.count("\n")                     # newlines preserved
     assert "render(" in out and "helper(" in out               # '</' did not swallow later code
     assert "test(" in out and '"' not in out                   # regex blanked, .test() survives
+
+
+def test_parse_repo_spec_rejects_injection():
+    import pytest as _pytest
+    # a crafted owner/repo/branch must not be interpolated into the GitHub URL on ANY caller path
+    for bad in ("foo/bar?x=1", "a b/c", "o/r#frag", "o/r/tree/..%2f"):
+        with _pytest.raises(ValueError):
+            repo_scan.parse_repo_spec(bad)
+    assert repo_scan.parse_repo_spec("pallets/click") == ("pallets", "click", "")
+    assert repo_scan.parse_repo_spec("o/r/tree/feature/x") == ("o", "r", "feature/x")
+
+
+def test_detect_collisions_uniquifies_duplicate_mr_ids():
+    # two DISTINCT merge requests that happen to share an id must not collapse the merge-order graph.
+    g = _collgraph({"m.py": "def x():\n    return 1\n\ndef y():\n    return 1\n\ndef c():\n    return x() + y()\n"})
+    res = collision.detect_collisions(g, [{"id": "MR-1", "symbols": ["x"]},
+                                          {"id": "MR-1", "symbols": ["y"]}])
+    assert res is not None
+    assert len(res["mrs"]) == 2 and len(set(res["mrs"])) == 2          # both kept, distinct ids
+    assert len(res["merge_order"]) + len(res["uncoordinable_cycle"]) == 2
