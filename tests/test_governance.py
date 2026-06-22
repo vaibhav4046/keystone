@@ -153,7 +153,7 @@ def test_agent_scope_enforced(graph):
     unreg = agents_mod.resolve_author("mystery", declared_kind="agent", registry=reg)
     assert unreg["badge"] == "AGENT_UNREGISTERED"
     bot = agents_mod.resolve_author("bot", declared_kind="agent", registry=reg)
-    assert bot["badge"] == "AGENT_VERIFIED"
+    assert bot["badge"] == "AGENT_REGISTERED"
     # load_config lives in /src/cli/config.py -> forbidden for bot
     bad = agents_mod.check_scope(bot, impact_mod.compute_blast_radius(graph, "load_config").to_dict())
     assert bad["in_scope"] is False and bad["violations"]
@@ -375,7 +375,7 @@ def test_evaluate_mr_records_real_author_kind_not_human(graph, tmp_path):
     names = ["serialize", "tokenize"]
     res = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="bot",
                                author_kind="agent", registry=reg, change_id="MR-BOT")
-    assert res["ok"] and res["row_extra"]["author_kind"] == "AGENT_VERIFIED"
+    assert res["ok"] and res["row_extra"]["author_kind"] == "AGENT_REGISTERED"
     # a UNREGISTERED agent is refused, just like the single-symbol path
     bad = gate_mod.evaluate_mr(graph, led, names=names, decision="approve", reviewer="stranger",
                                author_kind="agent", registry=reg, change_id="MR-STR")
