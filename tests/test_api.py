@@ -414,3 +414,15 @@ def test_strict_require_signed_mode_and_approve_mr_signature(monkeypatch):
                            "rationale": "signed mr", "change_id": "S3", "override": True})
     assert ok.status_code == 200, ok.text
     assert ok.json()["reviewer_verified"] is True and ok.json()["row"]["signature_verified"] is True
+
+
+def test_orbit_remote_enrichment_gates():
+    # the three Orbit Remote SDLC gates run over the committed fixture: ownership-entropy,
+    # pipeline-health, dependency-quarantine - real gate logic on the real Orbit Remote schema.
+    r = client.get("/api/orbit-remote/compute_blast_radius")
+    assert r.status_code == 200
+    e = r.json()
+    assert e["available"] is True and e["source"] == "ORBIT_REMOTE_FIXTURE" and e["synthetic"] is True
+    assert set(["ownership_entropy", "pipeline_health", "dependency_quarantine"]) <= set(e)
+    assert isinstance(e["ownership_entropy"]["distinct_owners"], int)
+    assert isinstance(e["dependency_quarantine"]["quarantined"], bool)
