@@ -53,8 +53,17 @@ _JS_DEF_PATTERNS = [
 _CALL_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*\(")
 
 
+_SEGMENT_RE = re.compile(r"[A-Za-z0-9_.-]+")          # one owner/repo segment
+_BRANCH_RE = re.compile(r"[A-Za-z0-9_./-]+")          # branch may contain slashes (feature/x)
+
+
 def parse_repo_spec(raw: str) -> Tuple[str, str, str]:
-    """'owner/repo', a github URL, or 'owner/repo/tree/branch' -> (owner, repo, branch)."""
+    """'owner/repo', a github URL, or 'owner/repo/tree/branch' -> (owner, repo, branch).
+
+    owner/repo/branch are allowlisted to the characters GitHub actually permits and rejected
+    otherwise, so a crafted value (e.g. 'foo/bar?x=1' or 'owner/repo/../etc') cannot reshape the
+    interpolated api.github.com / raw.githubusercontent path. Every caller, including the CLI
+    (skills/keystone/run_review.py), is protected here, matching the HTTP route's allowlist."""
     s = str(raw or "").strip()
     s = s.replace("https://", "").replace("http://", "")
     s = s.replace("www.", "").replace("github.com/", "").rstrip("/")
@@ -63,8 +72,15 @@ def parse_repo_spec(raw: str) -> Tuple[str, str, str]:
     parts = s.split("/")
     if len(parts) < 2:
         raise ValueError("expected owner/repo, got %r" % raw)
+    owner, repo = parts[0], parts[1]
     branch = "/".join(parts[3:]) if len(parts) >= 4 and parts[2] == "tree" else ""  # keep slash branches (feature/x)
-    return parts[0], parts[1], branch
+    if not (_SEGMENT_RE.fullmatch(owner) and _SEGMENT_RE.fullmatch(repo)):
+        raise ValueError("invalid owner/repo %r (allowed: letters, digits, '.', '_', '-')" % raw)
+    if owner in ("", ".", "..") or repo in ("", ".", ".."):
+        raise ValueError("invalid owner/repo %r" % raw)
+    if branch and (not _BRANCH_RE.fullmatch(branch) or ".." in branch):
+        raise ValueError("invalid branch in %r" % raw)
+    return owner, repo, branch
 
 
 def _gh(url: str, token: Optional[str], raw: bool = False):

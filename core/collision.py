@@ -176,8 +176,16 @@ def detect_collisions(graph, mrs: list, max_depth: int = 3) -> Optional[dict]:
     severity + the shared symbols), a per-MR risk roll-up, and a suggested safe merge order
     (or the cycle that makes one impossible). Returns None if fewer than one MR resolves."""
     fps = []
+    seen_ids = {}
     for mr in mrs:
         mid = str(mr.get("id") or f"MR-{len(fps) + 1}")
+        # Duplicate MR ids would collapse the merge-order graph (succ/indeg are keyed by id), so
+        # uniquify them - two distinct MRs that happen to share an id stay distinct in the sort.
+        if mid in seen_ids:
+            seen_ids[mid] += 1
+            mid = f"{mid}#{seen_ids[mid]}"
+        else:
+            seen_ids[mid] = 1
         syms = [s for s in (mr.get("symbols") or []) if s]
         fp = _footprint(graph, syms, max_depth)
         if fp["region"]:
