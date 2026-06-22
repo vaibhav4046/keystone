@@ -305,19 +305,22 @@ def test_find_top_collision_none_graph_is_safe():
     assert collision.find_top_collision(None) is None
 
 
-def test_js_cross_file_same_name_resolution_is_documented_and_bounded():
-    # DISCLOSED approximation (module docstring): name-based resolution links a call to EVERY
-    # same-named def across files (no scope analysis). Pin it so the JS path is a KNOWN, BOUNDED
-    # property, not a silent surprise - the same global resolution Python uses, which is why the
-    # pinned Python numbers (64/48/3) are unaffected. caller's target() links to BOTH 'target'
-    # defs, bounded to exactly the same-named set (never zero, never unbounded).
+def test_js_call_resolves_same_file_first_not_every_same_named_def():
+    # JS/TS resolution prefers a SAME-FILE def of the called name (the real target of a local call),
+    # so a same-named helper in an unrelated module no longer fabricates a cross-file edge. A caller
+    # with no local def of the callee still falls back to the global set (cross-module calls kept).
     src = {"a.js": "function caller(){ return target(); }\nfunction target(){ return 1; }\n",
-           "b.js": "function target(){ return 2; }\n"}
+           "b.js": "function target(){ return 2; }\n",
+           "c.js": "function farCaller(){ return target(); }\n"}     # no local target -> global fallback
     defs, edges = repo_scan._defs_and_edges(src)
-    target_ids = {d["id"] for d in defs if d["name"] == "target"}
-    caller_id = next(d["id"] for d in defs if d["name"] == "caller")
-    caller_targets = {b for (a, b) in edges if a == caller_id and b in target_ids}
-    assert len(target_ids) == 2 and caller_targets == target_ids
+    a_target = next(d["id"] for d in defs if d["name"] == "target" and d["file_path"] == "a.js")
+    b_target = next(d["id"] for d in defs if d["name"] == "target" and d["file_path"] == "b.js")
+    caller = next(d["id"] for d in defs if d["name"] == "caller")
+    far = next(d["id"] for d in defs if d["name"] == "farCaller")
+    caller_edges = {t for (s, t) in edges if s == caller}
+    assert a_target in caller_edges and b_target not in caller_edges    # same-file only, no phantom edge
+    far_edges = {t for (s, t) in edges if s == far}
+    assert a_target in far_edges and b_target in far_edges              # global fallback when no local def
 
 
 def test_js_builtin_method_calls_are_not_resolved_as_edges():

@@ -300,6 +300,7 @@ def _defs_and_edges(sources: Dict[str, str]):
     Each def carries the names it calls; edges then resolve those names to def ids globally."""
     defs: List[dict] = []
     name_to_ids: Dict[str, List[int]] = {}
+    name_file_to_ids: Dict[Tuple[str, str], List[int]] = {}   # (name, file) -> ids, same-file-first
     nid = [0]
 
     def add(name, fqn, path, dtype, start, end, callees):
@@ -308,6 +309,7 @@ def _defs_and_edges(sources: Dict[str, str]):
                      "definition_type": dtype, "start_line": int(start or 1),
                      "end_line": int(end or start or 1), "_callees": set(callees)})
         name_to_ids.setdefault(name, []).append(nid[0])
+        name_file_to_ids.setdefault((name, path), []).append(nid[0])
 
     for path, src in sources.items():
         ext = os.path.splitext(path)[1].lower()
@@ -319,8 +321,15 @@ def _defs_and_edges(sources: Dict[str, str]):
     edges: List[Tuple[int, int]] = []
     seen = set()
     for d in defs:
+        # JS/TS resolution is name-based and would otherwise link a call to EVERY same-named def
+        # across files. Prefer a SAME-FILE def of the called name (the real target of a local call),
+        # falling back to the global set only when the file has no such def - so a same-named helper
+        # in an unrelated module no longer fabricates a cross-file edge. Python (ast) keeps global
+        # resolution, so the committed Python collision numbers (64/48/3) are provably unchanged.
+        is_js = os.path.splitext(d["file_path"])[1].lower() in _JS_EXT
         for cn in d["_callees"]:
-            for tid in name_to_ids.get(cn, []):
+            tids = (name_file_to_ids.get((cn, d["file_path"])) if is_js else None) or name_to_ids.get(cn, [])
+            for tid in tids:
                 if tid == d["id"]:
                     continue
                 key = (d["id"], tid)
