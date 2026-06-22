@@ -128,3 +128,54 @@ def test_collision_works_on_javascript_sources():
     assert top is not None
     assert {top["a"], top["b"]} == {"s1", "s2"}
     assert set(top["shared"]) == {"c1", "c2", "c3"}
+
+
+def _name_edges(sources):
+    """(set of (caller_name, callee_name) edges, set of def names) for a parsed JS/TS source map."""
+    defs, edges = repo_scan._defs_and_edges(sources)
+    by_id = {d["id"]: d["name"] for d in defs}
+    return {(by_id[s], by_id[t]) for s, t in edges}, {d["name"] for d in defs}
+
+
+def test_js_call_edges_ignore_comments_and_strings():
+    # A callee named only inside a comment, a string, or a template literal must NOT create an
+    # edge - that over-attribution would inflate the blast radius the whole product reports.
+    src = {"a.js": ("function caller(){\n"
+                    "  // target() in a line comment\n"
+                    "  /* target() in a block comment */\n"
+                    "  const s = \"target()\";\n"
+                    "  const t = `target() ${1}`;\n"
+                    "  return 1;\n"
+                    "}\n"
+                    "function target(){ return 2; }\n")}
+    edges, names = _name_edges(src)
+    assert {"caller", "target"} <= names
+    assert ("caller", "target") not in edges      # only mentioned in noise -> no fabricated edge
+
+
+def test_js_real_call_still_edges_after_stripping():
+    # control: a genuine call must still produce its edge once comments/strings are blanked.
+    src = {"a.js": ("function caller(){ /* noise */ return target(); }\n"
+                    "function target(){ return 2; }\n")}
+    edges, names = _name_edges(src)
+    assert ("caller", "target") in edges
+
+
+def test_js_arrow_and_const_functions_resolve():
+    src = {"a.js": ("const helper = () => { return 1; };\n"
+                    "const caller = () => { return helper(); };\n")}
+    edges, names = _name_edges(src)
+    assert {"helper", "caller"} <= names
+    assert ("caller", "helper") in edges
+
+
+def test_ts_class_methods_and_type_annotations():
+    # class methods resolve to an intra-class edge; TS type names must not become defs or edges.
+    src = {"svc.ts": ("class Svc {\n"
+                      "  run(id: number): Promise<Thing> { return this.fetchThing(id); }\n"
+                      "  fetchThing(id: number): Thing { return null; }\n"
+                      "}\n")}
+    edges, names = _name_edges(src)
+    assert {"run", "fetchThing", "Svc"} <= names
+    assert ("run", "fetchThing") in edges
+    assert "Promise" not in names and "Thing" not in names   # generics/type refs are not calls
