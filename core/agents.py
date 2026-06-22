@@ -94,7 +94,11 @@ def _matches(path: str, pattern: str) -> bool:
 def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
     """For a registered agent, check the change against its scope manifest.
     Returns {in_scope, violations[]}. Non-agents / unregistered have no manifest,
-    so they are not auto-blocked here (they fall under the normal human gate)."""
+    so they are not auto-blocked here (they fall under the normal human gate).
+
+    Least privilege: a registered agent whose manifest declares an EMPTY allowed_paths is
+    allowed to change NOTHING (every changed file is out of scope), not everything. An agent that
+    should touch any path must say so explicitly with a broad glob (e.g. '**')."""
     scope = author_ctx.get("scope")
     if not scope:
         return {"in_scope": True, "violations": []}
@@ -105,7 +109,7 @@ def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
     for f in files:
         if any(_matches(f, pat) for pat in forbidden):
             violations.append(f"{f} matches a forbidden path for this agent")
-        elif allowed and not any(_matches(f, pat) for pat in allowed):
+        elif not any(_matches(f, pat) for pat in allowed):   # empty allowed => deny (least privilege)
             violations.append(f"{f} is outside this agent's allowed paths")
     cap = scope.get("max_blast_radius")
     defs = int(impact_dict.get("counts", {}).get("total_affected", 0))

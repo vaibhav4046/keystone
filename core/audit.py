@@ -43,6 +43,11 @@ def _ledger_key() -> bytes:
             return _CACHED_KEY
         env = os.environ.get("KEYSTONE_LEDGER_KEY")
         if env:
+            if len(env.strip()) < 16:
+                # A short/low-entropy integrity key makes the HMAC chain trivially forgeable, which
+                # defeats the whole tamper-evidence claim. Fail loud rather than accept a 1-byte key.
+                raise ValueError("KEYSTONE_LEDGER_KEY is too short (< 16 bytes); the ledger integrity "
+                                 "key must be high-entropy or the tamper-evidence is worthless")
             _CACHED_KEY = env.encode("utf-8")
             return _CACHED_KEY
         key_dir = os.path.join(os.path.expanduser("~"), ".keystone")

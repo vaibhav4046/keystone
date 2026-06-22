@@ -316,3 +316,28 @@ def test_writes_fail_closed_without_token_or_open_demo(monkeypatch):
     r2 = client.post("/api/approve-mr", json={"symbols": ["tokenize"], "decision": "approve",
                                               "reviewer": "x", "rationale": "y"})
     assert r2.status_code == 403 and r2.json()["detail"]["error"] == "WRITE_GATED"
+
+
+def test_startup_orbit_probe_uses_short_timeout(monkeypatch):
+    # the startup CLI probe must use a SHORT timeout so a glab-orbit TUI that hangs cannot stall
+    # cold start; it runs off a background thread, but here we pin the timeout it passes.
+    from backend import app as appmod
+    from core import orbit_cli
+    seen = {}
+
+    class _R:
+        ok = True
+
+    def fake_schema(*a, **k):
+        seen["schema"] = k.get("timeout")
+        return _R()
+
+    def fake_probe(*a, **k):
+        seen["probe"] = k.get("timeout")
+        return _R()
+
+    monkeypatch.setattr(orbit_cli, "schema", fake_schema)
+    monkeypatch.setattr(orbit_cli, "probe", fake_probe)
+    appmod._startup_orbit_probe()
+    assert seen.get("schema") is not None and seen["schema"] <= 2.0
+    assert seen.get("probe") is not None and seen["probe"] <= 2.0

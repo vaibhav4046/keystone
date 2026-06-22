@@ -117,12 +117,24 @@ _ledger = Ledger(LEDGER_PATH)
 # exercises Orbit's published interface, not just a DuckDB file read. The captured
 # transcript feeds /status; the engine's numbers still come from core/impact.py.
 _orbit_cli_ok = False
-if _graph.source.mode == "LIVE" and orbit_cli.cli_available():
+
+
+def _startup_orbit_probe():
+    """Drive Orbit's own CLI once at startup (schema + one query) so /status can SHOW the CLI was
+    exercised. Runs in a background daemon thread with a SHORT timeout so import NEVER blocks: a
+    glab orbit extension that opens an interactive TUI (or any slow/absent CLI) degrades to the
+    direct-DuckDB read in ~1.5s OFF the request path, instead of stalling cold start by ~12s while
+    two 6s probes time out. The transcript fills in shortly after boot; /status reads it live."""
+    global _orbit_cli_ok
     try:
-        orbit_cli.schema()                 # live `glab orbit local schema`
-        _orbit_cli_ok = orbit_cli.probe().ok  # live `glab orbit local sql "SELECT ..."`
+        orbit_cli.schema(timeout=1.5)                 # live `glab orbit local schema`
+        _orbit_cli_ok = orbit_cli.probe(timeout=1.5).ok  # live `glab orbit local sql "SELECT ..."`
     except Exception:
         _orbit_cli_ok = False
+
+
+if _graph.source.mode == "LIVE" and orbit_cli.cli_available():
+    threading.Thread(target=_startup_orbit_probe, name="keystone-orbit-probe", daemon=True).start()
 # seed the ledger if empty so the precedent contradiction is demoable on a cold start.
 # Adaptive: scripted tokenize/parse story on the fixture, or a real prior decision on
 # the most-depended-on live symbol when running on an indexed Orbit graph.
