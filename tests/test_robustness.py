@@ -95,3 +95,14 @@ def test_find_top_collision_none_and_deterministic():
     assert collision.find_top_collision(_collgraph({"m.py": "def a():\n    return 1\n"})) is None
     g = _collgraph({"m.py": "def x():\n    return 1\n\ndef y():\n    return 1\n\ndef c():\n    return x() + y()\n"})
     assert collision.find_top_collision(g) == collision.find_top_collision(g)   # deterministic
+
+
+def test_collision_works_on_javascript_sources():
+    # multi-language: s1 and s2 are independent JS functions both called by c1/c2/c3
+    src = {"a.js": ("function s1(){return 1}\nfunction s2(){return 2}\n"
+                    "function c1(){ return s1() + s2(); }\nfunction c2(){ return s1() + s2(); }\n"
+                    "function c3(){ return s1() + s2(); }\n")}
+    top = collision.find_top_collision(_collgraph(src))
+    assert top is not None
+    assert {top["a"], top["b"]} == {"s1", "s2"}
+    assert set(top["shared"]) == {"c1", "c2", "c3"}

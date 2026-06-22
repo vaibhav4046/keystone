@@ -16,6 +16,7 @@ from __future__ import annotations
 import ast
 import json as _json
 import os
+import re
 import tempfile
 import urllib.request as _urequest
 from typing import Dict, List, Optional, Tuple
@@ -25,6 +26,25 @@ MAX_FILE_BYTES = 300_000
 # Match the capitalized Orbit vocabulary the graph filters on (core/graph.py CALLABLE_TYPES);
 # lowercase values silently miss every WHERE definition_type IN (...) query on a scanned graph.
 _DEF_TYPES = {"FunctionDef": "Function", "AsyncFunctionDef": "Function", "ClassDef": "Class"}
+
+# Multi-language: Python is parsed with ast (accurate); JS/TS with a name-based regex pass
+# (the same honest approximation Orbit concedes - dynamic dispatch is under-approximated).
+_JS_EXT = {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}
+_SOURCE_EXT = {".py"} | _JS_EXT
+_LANG = {".py": "Python", ".js": "JavaScript", ".jsx": "JavaScript", ".mjs": "JavaScript",
+         ".cjs": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript"}
+_JS_KEYWORDS = {"if", "for", "while", "switch", "catch", "return", "function", "typeof",
+                "await", "new", "delete", "void", "do", "else", "case", "yield", "super",
+                "this", "require", "import", "export", "class", "const", "let", "var",
+                "throw", "try", "finally", "instanceof", "in", "of", "with", "default"}
+_JS_DEF_PATTERNS = [
+    (re.compile(r"\bfunction\s*\*?\s*([A-Za-z_$][\w$]*)\s*\("), "Function"),
+    (re.compile(r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+                r"(?:async\s+)?(?:function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)"), "Function"),
+    (re.compile(r"\bclass\s+([A-Za-z_$][\w$]*)"), "Class"),
+    (re.compile(r"(?m)^[ \t]*(?:async\s+|static\s+|get\s+|set\s+)*([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{"), "Method"),
+]
+_CALL_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*\(")
 
 
 def parse_repo_spec(raw: str) -> Tuple[str, str, str]:
@@ -53,14 +73,22 @@ def _gh(url: str, token: Optional[str], raw: bool = False):
 
 def fetch_github_python(owner: str, repo: str, branch: str = "",
                         token: Optional[str] = None) -> Dict[str, str]:
-    """Fetch a public repo's Python files: {path: source}. Network; honest on rate limit."""
+    """Fetch a public repo's source files (Python + JS/TS): {path: source}. Skips vendored and
+    minified noise. Network; honest on rate limit. (Name kept for back-compat; multi-language.)"""
     if not branch:
         meta = _gh("https://api.github.com/repos/%s/%s" % (owner, repo), token)
         branch = meta.get("default_branch") or "main"
     tree = _gh("https://api.github.com/repos/%s/%s/git/trees/%s?recursive=1"
                % (owner, repo, branch), token)
+
+    def _ok(p: str) -> bool:
+        pl = p.lower()
+        if any(s in pl for s in ("node_modules/", "/dist/", "/build/", "/vendor/", ".min.js", ".d.ts")):
+            return False
+        return os.path.splitext(pl)[1] in _SOURCE_EXT
+
     paths = [n["path"] for n in tree.get("tree", [])
-             if n.get("type") == "blob" and str(n.get("path", "")).endswith(".py")
+             if n.get("type") == "blob" and _ok(str(n.get("path", "")))
              and int(n.get("size", 0) or 0) <= MAX_FILE_BYTES][:MAX_FILES]
     out: Dict[str, str] = {}
     for p in paths:
@@ -73,47 +101,92 @@ def fetch_github_python(owner: str, repo: str, branch: str = "",
     return out
 
 
+def _brace_body(src: str, from_idx: int) -> str:
+    """The {...}-balanced block starting at the first '{' at/after from_idx (a JS function body)."""
+    o = src.find("{", from_idx)
+    if o < 0:
+        return ""
+    depth = 0
+    for i in range(o, len(src)):
+        c = src[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return src[o:i + 1]
+    return src[o:]
+
+
+def _py_collect(src: str, path: str, add) -> None:
+    """Collect Python defs + their called names via ast (accurate)."""
+    try:
+        tree = ast.parse(src, filename=path)
+    except (SyntaxError, ValueError):
+        return
+
+    def walk(node, prefix):
+        for child in ast.iter_child_nodes(node):
+            if type(child).__name__ in _DEF_TYPES:
+                fqn = (prefix + "." + child.name) if prefix else (path + "::" + child.name)
+                callees = set()
+                for n in ast.walk(child):
+                    if isinstance(n, ast.Call):
+                        f = n.func
+                        if isinstance(f, ast.Name):
+                            callees.add(f.id)
+                        elif isinstance(f, ast.Attribute):
+                            callees.add(f.attr)
+                add(child.name, fqn, path, _DEF_TYPES[type(child).__name__], child.lineno,
+                    getattr(child, "end_lineno", child.lineno) or child.lineno, callees)
+                walk(child, fqn)
+    walk(tree, "")
+
+
+def _js_collect(src: str, path: str, add) -> None:
+    """Collect JS/TS defs + their called names via regex (name-based approximation)."""
+    seen = set()
+    for pat, dtype in _JS_DEF_PATTERNS:
+        for m in pat.finditer(src):
+            name = m.group(1)
+            if name in _JS_KEYWORDS:
+                continue
+            start_line = src.count("\n", 0, m.start()) + 1
+            key = (name, start_line)
+            if key in seen:                      # don't double-count a def matched by two patterns
+                continue
+            seen.add(key)
+            body = _brace_body(src, m.start())
+            end_line = start_line + body.count("\n")
+            callees = {c for c in _CALL_RE.findall(body) if c not in _JS_KEYWORDS and c != name}
+            add(name, path + "::" + name, path, dtype, start_line, end_line, callees)
+
+
 def _defs_and_edges(sources: Dict[str, str]):
-    """ast-parse sources -> (definitions, edges). Two passes: collect defs, then resolve
-    each def's Call names to a def id (name-based)."""
+    """Parse sources -> (definitions, edges). Python via ast; JS/TS via a name-based regex pass.
+    Each def carries the names it calls; edges then resolve those names to def ids globally."""
     defs: List[dict] = []
     name_to_ids: Dict[str, List[int]] = {}
     nid = [0]
 
-    def _walk_defs(node, path, prefix):
-        for child in ast.iter_child_nodes(node):
-            kind = type(child).__name__
-            if kind in _DEF_TYPES:
-                nid[0] += 1
-                did = nid[0]
-                fqn = (prefix + "." + child.name) if prefix else (path + "::" + child.name)
-                defs.append({"id": did, "name": child.name, "fqn": fqn, "file_path": path,
-                             "definition_type": _DEF_TYPES[kind],
-                             "start_line": child.lineno,
-                             "end_line": getattr(child, "end_lineno", child.lineno) or child.lineno,
-                             "_node": child})
-                name_to_ids.setdefault(child.name, []).append(did)
-                _walk_defs(child, path, fqn)
+    def add(name, fqn, path, dtype, start, end, callees):
+        nid[0] += 1
+        defs.append({"id": nid[0], "name": name, "fqn": fqn, "file_path": path,
+                     "definition_type": dtype, "start_line": int(start or 1),
+                     "end_line": int(end or start or 1), "_callees": set(callees)})
+        name_to_ids.setdefault(name, []).append(nid[0])
 
     for path, src in sources.items():
-        try:
-            tree = ast.parse(src, filename=path)
-        except (SyntaxError, ValueError):
-            continue
-        _walk_defs(tree, path, "")
+        ext = os.path.splitext(path)[1].lower()
+        if ext == ".py":
+            _py_collect(src, path, add)
+        elif ext in _JS_EXT:
+            _js_collect(src, path, add)
 
     edges: List[Tuple[int, int]] = []
     seen = set()
     for d in defs:
-        callee_names = set()
-        for n in ast.walk(d["_node"]):
-            if isinstance(n, ast.Call):
-                f = n.func
-                if isinstance(f, ast.Name):
-                    callee_names.add(f.id)
-                elif isinstance(f, ast.Attribute):
-                    callee_names.add(f.attr)
-        for cn in callee_names:
+        for cn in d["_callees"]:
             for tid in name_to_ids.get(cn, []):
                 if tid == d["id"]:
                     continue
@@ -122,7 +195,7 @@ def _defs_and_edges(sources: Dict[str, str]):
                     seen.add(key)
                     edges.append(key)
     for d in defs:
-        d.pop("_node", None)
+        d.pop("_callees", None)
     return defs, edges
 
 
@@ -144,7 +217,8 @@ def build_graph_duckdb(sources: Dict[str, str], out_path: str, repo_label: str) 
           [(i + 1, d, os.path.basename(d)) for i, d in enumerate(dirs)])
     con.execute("CREATE TABLE gl_file (id BIGINT, path VARCHAR, name VARCHAR, extension VARCHAR, language VARCHAR)")
     _many("INSERT INTO gl_file VALUES (?, ?, ?, ?, ?)",
-          [(i + 1, p, os.path.basename(p), ".py", "Python") for i, p in enumerate(files)])
+          [(i + 1, p, os.path.basename(p), os.path.splitext(p)[1].lower(),
+            _LANG.get(os.path.splitext(p)[1].lower(), "Python")) for i, p in enumerate(files)])
     con.execute("CREATE TABLE gl_definition (id BIGINT, name VARCHAR, fqn VARCHAR, file_path VARCHAR, "
                 "definition_type VARCHAR, start_line BIGINT, end_line BIGINT)")
     _many("INSERT INTO gl_definition VALUES (?, ?, ?, ?, ?, ?, ?)",
