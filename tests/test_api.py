@@ -341,3 +341,18 @@ def test_startup_orbit_probe_uses_short_timeout(monkeypatch):
     appmod._startup_orbit_probe()
     assert seen.get("schema") is not None and seen["schema"] <= 2.0
     assert seen.get("probe") is not None and seen["probe"] <= 2.0
+
+
+def test_override_uncredentialed_refused_on_gated_deploy(monkeypatch):
+    # on a GATED deploy (approve token set) with NO override token, an override must be refused so a
+    # BLOCK is not bypassable with the ordinary approve token; open-demo keeps the override available.
+    from backend import app as appmod
+    monkeypatch.setattr(appmod, "APPROVE_TOKEN", "tok")
+    monkeypatch.setattr(appmod, "OVERRIDE_TOKEN", None)
+    assert appmod._override_uncredentialed(True) is True
+    assert appmod._override_uncredentialed(False) is False
+    monkeypatch.setattr(appmod, "OVERRIDE_TOKEN", "ov")
+    assert appmod._override_uncredentialed(True) is False     # override token configured
+    monkeypatch.setattr(appmod, "APPROVE_TOKEN", None)
+    monkeypatch.setattr(appmod, "OVERRIDE_TOKEN", None)
+    assert appmod._override_uncredentialed(True) is False     # open demo -> override stays available

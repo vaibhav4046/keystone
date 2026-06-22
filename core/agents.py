@@ -103,6 +103,12 @@ def check_scope(author_ctx: dict, impact_dict: dict) -> dict:
     if not scope:
         return {"in_scope": True, "violations": []}
     files = _changed_files(impact_dict)
+    if not files:
+        # Fail closed: a registered agent whose change resolves to NO file path cannot be proven
+        # in-scope, so deny rather than pass the path check vacuously (an unverifiable scope is not
+        # an allowed scope for a governance gate).
+        return {"in_scope": False,
+                "violations": ["agent scope unverifiable: no changed file path resolved for this change"]}
     allowed = scope.get("allowed_paths") or []
     forbidden = scope.get("forbidden_paths") or []
     violations = []
