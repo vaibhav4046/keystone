@@ -91,6 +91,8 @@ def find_top_collision(graph, top_k: int = 25, max_depth: int = 3) -> Optional[d
     honestly "the worst among the K most-consequential symbols" - the deliberate, stable framing the
     docs and tests pin. Returns {a, b, shared, shared_count, kind='blast_overlap', severity, blast_a,
     blast_b} or None."""
+    if graph is None:
+        return None
     names = graph.all_definition_names(limit=max(top_k, 4))
     fps = {}
     for n in names:

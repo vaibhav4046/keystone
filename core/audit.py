@@ -9,7 +9,9 @@ that already exist. No LLM, no web imports, standard library only.
 Row shape:
   {seq, ts, actor, change_id, target_symbols[], blast_radius_set[], signature,
    decision ('approve'|'reject'), rationale, prev_hash, row_hash}
-row_hash = sha256(prev_hash + canonical_json(payload_without_row_hash))
+row_hash = HMAC-SHA256(ledger_key, prev_hash + canonical_json(payload_without_row_hash))
+  (keyed, so a party that can append rows still cannot forge a valid tail without the key;
+   see _row_hash and the key note below.)
 genesis prev_hash = 64 zeros.
 """
 from __future__ import annotations

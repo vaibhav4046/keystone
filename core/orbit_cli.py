@@ -392,10 +392,14 @@ def probe(timeout: float = DEFAULT_TIMEOUT) -> OrbitCliResult:
 
     Selects callable definition names (function/method/class), so a single call
     confirms the CLI runs AND returns plausible code symbols rather than file-path
-    module entries. Result is recorded in the transcript like any other invocation.
+    module entries. Uses the SAME callable-type set as the engine (core.graph
+    CALLABLE_TYPES, including DecoratedMethod/DecoratedClass) so the liveness query
+    cannot under-count on an index whose first rows are decorated methods. Result is
+    recorded in the transcript like any other invocation.
     """
-    return sql("SELECT name FROM gl_definition WHERE definition_type IN "
-               "('Function','Method','Class','DecoratedFunction') LIMIT 3", timeout=timeout)
+    from core.graph import CALLABLE_TYPES   # lazy import to avoid a module cycle; values are safe idents
+    types = ",".join("'%s'" % t for t in CALLABLE_TYPES)
+    return sql("SELECT name FROM gl_definition WHERE definition_type IN (%s) LIMIT 3" % types, timeout=timeout)
 
 
 __all__ = [

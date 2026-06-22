@@ -273,3 +273,17 @@ def test_agent_empty_allowed_paths_denies():
     assert agents.check_scope(ctx, impact)["in_scope"] is False    # empty allowed => deny (least privilege)
     ctx["scope"]["allowed_paths"] = ["**"]                          # a broad glob restores access
     assert agents.check_scope(ctx, impact)["in_scope"] is True
+
+
+def test_agent_scope_fail_closed_on_unresolvable_files():
+    from core import agents
+    # a registered agent whose change resolves to NO file path must be DENIED (fail closed),
+    # even with a '**' allow-all, because an unverifiable scope is not an allowed scope.
+    ctx = {"id": "bot", "badge": "AGENT_REGISTERED",
+           "scope": {"allowed_paths": ["**"], "forbidden_paths": [], "max_blast_radius": None}}
+    impact = {"owners": [{"file": None, "ring": 0}, {"ring": 1}], "counts": {"total_affected": 3}}
+    assert agents.check_scope(ctx, impact)["in_scope"] is False
+
+
+def test_find_top_collision_none_graph_is_safe():
+    assert collision.find_top_collision(None) is None

@@ -508,6 +508,19 @@ _RATE_LOCK = threading.Lock()
 _RATE_MAX_PER_MIN = int(os.environ.get("KEYSTONE_APPROVE_RATE_PER_MIN", "30"))
 
 
+def _override_uncredentialed(want_override: bool) -> bool:
+    """True when an override is requested on a GATED deployment (APPROVE_TOKEN set) that has NO
+    separate KEYSTONE_OVERRIDE_TOKEN configured. In that case a policy BLOCK / four-eyes
+    self-approval would otherwise be bypassable with the same token that performs ordinary
+    approvals, so the override is refused (403) rather than silently honored. In open-demo mode
+    (no APPROVE_TOKEN) the demo override stays available."""
+    return bool(want_override) and OVERRIDE_TOKEN is None and APPROVE_TOKEN is not None
+
+
+# NOTE: _rate_ok is a GLOBAL per-process backstop (a coarse flood cap), NOT per-actor/per-IP abuse
+# protection - one client can consume the shared minute budget. It guards the single-instance demo;
+# real multi-tenant abuse protection belongs at the gateway/identity layer. Documented in the
+# README integrity note so it is not mistaken for per-caller fairness.
 def _rate_ok() -> bool:
     now = int(time.time() // 60)
     with _RATE_LOCK:
@@ -526,6 +539,9 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
                                   "hint": "set KEYSTONE_APPROVE_TOKEN (gated) or KEYSTONE_OPEN_DEMO=1 (explicit open demo)"})
     if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
         raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
+    if _override_uncredentialed(d.override):
+        raise HTTPException(403, {"error": "OVERRIDE_UNCREDENTIALED",
+                                  "hint": "override of a BLOCK/self-approval needs a separate KEYSTONE_OVERRIDE_TOKEN on a gated deployment"})
     if d.override and OVERRIDE_TOKEN is not None and not hmac.compare_digest(x_keystone_override_token or "", OVERRIDE_TOKEN):
         raise HTTPException(401, "override requires a valid X-Keystone-Override-Token")
     if not _rate_ok():
@@ -574,6 +590,9 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
                                   "hint": "set KEYSTONE_APPROVE_TOKEN (gated) or KEYSTONE_OPEN_DEMO=1 (explicit open demo)"})
     if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
         raise HTTPException(401, "invalid or missing X-Keystone-Token")
+    if _override_uncredentialed(d.override):
+        raise HTTPException(403, {"error": "OVERRIDE_UNCREDENTIALED",
+                                  "hint": "override of a BLOCK/self-approval needs a separate KEYSTONE_OVERRIDE_TOKEN on a gated deployment"})
     if d.override and OVERRIDE_TOKEN is not None and not hmac.compare_digest(x_keystone_override_token or "", OVERRIDE_TOKEN):
         raise HTTPException(401, "override requires a valid X-Keystone-Override-Token")
     if not _rate_ok():
