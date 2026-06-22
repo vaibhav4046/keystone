@@ -40,3 +40,24 @@ def test_external_repo_blast_radius_is_real_and_large():
     assert ctx is not None
     # Context is a hub in click; its real dependent count is large (not a tuned demo number).
     assert ctx.counts.get("total_affected", 0) >= 50
+
+
+SIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "six_graph.duckdb")
+REQUESTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "requests_graph.duckdb")
+
+
+def test_six_secondary_hero_number_reproduces():
+    # Every cited collision number must reproduce on a committed artifact, not just live in a cache.
+    assert os.path.exists(SIX), "committed data/six_graph.duckdb missing (scripts/build_external_graphs.py)"
+    top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=SIX))
+    assert top is not None
+    assert {top["a"], top["b"]} == {"_resolve", "__get_module"}
+    assert top["shared_count"] == 3
+
+
+def test_requests_secondary_hero_number_reproduces():
+    assert os.path.exists(REQUESTS), "committed data/requests_graph.duckdb missing (scripts/build_external_graphs.py)"
+    top = collision_mod.find_top_collision(graph_mod.Graph(prefer_live=True, path=REQUESTS))
+    assert top is not None
+    assert {top["a"], top["b"]} == {"values", "set_cookie"}
+    assert top["shared_count"] == 48

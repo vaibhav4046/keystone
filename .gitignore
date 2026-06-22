@@ -32,6 +32,11 @@ data/audit_ledger.jsonl
 # artifact, so a fresh clone can run find_top_collision and get the same count.
 # test_hero_cache_click_reproduces_from_committed_orbit_graph asserts it. No secrets.
 !data/click_graph.duckdb
+# ...and the two secondary hero graphs, so EVERY cited collision number reproduces on a
+# committed artifact: six (_resolve x __get_module, 3) and requests (values x set_cookie, 48).
+# Built by scripts/build_external_graphs.py; pinned by tests/test_external_repo.py. No secrets.
+!data/six_graph.duckdb
+!data/requests_graph.duckdb
 schema_snapshot.local.json
 
 # os / editor
