@@ -318,3 +318,16 @@ def test_js_cross_file_same_name_resolution_is_documented_and_bounded():
     caller_id = next(d["id"] for d in defs if d["name"] == "caller")
     caller_targets = {b for (a, b) in edges if a == caller_id and b in target_ids}
     assert len(target_ids) == 2 and caller_targets == target_ids
+
+
+def test_js_builtin_method_calls_are_not_resolved_as_edges():
+    # a call to a builtin method name (forEach/push/map) must NOT edge to a same-named repo def -
+    # that over-attribution inflated the blast radius (the axios push/forEach=72 artifact). Real
+    # named calls still edge.
+    src = {"a.js": ("function forEach(){ return 1; }\n"
+                    "function caller(){ arr.forEach(x => x); return realHelper(); }\n"
+                    "function realHelper(){ return 2; }\n")}
+    edges, names = _name_edges(src)
+    assert {"forEach", "caller", "realHelper"} <= names
+    assert ("caller", "forEach") not in edges       # builtin call not attributed to the repo def
+    assert ("caller", "realHelper") in edges          # a genuine call still edges

@@ -27,9 +27,13 @@ from core import repo_scan, collision  # noqa: E402
 DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
 # (repo spec, output filename, expected collision) - expected is a build-time sanity check only.
+# Python (ast, sound) AND JavaScript (name-based) repos, so the SAME engine is proven to find a
+# genuine cross-MR collision on a real multi-file JS library, not only on Python.
 TARGETS = [
     ("benjaminp/six", "six_graph.duckdb", ("_resolve", "__get_module", 3)),
     ("psf/requests", "requests_graph.duckdb", ("values", "set_cookie", 48)),
+    ("axios/axios", "axios_graph.duckdb", ("isBuffer", "isObject", 62)),     # JavaScript
+    ("chalk/chalk", "chalk_graph.duckdb", ("stringEncaseCRLFWithFirstIndex", "stringReplaceAll", 4)),  # JavaScript
 ]
 
 

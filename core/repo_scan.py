@@ -51,6 +51,22 @@ _JS_DEF_PATTERNS = [
     (re.compile(r"(?m)^[ \t]*(?:async\s+|static\s+|get\s+|set\s+)*([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*(?::[^{;\n]+)?\{"), "Method"),
 ]
 _CALL_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*\(")
+# Built-in Array/String/Object/Promise/RegExp method names. A JS call like `x.forEach(...)` is
+# almost always the prototype builtin, NOT a repo-defined function of the same name, so resolving
+# it to a same-named def fabricates edges and inflates the blast radius (e.g. axios `forEach` would
+# absorb every `.forEach()` in the codebase). Excluded from JS/TS call-edge resolution only; the
+# Python `ast` pass is untouched, so the committed Python collision numbers cannot move.
+_JS_BUILTIN_METHODS = {
+    "push", "pop", "shift", "unshift", "slice", "splice", "concat", "join", "reverse", "sort",
+    "forEach", "map", "filter", "reduce", "reduceRight", "find", "findIndex", "some", "every",
+    "includes", "indexOf", "lastIndexOf", "flat", "flatMap", "fill", "keys", "values", "entries",
+    "then", "catch", "finally", "call", "apply", "bind", "toString", "valueOf", "hasOwnProperty",
+    "test", "exec", "match", "matchAll", "replace", "replaceAll", "split", "trim", "trimStart",
+    "trimEnd", "padStart", "padEnd", "charAt", "charCodeAt", "codePointAt", "substring", "substr",
+    "toLowerCase", "toUpperCase", "startsWith", "endsWith", "repeat", "at", "assign", "freeze",
+    "isArray", "from", "of", "parse", "stringify", "resolve", "reject", "all", "race", "add",
+    "has", "get", "set", "delete", "clear",
+}
 
 
 _SEGMENT_RE = re.compile(r"[A-Za-z0-9_.-]+")          # one owner/repo segment
@@ -274,7 +290,8 @@ def _js_collect(src: str, path: str, add) -> None:
             seen.add(key)
             body = _brace_body(src, m.start())
             end_line = start_line + body.count("\n")
-            callees = {c for c in _CALL_RE.findall(body) if c not in _JS_KEYWORDS and c != name}
+            callees = {c for c in _CALL_RE.findall(body)
+                       if c not in _JS_KEYWORDS and c not in _JS_BUILTIN_METHODS and c != name}
             add(name, path + "::" + name, path, dtype, start_line, end_line, callees)
 
 
