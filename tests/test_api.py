@@ -356,3 +356,33 @@ def test_override_uncredentialed_refused_on_gated_deploy(monkeypatch):
     monkeypatch.setattr(appmod, "APPROVE_TOKEN", None)
     monkeypatch.setattr(appmod, "OVERRIDE_TOKEN", None)
     assert appmod._override_uncredentialed(True) is False     # open demo -> override stays available
+
+
+def test_signed_approval_is_cryptographically_verified(monkeypatch):
+    # a decision signed with a registered reviewer's Ed25519 key is recorded as PROVEN, not
+    # self-asserted; a bad signature is rejected (401), not silently downgraded; unsigned still works.
+    import json as _json
+    import tempfile
+    from core import identity
+    priv, pub = identity.generate_keypair()
+    reg = os.path.join(tempfile.mkdtemp(), "reviewers.json")
+    with open(reg, "w", encoding="utf-8") as f:
+        f.write(_json.dumps({"reviewers": {"alice": pub}}))
+    monkeypatch.setenv("KEYSTONE_REVIEWERS", reg)
+    # tokenize is contradiction-BLOCKed in the seeded fixture, so sign an accountable override -
+    # which also proves the signature binds the override path, not just a plain approve.
+    sig = identity.sign_decision(priv, identity.signing_payload("alice", "MR-SIG", "approve", ["tokenize"]))
+    ok = client.post("/api/approve", headers={"X-Keystone-Signature": sig},
+                     json={"name": "tokenize", "decision": "approve", "reviewer": "alice",
+                           "rationale": "signed accountable override", "change_id": "MR-SIG", "override": True})
+    assert ok.status_code == 200, ok.text
+    body = ok.json()
+    assert body["reviewer_verified"] is True and body["self_asserted"] is False
+    assert body["row"]["signature_verified"] is True and body["row"]["identity_source"] == "ed25519-signature"
+    bad = client.post("/api/approve", headers={"X-Keystone-Signature": "00" * 64},
+                      json={"name": "tokenize", "decision": "approve", "reviewer": "alice",
+                            "rationale": "x", "change_id": "MR-SIG2", "override": True})
+    assert bad.status_code == 401 and bad.json()["detail"]["error"] == "INVALID_SIGNATURE"
+    un = client.post("/api/approve", json={"name": "tokenize", "decision": "approve", "reviewer": "carol",
+                                           "rationale": "x", "change_id": "MR-UNS", "override": True})
+    assert un.status_code == 200 and un.json()["reviewer_verified"] is False

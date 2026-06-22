@@ -191,4 +191,108 @@ def verify_signature(token: str, *, jwks: Optional[list] = None, timeout: float 
         return False
 
 
-__all__ = ["ci_identity", "decode_jwt_claims", "verify_signature"]
+# ---------------------------------------------------------------------------
+# Self-contained cryptographic reviewer identity (Ed25519) - NO external service.
+#
+# The OIDC path above binds identity to a GitLab runner, which needs a GitLab Ultimate/CI
+# environment. This path needs nothing but local crypto: a reviewer holds an Ed25519 private
+# key, registers the PUBLIC key in .keystone/reviewers.json, and signs each decision. Keystone
+# verifies the signature against the registered public key, so the recorded actor is proven by
+# possession of a key (the same model as a signed Git commit / SSH / Sigstore), not self-asserted -
+# and the proof is recorded into the tamper-evident ledger. Offline, deterministic, no account.
+# ---------------------------------------------------------------------------
+
+def _canonical(payload: dict) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def signing_payload(actor: str, change_id: str, decision: str, symbols) -> dict:
+    """The exact, canonical object a reviewer signs - binds the signature to WHO + WHAT + the
+    verdict, so a signature cannot be replayed onto a different change, symbol set, or decision."""
+    return {"actor": actor, "change_id": change_id or "", "decision": decision,
+            "symbols": sorted(str(s) for s in (symbols or []))}
+
+
+def _reviewers_path() -> str:
+    env = os.environ.get("KEYSTONE_REVIEWERS")
+    if env:
+        return env
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(here, ".keystone", "reviewers.json")
+
+
+def load_reviewer_keys(path: Optional[str] = None) -> dict:
+    """reviewer_id -> Ed25519 public key (hex), from .keystone/reviewers.json ({"reviewers": {...}})."""
+    path = path or _reviewers_path()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        keys = data.get("reviewers", data) if isinstance(data, dict) else {}
+        return {k: v for k, v in keys.items() if isinstance(v, str)}
+    except (OSError, ValueError):
+        return {}
+
+
+def generate_keypair() -> tuple:
+    """(private_hex, public_hex) for a fresh Ed25519 reviewer key. For keygen / demo / tests."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
+    priv = Ed25519PrivateKey.generate()
+    pub = priv.public_key()
+    priv_raw = priv.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw,
+                                  serialization.NoEncryption())
+    pub_raw = pub.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    return priv_raw.hex(), pub_raw.hex()
+
+
+def sign_decision(private_hex: str, payload: dict) -> str:
+    """Ed25519 signature (hex) over the canonical signing payload. The reviewer's local action."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    priv = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(private_hex))
+    return priv.sign(_canonical(payload)).hex()
+
+
+def verify_decision_signature(public_hex: str, payload: dict, signature_hex: str) -> bool:
+    """True iff signature_hex is a valid Ed25519 signature over canonical(payload) under public_hex.
+    Never raises, never overstates: returns False if cryptography is absent or anything is malformed."""
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+        from cryptography.exceptions import InvalidSignature
+    except Exception:
+        return False
+    try:
+        pub = Ed25519PublicKey.from_public_bytes(bytes.fromhex(public_hex))
+        pub.verify(bytes.fromhex(signature_hex), _canonical(payload))
+        return True
+    except (InvalidSignature, ValueError, TypeError):
+        return False
+    except Exception:
+        return False
+
+
+def signed_identity(actor: str, change_id: str, decision: str, symbols, signature_hex: str,
+                    registry: Optional[dict] = None) -> Optional[dict]:
+    """If `actor` has a registered Ed25519 public key and signature_hex verifies over the canonical
+    signing payload, return a BOUND identity dict (cryptographically proven, not self-asserted);
+    otherwise None (the caller falls back to the self-asserted path or rejects)."""
+    keys = registry if registry is not None else load_reviewer_keys()
+    pub = keys.get(actor)
+    if not pub:
+        return None
+    payload = signing_payload(actor, change_id, decision, symbols)
+    if not verify_decision_signature(pub, payload, signature_hex):
+        return None
+    return {
+        "bound": True,
+        "source": "ed25519-signature",
+        "actor": actor,
+        "signature_verified": True,
+        "public_key": pub,
+        "note": "actor proven by an Ed25519 signature over the decision, verified against the "
+                "registered public key (no external service); recorded in the tamper-evident ledger",
+    }
+
+
+__all__ = ["ci_identity", "decode_jwt_claims", "verify_signature", "signing_payload",
+           "load_reviewer_keys", "generate_keypair", "sign_decision",
+           "verify_decision_signature", "signed_identity"]

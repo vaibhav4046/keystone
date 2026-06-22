@@ -27,7 +27,7 @@ from pydantic import BaseModel, Field
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
                   llm as llm_mod, agent as agent_mod, mr as mr_mod, collision as collision_mod,
-                  graph_audit as graph_audit_mod, drift as drift_mod)
+                  graph_audit as graph_audit_mod, drift as drift_mod, identity as identity_mod)
 from core.audit import Ledger, key_fingerprint, using_public_sample_key
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -533,12 +533,23 @@ def _rate_ok() -> bool:
 
 @app.post("/api/approve")
 def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
-            x_keystone_override_token: Optional[str] = Header(default=None)):
+            x_keystone_override_token: Optional[str] = Header(default=None),
+            x_keystone_signature: Optional[str] = Header(default=None)):
     if not _writes_allowed():
         raise HTTPException(403, {"error": "WRITE_GATED",
                                   "hint": "set KEYSTONE_APPROVE_TOKEN (gated) or KEYSTONE_OPEN_DEMO=1 (explicit open demo)"})
     if APPROVE_TOKEN is not None and not hmac.compare_digest(x_keystone_token or "", APPROVE_TOKEN):
         raise HTTPException(401, "invalid or missing X-Keystone-Token")  # constant-time compare
+    # Cryptographic reviewer identity: when a signature is supplied it MUST verify against this
+    # reviewer's registered Ed25519 public key (a bad signature is a rejected identity claim, not a
+    # silent downgrade). Absent => the self-asserted path (honest). Proven => recorded in the ledger.
+    signed_ident = None
+    if x_keystone_signature:
+        signed_ident = identity_mod.signed_identity(d.reviewer, d.change_id or "", d.decision,
+                                                    [d.name], x_keystone_signature)
+        if signed_ident is None:
+            raise HTTPException(401, {"error": "INVALID_SIGNATURE",
+                                      "hint": "X-Keystone-Signature did not verify against this reviewer's registered Ed25519 public key"})
     if _override_uncredentialed(d.override):
         raise HTTPException(403, {"error": "OVERRIDE_UNCREDENTIALED",
                                   "hint": "override of a BLOCK/self-approval needs a separate KEYSTONE_OVERRIDE_TOKEN on a gated deployment"})
@@ -554,15 +565,23 @@ def approve(d: Decision, x_keystone_token: Optional[str] = Header(default=None),
         raise HTTPException(res["status"], res.get("detail") or res["error"])
 
     sig, change_id, pol, out = res["sig"], res["change_id"], res["policy"], res["impact"]
+    extra = dict(res["row_extra"])
+    if signed_ident:   # bind the cryptographic identity proof into the signed, tamper-evident row
+        extra["signature_verified"] = True
+        extra["identity_source"] = "ed25519-signature"
+        extra["reviewer_signature"] = x_keystone_signature
+        extra["reviewer_pubkey"] = signed_ident["public_key"]
     row = _ledger.append(
         actor=d.reviewer, change_id=change_id, target_symbols=[d.name], target_fqns=res["target_fqns"],
         blast_radius_set=res["blast_set"], signature=sig, decision=d.decision, rationale=d.rationale,
-        extra=res["row_extra"],
+        extra=extra,
         ts=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # real time, not fixture
     )
     att = attest_mod.build_attestation(impact_dict=out, policy_eval=pol, row=row, source_mode=_graph.source.mode)
     return {"row": row, "verify": _ledger.verify(), "policy": pol, "author": res["author"],
-            "self_asserted": res.get("self_asserted", True),
+            "self_asserted": (res.get("self_asserted", True) and signed_ident is None),
+            "reviewer_verified": signed_ident is not None,
+            "identity_source": signed_ident["source"] if signed_ident else "self-asserted",
             "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")},
             "attestation": att}
 
