@@ -190,3 +190,24 @@ def test_find_definition_and_blast_radius_are_none_safe():
     assert g.find_definition("") is None
     assert impact_mod.compute_blast_radius(g, None) is None
     assert impact_mod.compute_blast_radius(g, "") is None
+
+
+def test_js_regex_literal_does_not_swallow_following_code():
+    # A quote inside a regex literal (e.g. /["']/g in a .replace) must NOT be read as a string
+    # delimiter that blanks all the real code after it - that would DELETE genuine defs + edges.
+    src = {"a.js": ("function clean(s){ return s.replace(/[\"']/g, \"\"); }\n"
+                    "function caller(){ return clean(x) + helper(); }\n"
+                    "function helper(){ return 1; }\n")}
+    edges, names = _name_edges(src)
+    assert {"clean", "caller", "helper"} <= names              # all defs survive the regex literal
+    assert ("caller", "clean") in edges and ("caller", "helper") in edges
+
+
+def test_strip_js_noise_invariants_and_jsx_safety():
+    # length + a JSX close tag must not trigger regex mode (which would eat the following call).
+    s = "let a = render(); let b = x</y; let c = helper(); /* note */ const r = /[\"']/.test(a);"
+    out = repo_scan._strip_js_noise(s)
+    assert len(out) == len(s)                                   # length preserved exactly
+    assert s.count("\n") == out.count("\n")                     # newlines preserved
+    assert "render(" in out and "helper(" in out               # '</' did not swallow later code
+    assert "test(" in out and '"' not in out                   # regex blanked, .test() survives
