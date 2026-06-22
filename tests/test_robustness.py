@@ -231,3 +231,45 @@ def test_detect_collisions_uniquifies_duplicate_mr_ids():
     assert res is not None
     assert len(res["mrs"]) == 2 and len(set(res["mrs"])) == 2          # both kept, distinct ids
     assert len(res["merge_order"]) + len(res["uncoordinable_cycle"]) == 2
+
+
+def test_callable_types_cover_decorated_method():
+    from core import graph as gm
+    assert "DecoratedMethod" in gm.CALLABLE_TYPES
+    click = os.path.join(os.path.dirname(__file__), "..", "data", "click_graph.duckdb")
+    g = gm.Graph(prefer_live=True, path=click)
+    types = {r[0] for r in g._con.execute("SELECT DISTINCT definition_type FROM gl_definition").fetchall()}
+    # every Method/Function callable kind Orbit emits must be reviewable, not silently dropped
+    callable_kinds = {t for t in types if "Method" in t or "Function" in t}
+    assert callable_kinds <= set(gm.CALLABLE_TYPES), \
+        "uncovered callable types: %s" % (callable_kinds - set(gm.CALLABLE_TYPES))
+
+
+def test_scan_excludes_generated_and_test_paths():
+    assert repo_scan._is_noise_path("app/.next/static/x.js")
+    assert repo_scan._is_noise_path("packages/out/bundle.js")
+    assert repo_scan._is_noise_path("coverage/lcov-report/x.js")
+    assert repo_scan._is_noise_path("src/foo.generated.ts")
+    assert repo_scan._is_noise_path("src/__generated__/types.ts")
+    assert repo_scan._is_noise_path("a/tests/test_x.py")          # tests still excluded
+    assert not repo_scan._is_noise_path("src/app/handler.ts")     # real source kept
+
+
+def test_ledger_key_rejects_weak_key(monkeypatch):
+    import pytest as _pytest
+    from core import audit
+    monkeypatch.setattr(audit, "_CACHED_KEY", None)
+    monkeypatch.setenv("KEYSTONE_LEDGER_KEY", "short")
+    with _pytest.raises(ValueError):
+        audit._ledger_key()
+    monkeypatch.setattr(audit, "_CACHED_KEY", None)               # don't poison cached key for other tests
+
+
+def test_agent_empty_allowed_paths_denies():
+    from core import agents
+    ctx = {"id": "bot", "badge": "AGENT_REGISTERED",
+           "scope": {"allowed_paths": [], "forbidden_paths": [], "max_blast_radius": None}}
+    impact = {"owners": [{"file": "core/x.py", "ring": 0}], "counts": {"total_affected": 1}}
+    assert agents.check_scope(ctx, impact)["in_scope"] is False    # empty allowed => deny (least privilege)
+    ctx["scope"]["allowed_paths"] = ["**"]                          # a broad glob restores access
+    assert agents.check_scope(ctx, impact)["in_scope"] is True

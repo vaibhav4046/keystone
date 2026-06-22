@@ -93,6 +93,23 @@ def _gh(url: str, token: Optional[str], raw: bool = False):
     return data if raw else _json.loads(data.decode("utf-8"))
 
 
+# Vendored / generated / minified output that is NOT authored source. Including it would inflate
+# def counts and the blast-radius collision numbers the demo reports on a real Next.js/CRA repo, so
+# it is excluded just as rigorously as test files (a generated bundle is not production coupling).
+_VENDOR_NOISE = ("node_modules/", "/dist/", "/build/", "/vendor/", "/out/", "/.next/", "/.nuxt/",
+                 "/coverage/", "/__generated__/", ".min.js", ".d.ts", ".generated.")
+
+
+def _is_noise_path(pl: str) -> bool:
+    """True for a lowercased path that is vendored/generated noise OR a test file - neither is a
+    runtime dependent, so a blast radius (production coupling) must exclude both to stay honest."""
+    if any(s in "/" + pl for s in _VENDOR_NOISE):   # leading '/' so a ROOT-level dir matches '/dir/'
+        return True
+    base = pl.rsplit("/", 1)[-1]
+    return ("/test/" in pl or "/tests/" in pl or base.startswith("test_") or base.startswith("test.")
+            or base.endswith("_test.py") or ".spec." in base or ".test." in base or base == "conftest.py")
+
+
 def fetch_github_python(owner: str, repo: str, branch: str = "",
                         token: Optional[str] = None) -> Dict[str, str]:
     """Fetch a public repo's source files (Python + JS/TS): {path: source}. Skips vendored and
@@ -105,13 +122,7 @@ def fetch_github_python(owner: str, repo: str, branch: str = "",
 
     def _ok(p: str) -> bool:
         pl = p.lower()
-        if any(s in pl for s in ("node_modules/", "/dist/", "/build/", "/vendor/", ".min.js", ".d.ts")):
-            return False
-        # Tests are NOT runtime dependents: a blast radius should measure production coupling, not
-        # how many tests touch a symbol. Excluding them keeps the collision counts honest + defensible.
-        base = pl.rsplit("/", 1)[-1]
-        if ("/test/" in pl or "/tests/" in pl or base.startswith("test_") or base.startswith("test.")
-                or base.endswith("_test.py") or ".spec." in base or ".test." in base or base == "conftest.py"):
+        if _is_noise_path(pl):
             return False
         return os.path.splitext(pl)[1] in _SOURCE_EXT
 

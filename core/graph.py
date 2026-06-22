@@ -31,8 +31,12 @@ FIXTURE_DUCKDB = os.path.abspath(FIXTURE_DUCKDB)
 
 EXPECTED_TABLES = {"gl_definition", "gl_file", "gl_directory", "gl_edge"}
 
-# definition_type values worth listing as reviewable symbols (real Orbit values).
-CALLABLE_TYPES = ("Function", "Method", "DecoratedFunction", "Class", "DecoratedClass")
+# definition_type values worth listing as reviewable symbols (real Orbit values). Includes the
+# Decorated* variants Orbit emits - notably DecoratedMethod, which is common in real Python
+# (decorated methods) and is present in the committed indexes; omitting it silently dropped those
+# symbols from the reviewable + review-debt sets. (Verified: adding it leaves the pinned headline
+# collision numbers unchanged - 64/48/3 - so it only widens coverage, never moves the headline.)
+CALLABLE_TYPES = ("Function", "Method", "DecoratedFunction", "DecoratedMethod", "Class", "DecoratedClass")
 
 
 @dataclass
