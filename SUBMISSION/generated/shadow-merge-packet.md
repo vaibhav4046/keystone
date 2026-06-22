@@ -1,35 +1,30 @@
 # Keystone - Shadow Merge Firewall decision packet
 
-**Verdict: BLOCK**  (Git text conflict: NONE | Orbit collision: DETECTED)
+**Verdict: ALLOW**  (Git text conflict: NONE | Orbit collision: none)
 
 ## Executive summary
-`MR-204` and `MR-207` touch different files, so Git reports no conflict and both pass review independently. On the GitLab Orbit graph their blast radii collide on a shared dependency, so merging both can break code neither reviewer changed.
+`MR-301` and `MR-302` touch different files and their Orbit blast radii do not overlap. No hidden relationship conflict - safe to merge in any order.
 
 ## The two changes
-- **MR-204** changes `compute_blast_radius()` in `core/impact.py` (Orbit blast radius: 12 dependents)
-- **MR-207** changes `impact()` in `backend/app.py` (Orbit blast radius: 0 dependents)
+- **MR-301** changes `clear_transcript()` in `core/orbit_cli.py` (Orbit blast radius: 3 dependents)
+- **MR-302** changes `precedent()` in `core/audit.py` (Orbit blast radius: 4 dependents)
 
 ## Git result: NONE
 Git's merge-conflict detection is textual: it only flags overlapping line edits. These MRs edit different files, so Git is blind to the relationship between them.
 
 ## Orbit evidence (the relationship Git cannot see)
-- Collision kind: `change_in_blast`
-- Shared dependents (1): impact
-- These definitions transitively depend on BOTH changed symbols, so a change to either ripples into them; changing both at once compounds the risk with no text conflict to warn you.
+- No blast-radius overlap detected.
 
-## Recommended developer action
-Do not merge both blindly. Stack the two MRs into one coordinated review, add an integration test exercising the shared dependents, and merge in the order Keystone's safe-merge-order computes.
-
-## CI result: exit 2 (fails the pipeline)
+## CI result: exit 0 (passes)
 ## Reproduce
 ```
-python skills/keystone/run_review.py shadow-merge
+python skills/keystone/run_review.py shadow-merge --safe
 ```
 
 ## Paste-ready GitLab MR comment
 ```markdown
-### Keystone Shadow Merge Firewall: BLOCK
-MR-204 (`compute_blast_radius`, core/impact.py) and MR-207 (`impact`, backend/app.py) have **no Git text conflict** but **collide on the Orbit graph** via 1 shared dependents (impact). Coordinate these before merge.
+### Keystone Shadow Merge Firewall: ALLOW
+MR-301 (`clear_transcript`, core/orbit_cli.py) and MR-302 (`precedent`, core/audit.py) have **no Git text conflict** and **no Orbit blast-radius overlap** - safe to merge.
 ```
 
 ## Honest limitations

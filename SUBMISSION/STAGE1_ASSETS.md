@@ -40,7 +40,7 @@ Keystone computes each change's blast radius from the real Orbit call graph (gl_
 - Agent governance: gates autonomous coding agents against a committed scope manifest and binds each decision to a verifiable identity (GitLab OIDC on the CI path).
 - Tamper-evident ledger: every approve/reject is appended to an HMAC-SHA256 hash-chained log; change one row and the whole chain visibly breaks.
 
-The decision path uses no LLM - every figure is computed from a real orbit index and cross-checked by a live `glab orbit local sql` query that returns the same number. 116 tests pass. The same engine that runs on Keystone's own 262-definition index also finds genuine collisions on pallets/click (1,841 definitions) - a library it did not write - so it is not tuned to our own code. An optional AI assistant explains a change in plain language but is advisory only: it proposes, the deterministic gate decides.
+The decision path uses no LLM - every figure is computed from a real orbit index and cross-checked by a live `glab orbit local sql` query that returns the same number. the full suite passes. The same engine that runs on Keystone's own 262-definition index also finds genuine collisions on pallets/click (1,841 definitions) - a library it did not write - so it is not tuned to our own code. An optional AI assistant explains a change in plain language but is advisory only: it proposes, the deterministic gate decides.
 ```
 
 ## What it does
@@ -74,7 +74,7 @@ Blast radius and cross-MR collision are direct computations over Orbit's symbol 
 - Deterministic: same graph in, same rings/counts/verdict out. No model on the decision path.
 - Cross-checked: each ring-1 count is verified against a live `glab orbit local sql` query; a raw-SQL independent recompute is asserted in tests.
 - Reproducible in one command: `python skills/keystone/run_review.py demo` → BLOCK (exit 2), ALLOW (exit 0), AI override, ledger break.
-- Tested: 116 passing tests, including the cross-MR collision, the memory-gate override, content-addressed precedent, and a real collision on pallets/click.
+- Tested: the full passing suite, including the cross-MR collision, the memory-gate override, content-addressed precedent, and a real collision on pallets/click.
 - Honest about its seams (labelled in the UI): FNV-1a hash in the static browser demo vs HMAC-SHA256 in production; self-asserted identity in the static demo vs OIDC-bound on CI.
 ```
 
@@ -104,7 +104,7 @@ Blast radius and cross-MR collision are direct computations over Orbit's symbol 
 
 ## Judge verification steps (in 2 minutes, no trust required)
 ```
-1. python -m pytest -q                                   -> 116 passed, 2 skipped
+1. python -m pytest -q                                   -> the full suite passes (2 skipped)
 2. python skills/keystone/run_review.py demo             -> the whole story: BLOCK / ALLOW / AI override / ledger break
 3. Open the live demo -> Try the live demo -> green "REAL GitLab Orbit graph" badge -> Reviewer Cockpit (blast graph) -> Audit Ledger -> Simulate tamper (chain BROKEN) -> Restore
 4. python skills/keystone/run_review.py shadow-merge --graph data/click_graph.duckdb --a Context --b echo   -> a real collision on a repo we did not write
