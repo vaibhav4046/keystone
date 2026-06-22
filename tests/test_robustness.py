@@ -179,3 +179,14 @@ def test_ts_class_methods_and_type_annotations():
     assert {"run", "fetchThing", "Svc"} <= names
     assert ("run", "fetchThing") in edges
     assert "Promise" not in names and "Thing" not in names   # generics/type refs are not calls
+
+
+def test_find_definition_and_blast_radius_are_none_safe():
+    # find_definition honors its Optional contract on bad input instead of raising; callers that
+    # rely on a None return (compute_blast_radius) stay safe.
+    from core import impact as impact_mod
+    g = _collgraph({"m.py": "def a():\n    return 1\n"})
+    assert g.find_definition(None) is None
+    assert g.find_definition("") is None
+    assert impact_mod.compute_blast_radius(g, None) is None
+    assert impact_mod.compute_blast_radius(g, "") is None
