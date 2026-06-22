@@ -3,7 +3,7 @@
 Timing QA: all screen actions match the verified live product; every terminal command works from a
 clean clone (`pip install -r requirements.txt` then the commands below). One timing risk found:
 `pytest` takes ~15s live - do NOT run it live inside the 1:52-2:18 slot. Run it BEFORE recording and
-show the final `116 passed` line, or just say "116 passing tests" over the `demo` output. Script fits
+show the final `the full suite passes` line, or just say "the full passing suite" over the `demo` output. Script fits
 2:30 with that adjustment.
 
 - Upload title: Keystone - GitLab Orbit Merge Governance for Silent Collision Detection
@@ -20,7 +20,7 @@ show the final `116 passed` line, or just say "116 passing tests" over the `demo
 | 0:50-1:10 | merge verdict + safe order | "Blocked before it lands. And a safe order - not just a red light, a path forward." |
 | 1:10-1:32 | Audit Ledger → Simulate tamper → restore | "Every decision is tamper-evident. Edit the record and the chain breaks. Restore and it verifies again." |
 | 1:32-1:52 | pallets/click proof | "Not tuned only to Keystone - same engine on pallets/click, 1,841 definitions, real collisions there too." |
-| 1:52-2:18 | terminal: `python skills/keystone/run_review.py demo` (pre-run pytest, flash `116 passed`) | "One command reproduces the whole story: collision blocked, safe alternative allowed, AI approval overruled by memory, ledger tamper detected. 116 passing tests." |
+| 1:52-2:18 | terminal: `python skills/keystone/run_review.py demo` (pre-run pytest, flash `the full suite passes`) | "One command reproduces the whole story: collision blocked, safe alternative allowed, AI approval overruled by memory, ledger tamper detected. the full passing suite." |
 | 2:18-2:30 | landing | "AI agents make code faster → more parallel merges. Orbit exposes the relationship graph. Keystone turns it into a deterministic pre-merge gate." + end line |
 
 ## 60-second emergency version
@@ -34,7 +34,7 @@ show the final `116 passed` line, or just say "116 passing tests" over the `demo
 
 ## Exact terminal commands (verified)
 ```
-python -m pytest -q                                  # 116 passed, 2 skipped  (run BEFORE recording)
+python -m pytest -q                                  # the full suite passes (2 skipped)  (run BEFORE recording)
 python skills/keystone/run_review.py demo            # the 6-beat story, exit 0
 ```
 
@@ -43,7 +43,7 @@ live URL → Try the live demo → (rail) Reviewer Cockpit → (rail) Audit Ledg
 
 ## Final checklist before recording
 - [ ] 1080p · browser 100% zoom · notifications + personal tabs hidden · large terminal font · no secrets
-- [ ] Pre-run `pytest` so the `116 passed` line is visible without a 15s wait
+- [ ] Pre-run `pytest` so the `the full suite passes` line is visible without a 15s wait
 - [ ] Render free instance may be asleep - hit https://keystone-zt6c.onrender.com once ~60s before recording to wake it (only if filming the backend; the static site needs no warm-up)
 - [ ] ≤ 2:30 · upload Unlisted · paste URL back to wire into all docs
 

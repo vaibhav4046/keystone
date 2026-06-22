@@ -31,7 +31,7 @@ by login/recording access · External = external judge control).
 ## Verdict
 No fixable code-, UX-, demo-, copy-, or test-owned issue remains below 9.5 (re-verified live this pass:
 oneCTA=1, deep-links land, tamper→restore, cockpit 17/17, pallets 1,841, no overflow, 0 console errors;
-backend routes 200 + clean 404s + all security headers; 116 tests; CLI 0/2/0/2/2). Every residual < 9.5
+backend routes 200 + clean 404s + all security headers; a full passing test suite; CLI 0/2/0/2/2). Every residual < 9.5
 is External (Impact/Idea/Tech-preference) or Login/recording (the three submission steps). This is the
 convergence stop condition.
 

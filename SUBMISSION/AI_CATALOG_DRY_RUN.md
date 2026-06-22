@@ -10,7 +10,7 @@ verified this pass.
 | Long description | YES - deterministic, no-LLM-verdict, Orbit-native, proven on pallets/click |
 | Install instructions | YES - `git clone … && pip install -r requirements.txt` |
 | Usage instructions | YES - `run_review.py demo` / `shadow-merge` / `--safe` / `memory-gate --prove` |
-| Verification commands | YES - `pytest -q` (115) + `shadow-merge --graph data/click_graph.duckdb` |
+| Verification commands | YES - `pytest -q` (full green suite) + `shadow-merge --graph data/click_graph.duckdb` |
 | Security model | YES, honest - HMAC-SHA256 prod / FNV-1a static demo; OIDC on CI / self-asserted static; CSP + SRI |
 | Limitations | YES, honest - static call-graph approx; published-key static ledger; content-key rename limit; no live MR webhook |
 | Links (live, backend, GitHub, GitLab) | YES - all 200; video URL pending |

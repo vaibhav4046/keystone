@@ -75,7 +75,7 @@ Open gitlab-transcend.devpost.com -> Submit. Paste:
   gl_definition/gl_edge graph - cross-MR transitive intersection - cross-checked by Orbit's
   own `orbit sql`. And `scan-repo` builds the same Orbit schema on the fly for ANY repo, so
   the control runs with zero pre-indexing.
-- **Technical implementation:** 124 passing tests; no LLM on the verdict path; real GitHub
+- **Technical implementation:** the full passing suite; no LLM on the verdict path; real GitHub
   OAuth (HttpOnly cookie); autonomous `git diff -> changed-symbols` gate; in-browser
   duckdb-wasm recompute; a live backend kept warm by a cron.
 - **What makes it new:** It reveals a hazard Git, CODEOWNERS, branch protection, and merge
@@ -92,7 +92,7 @@ Open gitlab-transcend.devpost.com -> Submit. Paste:
   https://github.com/vaibhav4046/keystone - Video: <paste STEP 2 URL> - AI Catalog:
   <paste STEP 1 URL>
 - **Judge verification (paste in the description):**
-  `python -m pytest -q` -> 124 passed; `run_review.py demo`; `run_review.py shadow-merge`
+  `python -m pytest -q` -> the full suite passes; `run_review.py demo`; `run_review.py shadow-merge`
   (BLOCK, exit 2); `run_review.py scan-repo benjaminp/six` (any repo, zero pre-indexing);
   `curl .../api/proof`. On the live site: "Run REAL duckdb-wasm SQL in your browser" returns
   the same count as the backend; Simulate tamper breaks the live hash chain.
@@ -103,7 +103,7 @@ Open gitlab-transcend.devpost.com -> Submit. Paste:
 
 - **Technological Implementation (strongest):** real Orbit SQL converging three ways
   (backend + duckdb-wasm in-browser + tests), deterministic no-LLM gate, autonomous diff
-  gate, any-repo scan. 124 tests.
+  gate, any-repo scan. a full passing test suite.
 - **Quality of the Idea:** cross-MR blast collision + the AI-agent-accountability gate is a
   capability no file-diff tool can reproduce and GitLab doesn't ship.
 - **Design & Usability:** one-CTA hero, autoplaying demo, hands-free tour, real navigation,
