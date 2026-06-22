@@ -42,6 +42,10 @@ data/audit_ledger.jsonl
 # 39). Built by scripts/build_external_graphs.py; pinned by tests. No secrets.
 !data/axios_graph.duckdb
 !data/zod_graph.duckdb
+# ...and the synthetic Orbit Remote SDLC fixture (real gl_codeowners/gl_commit_recency/
+# gl_pipeline_history/gl_security_finding schema, synthetic data) that powers the ownership-entropy
+# / pipeline-health / dependency-quarantine gates. Built by scripts/build_orbit_remote_fixture.py.
+!data/orbit_remote_fixture.duckdb
 schema_snapshot.local.json
 
 # os / editor

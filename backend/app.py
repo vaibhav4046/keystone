@@ -27,7 +27,8 @@ from pydantic import BaseModel, Field
 from core import (graph as graph_mod, impact as impact_mod, orbit_cli,
                   policy as policy_mod, attest as attest_mod, agents as agents_mod, gate as gate_mod,
                   llm as llm_mod, agent as agent_mod, mr as mr_mod, collision as collision_mod,
-                  graph_audit as graph_audit_mod, drift as drift_mod, identity as identity_mod)
+                  graph_audit as graph_audit_mod, drift as drift_mod, identity as identity_mod,
+                  enrich as enrich_mod)
 from core.audit import Ledger, key_fingerprint, using_public_sample_key
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -658,6 +659,21 @@ def approve_mr(d: MRDecision, x_keystone_token: Optional[str] = Header(default=N
             "identity_source": signed_ident["source"] if signed_ident else "self-asserted",
             "quorum": {k: res["quorum"][k] for k in ("required", "confirmed", "status", "closed")},
             "attestation": att}
+
+
+@app.get("/api/orbit-remote/{name}")
+def orbit_remote(name: str = Path(max_length=256)):
+    """Orbit Remote enrichment gates for a symbol's blast radius: ownership-entropy, pipeline-health,
+    and dependency-quarantine - the SDLC signals Orbit Local cannot see. Runs the real gate logic
+    against the real Orbit Remote schema over a committed, clearly-labelled synthetic fixture."""
+    imp, out = _impact_with_governance(name, 3)
+    if out is None:
+        raise HTTPException(404, f"definition not found: {name}")
+    e = enrich_mod.enrich(imp)
+    if e is None:
+        return {"available": False,
+                "note": "no Orbit Remote source; commit data/orbit_remote_fixture.duckdb or set KEYSTONE_ORBIT_REMOTE"}
+    return {"available": True, "symbol": name, **e}
 
 
 @app.get("/api/attestation/{name}")
