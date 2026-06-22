@@ -104,11 +104,15 @@ def test_hero_cache_click_reproduces_from_committed_orbit_graph():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     cache_path = os.path.join(root, "data", "hero_collisions.json")
     graph_path = os.path.join(root, "data", "click_graph.duckdb")
-    if not (os.path.exists(cache_path) and os.path.exists(graph_path)):
-        return
+    # Both artifacts are committed (the graph is force-tracked in .gitignore), so this test
+    # must EXERCISE the reproduction on every checkout - never silently pass. A missing file
+    # here means the headline number is no longer backed by a committed artifact: fail loud.
+    assert os.path.exists(graph_path), (
+        "committed hero Orbit graph data/click_graph.duckdb is missing - the headline "
+        "collision (Parameter x HelpFormatter, 64) must reproduce on a committed artifact")
+    assert os.path.exists(cache_path), "data/hero_collisions.json (committed) is missing"
     entry = json.load(open(cache_path, encoding="utf-8")).get("pallets/click")
-    if not entry:
-        return
+    assert entry, "hero cache must contain the pallets/click entry"
     top = collision.find_top_collision(graph_mod.Graph(path=graph_path, mode="LIVE"))
     assert top["shared_count"] == entry["collision"]["shared_count"]
     assert {top["a"], top["b"]} == {entry["collision"]["a"], entry["collision"]["b"]}

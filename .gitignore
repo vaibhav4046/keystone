@@ -27,6 +27,11 @@ data/audit_ledger.jsonl
 # repo that the static build + CI drift check require (CI has no orbit binary to
 # regenerate it). It is read-only graph data, no secrets. See scripts/build_static.py.
 !data/keystone_self_graph.duckdb
+# ...and the hero Orbit index of pallets/click IS tracked too: the headline number
+# (Parameter x HelpFormatter, 64 shared dependents) must reproduce on a committed
+# artifact, so a fresh clone can run find_top_collision and get the same count.
+# test_hero_cache_click_reproduces_from_committed_orbit_graph asserts it. No secrets.
+!data/click_graph.duckdb
 schema_snapshot.local.json
 
 # os / editor
