@@ -78,16 +78,19 @@ def _classify(a: dict, b: dict) -> dict:
 
 
 def find_top_collision(graph, top_k: int = 25, max_depth: int = 3) -> Optional[dict]:
-    """Find the worst GENUINELY-INDEPENDENT collision among a repo's most-consequential symbols:
-    a pair where NEITHER symbol sits in the other's blast radius - so two parallel MRs changing
-    them have no Git conflict and neither review sees the other - yet they SHARE the most runtime
-    dependents. The textbook "both pass review, break together" hazard, with an honest count that
-    excludes the two changed symbols themselves. Deterministic, from the repo's own call graph.
+    """Find the worst GENUINELY-INDEPENDENT collision among the repo's TOP-K most-consequential
+    symbols: a pair where NEITHER symbol sits in the other's blast radius - so two parallel MRs
+    changing them have no Git conflict and neither review sees the other - yet they SHARE the most
+    runtime dependents. The textbook "both pass review, break together" hazard, with an honest count
+    that excludes the two changed symbols themselves. Deterministic, from the repo's own call graph.
 
-    top_k bounds how many of the most-consequential symbols are considered as collision
-    candidates; it is floored at 4 (top_k < 4 still scans 4), so a tiny top_k does not silently
-    yield an empty scan. Returns {a, b, shared, shared_count, kind='blast_overlap', severity,
-    blast_a, blast_b} or None."""
+    "Worst" is scoped to the candidate window, NOT the global maximum: top_k bounds how many of the
+    highest-fan-in symbols are paired (default 25, floored at 4 so a tiny top_k never silently yields
+    an empty scan). A larger top_k can surface a larger collision among less-central symbols (on
+    pallets/click, top_k=25 gives 64 shared dependents and top_k=60 gives 71), so the headline is
+    honestly "the worst among the K most-consequential symbols" - the deliberate, stable framing the
+    docs and tests pin. Returns {a, b, shared, shared_count, kind='blast_overlap', severity, blast_a,
+    blast_b} or None."""
     names = graph.all_definition_names(limit=max(top_k, 4))
     fps = {}
     for n in names:
@@ -114,6 +117,9 @@ def find_top_collision(graph, top_k: int = 25, max_depth: int = 3) -> Optional[d
             if not shared_names:
                 continue
             weight = {**fa["weight"], **fb["weight"]}
+            # severity is a finer id-level weight (per shared id, fan-in-weighted), used ONLY as a
+            # secondary tiebreak after the name-deduped shared_count; it can exceed shared_count when
+            # several dependents share a short name. shared_count stays the reported headline.
             sev = sum(1 + weight.get(x, 0) for x in shared)
             key = (len(shared_names), sev)       # most shared dependents, then most depended-on
             if key > best_key:

@@ -61,3 +61,15 @@ def test_requests_secondary_hero_number_reproduces():
     assert top is not None
     assert {top["a"], top["b"]} == {"values", "set_cookie"}
     assert top["shared_count"] == 48
+
+
+def test_click_headline_pair_is_stable_in_default_window():
+    # The headline is honestly "the worst among the top-K most-consequential symbols", so it must
+    # be STABLE across the default window and never silently shift. A larger top_k can surface a
+    # bigger collision among less-central symbols (top_k=60 -> 71) - that is expected + documented,
+    # not the pinned headline.
+    g = graph_mod.Graph(prefer_live=True, path=CLICK)
+    for k in (25, 30, 40):
+        top = collision_mod.find_top_collision(g, top_k=k)
+        assert {top["a"], top["b"]} == {"Parameter", "HelpFormatter"}, "headline pair shifted at top_k=%d" % k
+        assert top["shared_count"] == 64

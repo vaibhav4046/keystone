@@ -46,15 +46,21 @@ def load_registry() -> dict:
 def resolve_author(author: str, declared_kind: Optional[str] = None, registry: Optional[dict] = None) -> dict:
     """Resolve an author to an identity badge.
 
-    HUMAN              : not declared as an agent.
-    AGENT_VERIFIED     : declared agent AND present in the committed registry.
-    AGENT_UNREGISTERED : declared agent but not in the registry (detected, not proven).
+    The badge describes REGISTRATION against the committed manifest, never a proof of identity:
+    the author name and declared_kind are self-asserted (see the README integrity note), so a
+    match means "this name has a committed scope manifest", not "this caller is cryptographically
+    this agent". The name is deliberately AGENT_REGISTERED, not AGENT_VERIFIED, to avoid claiming
+    an identity guarantee the system does not provide.
+
+    HUMAN               : not declared as an agent.
+    AGENT_REGISTERED    : declared agent AND present in the committed registry (scope applies).
+    AGENT_UNREGISTERED  : declared agent but not in the registry (detected, not proven).
     """
     registry = registry or load_registry()
     agents = registry.get("agents", {})
     if author in agents:
         a = agents[author]
-        return {"id": author, "badge": "AGENT_VERIFIED", "model": a.get("model"),
+        return {"id": author, "badge": "AGENT_REGISTERED", "model": a.get("model"),
                 "scope": {"allowed_paths": a.get("allowed_paths", []),
                           "forbidden_paths": a.get("forbidden_paths", []),
                           "max_blast_radius": a.get("max_blast_radius")}}
