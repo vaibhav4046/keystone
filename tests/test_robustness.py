@@ -303,3 +303,18 @@ def test_agent_scope_fail_closed_on_unresolvable_files():
 
 def test_find_top_collision_none_graph_is_safe():
     assert collision.find_top_collision(None) is None
+
+
+def test_js_cross_file_same_name_resolution_is_documented_and_bounded():
+    # DISCLOSED approximation (module docstring): name-based resolution links a call to EVERY
+    # same-named def across files (no scope analysis). Pin it so the JS path is a KNOWN, BOUNDED
+    # property, not a silent surprise - the same global resolution Python uses, which is why the
+    # pinned Python numbers (64/48/3) are unaffected. caller's target() links to BOTH 'target'
+    # defs, bounded to exactly the same-named set (never zero, never unbounded).
+    src = {"a.js": "function caller(){ return target(); }\nfunction target(){ return 1; }\n",
+           "b.js": "function target(){ return 2; }\n"}
+    defs, edges = repo_scan._defs_and_edges(src)
+    target_ids = {d["id"] for d in defs if d["name"] == "target"}
+    caller_id = next(d["id"] for d in defs if d["name"] == "caller")
+    caller_targets = {b for (a, b) in edges if a == caller_id and b in target_ids}
+    assert len(target_ids) == 2 and caller_targets == target_ids
