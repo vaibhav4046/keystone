@@ -7,4 +7,8 @@ fail-closed test (tests/test_api.py) monkeypatches this off to assert the 403 de
 """
 import os
 
-os.environ.setdefault("KEYSTONE_OPEN_DEMO", "1")
+# Hard assignment (not setdefault): force the open-demo write path for the whole suite regardless
+# of an ambient KEYSTONE_OPEN_DEMO=0 / stray token, so the approve/approve-mr/quorum tests always
+# exercise the real write path. The dedicated fail-closed test monkeypatches these off per-test.
+os.environ["KEYSTONE_OPEN_DEMO"] = "1"
+os.environ.pop("KEYSTONE_APPROVE_TOKEN", None)
