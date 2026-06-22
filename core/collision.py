@@ -83,7 +83,11 @@ def find_top_collision(graph, top_k: int = 25, max_depth: int = 3) -> Optional[d
     them have no Git conflict and neither review sees the other - yet they SHARE the most runtime
     dependents. The textbook "both pass review, break together" hazard, with an honest count that
     excludes the two changed symbols themselves. Deterministic, from the repo's own call graph.
-    Returns {a, b, shared, shared_count, kind='blast_overlap', severity, blast_a, blast_b} or None."""
+
+    top_k bounds how many of the most-consequential symbols are considered as collision
+    candidates; it is floored at 4 (top_k < 4 still scans 4), so a tiny top_k does not silently
+    yield an empty scan. Returns {a, b, shared, shared_count, kind='blast_overlap', severity,
+    blast_a, blast_b} or None."""
     names = graph.all_definition_names(limit=max(top_k, 4))
     fps = {}
     for n in names:

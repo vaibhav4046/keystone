@@ -128,7 +128,12 @@ class Graph:
         exactly, so callers can disambiguate two same-short-name symbols. A bare
         short name resolves to the definition with the most callers (the most
         consequential to change), tie-break by id; the returned fqn + file let the
-        UI show exactly which symbol was picked so it can never silently mislead."""
+        UI show exactly which symbol was picked so it can never silently mislead.
+
+        A non-string or empty name resolves to None (the Optional contract), so callers
+        like compute_blast_radius stay None-safe instead of raising on bad input."""
+        if not isinstance(name, str) or not name:
+            return None
         col = "fqn" if ("." in name and self.has("gl_definition", "fqn")) else "name"
         rows = self._con.execute(
             f"SELECT d.id, d.name, d.fqn, d.file_path, d.definition_type, {self._fanin_subquery()} AS fanin "
