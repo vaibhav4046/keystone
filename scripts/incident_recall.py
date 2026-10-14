@@ -23,8 +23,13 @@ if ROOT not in sys.path:
 from core.audit import Ledger                    # noqa: E402
 from core.incident import (UNDERSTATED, Incident, feedback, score_all, summarise)  # noqa: E402
 
-DEFAULT_LEDGER = os.path.join(ROOT, "data", "audit_ledger.jsonl")
+DEFAULT_LEDGER = os.path.join(ROOT, "data", "recall_fixture_ledger.jsonl")
 DEFAULT_INCIDENTS = os.path.join(ROOT, "data", "incidents.example.json")
+# The live ledger (data/audit_ledger.jsonl) is runtime state and is deliberately
+# not tracked, so it does not exist on a clean checkout. The default is therefore a
+# committed fixture: without it the example would silently score every incident as
+# NO_BASELINE on a fresh clone while looking correct on a developer machine, which
+# is the worst possible failure for a reproducibility claim.
 
 
 def load_incidents(path: str) -> list:

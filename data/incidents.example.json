@@ -1,5 +1,5 @@
 {
-  "_comment": "EXAMPLE incident records for the recall scorer. 'observed' is the set of symbols that actually broke, as triaged by a human -- this is the input the engine cannot produce for itself, which is exactly why the comparison is worth making. Every change_id below points at a REAL row in data/audit_ledger.jsonl so the numbers reproduce: MR-118 approved 'append', MR-203 rejected 'compute_blast_radius'. INC-003 deliberately names a change with no recorded decision, to exercise the NO_BASELINE path.",
+  "_comment": "EXAMPLE incident records for the recall scorer. 'observed' is the set of symbols that actually broke, as triaged by a human -- this is the input the engine cannot produce for itself, which is exactly why the comparison is worth making. The change_id values below point at rows in data/recall_fixture_ledger.jsonl, which is committed precisely so these numbers reproduce on a clean checkout. The live ledger (data/audit_ledger.jsonl) is runtime state and is deliberately untracked, so it is NOT what these examples are scored against. INC-003 deliberately names a change with no recorded decision, to exercise the NO_BASELINE path.",
   "incidents": [
     {
       "id": "INC-001",
