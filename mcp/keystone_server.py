@@ -13,6 +13,7 @@ Self-test (no MCP client needed):
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 
@@ -177,13 +178,54 @@ def dependency_risk(advisories_path: str = "", lock_path: str = "",
     }
 
 
+def incident_recall(incidents_path: str = "", ledger_path: str = "") -> dict:
+    """Score the engine's own predictions against real incidents.
+
+    Every gate here can report a blast radius all day. Only an incident can say
+    whether that number was right. This compares the symbol set recorded in the
+    ledger at review time against the symbols that actually broke, and returns
+    precision, recall, and the set that broke without ever being predicted.
+
+    That missed set is the point: it is exactly the dependency the precedent store
+    is missing, so it is returned as concrete precedent updates rather than just
+    a number. An incident with no recorded decision reports NO_BASELINE, never a
+    clean bill of health. Deterministic, no LLM.
+    """
+    import sys as _sys
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if ROOT not in _sys.path:
+        _sys.path.insert(0, ROOT)
+    from core.audit import Ledger
+    from core.incident import Incident, feedback, score_all, summarise
+
+    inc_path = incidents_path or os.path.join(ROOT, "data", "incidents.example.json")
+    led_path = ledger_path or os.path.join(ROOT, "data", "audit_ledger.jsonl")
+    if not os.path.exists(inc_path):
+        return {"ok": False, "error": "no_incidents", "incidents_path": inc_path}
+    with open(inc_path, "r", encoding="utf-8") as fh:
+        raw = json.load(fh)
+    rows = raw.get("incidents", []) if isinstance(raw, dict) else raw
+    incs = [Incident(id=str(r.get("id") or f"INC-{i}"),
+                     observed=list(r.get("observed") or []),
+                     change_id=str(r.get("change_id") or ""),
+                     summary=str(r.get("summary") or ""))
+            for i, r in enumerate(rows)]
+    led = Ledger(led_path) if os.path.exists(led_path) else Ledger(os.devnull)
+    scored = score_all(led, incs)
+    return {
+        "ok": True,
+        "summary": summarise(scored),
+        "feedback": feedback(scored),
+        "reports": [r.to_dict() for r in scored],
+    }
+
+
 for _fn in (gate_symbol, gate_diff, cross_mr_collision, scan_repo_and_gate,
-            advisory_exposure, dependency_risk):
+            advisory_exposure, dependency_risk, incident_recall):
     mcp.tool()(_fn)
 
 
 def _selftest() -> int:
-    import json
     print("gate_symbol(compute_blast_radius):")
     print(json.dumps(gate_symbol("compute_blast_radius"), indent=2))
     print("\ngate_diff(touch compute_blast_radius):")

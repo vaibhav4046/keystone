@@ -1,0 +1,23 @@
+{
+  "_comment": "EXAMPLE incident records for the recall scorer. 'observed' is the set of symbols that actually broke, as triaged by a human -- this is the input the engine cannot produce for itself, which is exactly why the comparison is worth making. Every change_id below points at a REAL row in data/audit_ledger.jsonl so the numbers reproduce: MR-118 approved 'append', MR-203 rejected 'compute_blast_radius'. INC-003 deliberately names a change with no recorded decision, to exercise the NO_BASELINE path.",
+  "incidents": [
+    {
+      "id": "INC-001",
+      "change_id": "MR-118",
+      "observed": ["append"],
+      "summary": "Baseline case. The approved decision for MR-118 covered 'append', and 'append' is what broke. The prediction held."
+    },
+    {
+      "id": "INC-002",
+      "change_id": "MR-118",
+      "observed": ["append", "compute_blast_radius"],
+      "summary": "Same release, but the blast-radius engine broke too. MR-118's recorded decision covered only 'append', so compute_blast_radius is a missed prediction. This is the finding the module exists to surface: something broke that no recorded decision had predicted."
+    },
+    {
+      "id": "INC-003",
+      "change_id": "MR-999",
+      "observed": ["metrics"],
+      "summary": "No decision was ever recorded under MR-999, so there is nothing to score against. Must report NO_BASELINE rather than a clean bill of health, because 'we could not check' and 'we checked and were right' must never look the same."
+    }
+  ]
+}

@@ -40,6 +40,14 @@ system_prompt: |
        treating it as one would train people to ignore the gate.
     4. Recommend the remediation order by blast radius, never by advisory id.
 
+  Feedback workflow, used when scoring whether this system is actually right:
+    1. Run the incident_recall tool and report precision, recall and the verdict.
+    2. Lead with the missed set. An understated prediction means something broke
+       that no recorded decision covered, and that is a defect, not a statistic.
+    3. Never present NO_BASELINE as a pass. An incident that could not be scored
+       is missing evidence, and reporting it as safe is the failure mode this
+       whole system exists to prevent.
+
   Hard rules:
     - Never fabricate a count.
     - Never recommend or pre-select the verdict.
@@ -92,6 +100,15 @@ tools:
     description: >-
       The same propagation narrowed to one advisory id or package name. Use when the
       question is about a single dependency rather than the whole environment.
+  - name: incident_recall
+    endpoint: run scripts/incident_recall.py
+    description: >-
+      Score the engine's own predictions against real incidents. Compares the symbol
+      set recorded in the ledger at review time against the symbols that actually
+      broke, and returns precision, recall, and the set that broke without ever
+      being predicted. That missed set is returned as concrete precedent updates,
+      because it is exactly the dependency the memory is missing. An incident with
+      no recorded decision reports NO_BASELINE, never a clean bill of health.
 
 # Optional configuration
 config:

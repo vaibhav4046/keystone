@@ -7,6 +7,7 @@ stages:
   - gate
   - secure
   - release
+  - monitor
   - deploy
 
 # --- diagnostics --------------------------------------------------------------
@@ -187,6 +188,46 @@ release-gate:
   script:
     - pip install --quiet -r requirements.txt
     - python scripts/dependency_risk.py --fail-on-block
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: never
+
+# --- monitor: did the predictions actually hold? -------------------------------
+# Every gate in this pipeline reports a blast radius. Only an incident can say
+# whether that number was right. This compares the symbol set recorded in the
+# ledger at review time against the symbols that actually broke, and reports
+# precision, recall, and the set that broke without ever being predicted.
+#
+# allow_failure, because an understated prediction is a finding to act on rather
+# than a build break: failing the pipeline here would train people to ignore the
+# one job that tells them the memory is incomplete. It is a gate on a tag, like
+# release-gate, when you actually want it to block.
+incident-recall:
+  stage: monitor
+  image: python:3.13-slim
+  allow_failure: true
+  script:
+    - pip install --quiet -r requirements.txt
+    - python scripts/incident_recall.py
+  artifacts:
+    when: always
+    paths:
+      - incident-recall.json
+  after_script:
+    - python scripts/incident_recall.py --json > incident-recall.json || true
+  rules:
+    - when: always
+
+# Enforceable form: fails the pipeline when a prediction was UNDERSTATED, i.e.
+# something broke that no recorded decision had predicted. Over-warning is a
+# cost, under-warning is a defect, and a gate that treats them equally will
+# eventually be tuned to ignore itself.
+incident-recall-gate:
+  stage: monitor
+  image: python:3.13-slim
+  script:
+    - pip install --quiet -r requirements.txt
+    - python scripts/incident_recall.py --fail-on-understated
   rules:
     - if: $CI_COMMIT_TAG
     - when: never
