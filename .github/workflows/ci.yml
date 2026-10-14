@@ -26,6 +26,37 @@ jobs:
         with:
           python-version: '3.13'
       - run: pip install --quiet -r requirements.txt
+      # --- pre-flight lint of the GitLab CI config -------------------------------
+      # Runs on GitHub, so it fires on every push even when GitLab cannot create a
+      # single job. An invalid .gitlab-ci.yml is the worst failure mode: GitLab
+      # still creates a pipeline, still calls it failed, and silently creates zero
+      # jobs, so the pipeline tab looks like a broken runner and nothing explains
+      # why. That is exactly what happened here.
+      #
+      # The check is item-level on purpose. A plain YAML scalar containing ": "
+      # parses as a MAPPING, so the offending entry becomes a dict. safe_load
+      # raises nothing and a top-level "is every job a dict with a script key"
+      # check sails straight past it.
+      - name: lint .gitlab-ci.yml (item-level)
+        run: |
+          python -c "
+          import sys, yaml
+          d = yaml.safe_load(open('.gitlab-ci.yml'))
+          bad = []
+          for name, job in d.items():
+              if not (isinstance(job, dict) and 'script' in job):
+                  continue
+              for i, item in enumerate(job['script']):
+                  if not isinstance(item, str):
+                      bad.append(f'{name}[{i}] is {type(item).__name__}')
+          if bad:
+              print('INVALID .gitlab-ci.yml, non-string script entries:')
+              [print('  -', b) for b in bad]
+              print('hint: quote any script line containing a colon-space')
+              sys.exit(1)
+          jobs = [k for k, v in d.items() if isinstance(v, dict) and 'script' in v]
+          print(f'ok: {len(jobs)} jobs -> ' + ', '.join(jobs))
+          "
       - run: python -m pytest -q
       # enforceable governance gate (in-process, SAME gate as the API): a clean
       # symbol passes; a BLOCKed symbol exits non-zero.

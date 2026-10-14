@@ -28,6 +28,10 @@ diagnose:
   image: python:3.13-slim
   allow_failure: true
   script:
+    # Install first. The self-check below needs PyYAML, and python:3.13-slim does
+    # not ship it, so checking before the install fails the job on a missing import
+    # rather than on the thing it is actually looking for.
+    - python -m pip install --quiet -r requirements.txt
     # A YAML plain scalar containing ": " parses as a MAPPING, not a string, which
     # makes the whole job's script invalid. PyYAML loads it without complaint, so
     # only an item-level type check catches it. This is the check that would have
