@@ -143,36 +143,51 @@ test:
 governance-gate:
   stage: gate
   image: python:3.13-slim
-  # Mint a GitLab OIDC ID token for THIS job. The runner injects it as $KEYSTONE_ID_TOKEN;
-  # Keystone binds the recorded actor to its `sub` claim, so a pipeline decision is
-  # GitLab-attested (self_asserted=False), closing the self-asserted-identity gap on the
-  # path that matters most for supply-chain attestation.
+  # THE security control, and fatal. The SAME policy gate the API uses: a clean
+  # symbol passes, a BLOCKed symbol exits non-zero. This asserts the engine refuses
+  # a contradicted change, which is the property the whole project exists for.
+  script:
+    - pip install --quiet -r requirements.txt
+    - python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
+  rules:
+    - when: always
+
+# Demonstration of the cryptographically-bound actor on the CI path. allow_failure,
+# and deliberately a SEPARATE job from the gate above.
+#
+# It has to be separate. This job declares `id_tokens`, which asks the RUNNER to mint
+# a GitLab OIDC token for it. A runner that cannot do that fails the job before a
+# single script line runs, which is not something a job can defend against from the
+# inside. So an attestation demo that depends on runner capability must never be the
+# thing that reddens the pipeline: the control above is what must stay green.
+#
+# With a bound token the recorded actor is GitLab-attested (self_asserted=False),
+# which closes the self-asserted-identity gap on the path that matters most for
+# supply-chain attestation.
+governance-gate-oidc:
+  stage: gate
+  image: python:3.13-slim
+  allow_failure: true
   id_tokens:
     KEYSTONE_ID_TOKEN:
       aud: https://keystone.example/ci
   variables:
-    # verify the token's RS256 signature against the issuer JWKS and enforce the audience the
-    # id_tokens block above minted, so the bound identity is cryptographically checked, not just
-    # decoded. KEYSTONE_STRICT_OVERRIDE refuses an override that is not identity-bound.
+    # verify the token's RS256 signature against the issuer JWKS and enforce the
+    # audience the id_tokens block above minted, so the bound identity is
+    # cryptographically checked, not just decoded. KEYSTONE_STRICT_OVERRIDE refuses
+    # an override that is not identity-bound.
     KEYSTONE_VERIFY_OIDC: "1"
     KEYSTONE_OIDC_AUD: https://keystone.example/ci
     KEYSTONE_STRICT_OVERRIDE: "1"
   script:
     - pip install --quiet -r requirements.txt
-    # the SAME policy gate the API uses: a clean symbol passes, a BLOCKed one fails
-    - python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
-    # Record an approval, but do not fail the pipeline on it.
-    #
-    # This job runs with KEYSTONE_VERIFY_OIDC=1 and KEYSTONE_STRICT_OVERRIDE=1, so when
-    # GitLab mints no id_token for the job, or the issuer JWKS is unreachable, the engine
-    # correctly refuses the identity-bound approval and exits non-zero. That refusal is
-    # the product behaving correctly, not a CI defect.
-    #
-    # The security assertion in this job is the gate BLOCKING a contradicted change above,
-    # which stays fatal. The approval below is a demonstration, so it is reported and
-    # tolerated. Relaxing KEYSTONE_STRICT_OVERRIDE to make this green would weaken the
-    # exact control this project exists to enforce, so it is deliberately not done.
-    - python skills/keystone/run_review.py metrics --local --fixture --decide approve --reviewer "${GITLAB_USER_LOGIN:-gitlab-ci}" --reason "pipeline-gated approval (OIDC-bound actor)" || echo "approval refused (expected without a bound id_token) - gate control itself is asserted above"
+    - python skills/keystone/run_review.py metrics --local --fixture --decide approve --reviewer "${GITLAB_USER_LOGIN:-gitlab-ci}" --reason "pipeline-gated approval (OIDC-bound actor)" || echo "approval refused (expected without a bound id_token)"
+    - |
+      if [ -n "${KEYSTONE_ID_TOKEN:-}" ]; then
+        echo "id_token: present, the OIDC-bound actor path was exercised"
+      else
+        echo "id_token: ABSENT, this runner did not mint one; attestation path not exercised here"
+      fi
   rules:
     - when: always
 
