@@ -116,30 +116,18 @@ governance-gate:
     - pip install --quiet -r requirements.txt
     # the SAME policy gate the API uses: a clean symbol passes, a BLOCKed one fails
     - python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
-    # Record an approval and report which identity path was actually exercised.
+    # Record an approval, but do not fail the pipeline on it.
     #
-    # This step is deliberately NOT fatal. The security property being asserted is the
-    # gate above, which must BLOCK and must stay green -- that one is a hard assertion.
-    # The approval step additionally runs with KEYSTONE_VERIFY_OIDC=1 and
-    # KEYSTONE_STRICT_OVERRIDE=1, so when GitLab mints no id_token for the job, or the
-    # issuer JWKS is unreachable, the engine correctly refuses the identity-bound
-    # approval and exits non-zero. That refusal is the product behaving correctly, not
-    # a CI defect, so it is reported rather than failed on. The alternative -- relaxing
-    # KEYSTONE_STRICT_OVERRIDE to turn the pipeline green -- would weaken the exact
-    # control this project exists to enforce.
-    - |
-      set +e
-      python skills/keystone/run_review.py metrics --local --fixture \
-        --decide approve \
-        --reviewer "${GITLAB_USER_LOGIN:-gitlab-ci}" \
-        --reason "pipeline-gated approval (OIDC-bound actor)"
-      echo "APPROVE_EXIT=$?"
-      if [ -n "${KEYSTONE_ID_TOKEN:-}" ]; then
-        echo "id_token: present (OIDC path available)"
-      else
-        echo "id_token: ABSENT from this job env - attestation path not exercised here"
-      fi
-      exit 0
+    # This job runs with KEYSTONE_VERIFY_OIDC=1 and KEYSTONE_STRICT_OVERRIDE=1, so when
+    # GitLab mints no id_token for the job, or the issuer JWKS is unreachable, the engine
+    # correctly refuses the identity-bound approval and exits non-zero. That refusal is
+    # the product behaving correctly, not a CI defect.
+    #
+    # The security assertion in this job is the gate BLOCKING a contradicted change above,
+    # which stays fatal. The approval below is a demonstration, so it is reported and
+    # tolerated. Relaxing KEYSTONE_STRICT_OVERRIDE to make this green would weaken the
+    # exact control this project exists to enforce, so it is deliberately not done.
+    - python skills/keystone/run_review.py metrics --local --fixture --decide approve --reviewer "${GITLAB_USER_LOGIN:-gitlab-ci}" --reason "pipeline-gated approval (OIDC-bound actor)" || echo "approval refused (expected without a bound id_token) - gate control itself is asserted above"
   rules:
     - when: always
 
