@@ -1,9 +1,15 @@
 name: keystone
 description: |
-  Governed change review on the GitLab Orbit code knowledge graph.
+  Governed change review on the GitLab Orbit code knowledge graph, extended into
+  dependency-risk propagation for the supply chain.
+
   Given a symbol that is about to change, fetch its Orbit dependency graph,
-  compute deterministic blast radius, surface precedent decisions, and record
-  a human-auditable approval or rejection in a tamper-evident ledger.
+  compute deterministic blast radius, surface precedent decisions, and record a
+  human-auditable approval or rejection in a tamper-evident ledger.
+
+  Given a package advisory, resolve the real import edges to the definitions that
+  are actually exposed, compute how far the damage travels from each, and return
+  an ALLOW / HOLD / BLOCK verdict ranked by blast radius rather than by severity.
 
 # The agent persona and hard rules
 system_prompt: |
@@ -13,22 +19,33 @@ system_prompt: |
   from the GitLab Orbit graph; you never invent or estimate a figure.
 
   Workflow:
-  1. Resolve the target symbol against the Orbit graph. If it does not exist,
-     say so and stop.
-  2. Call the Keystone impact endpoint to get the deterministic blast radius.
-  3. Call the precedent endpoint to surface prior governance and any
-     contradiction.
-  4. Present a governed-review report: affected count, severity rings, owners,
-     precedent counts, and any contradiction.
-  5. Require an explicit human decision with reviewer name and written reason.
-     Record it via POST /api/approve.
-  6. Confirm the chain still verifies via GET /api/audit/verify.
+    1. Resolve the target symbol against the Orbit graph. If it does not exist,
+       say so and stop.
+    2. Call the Keystone impact endpoint to get the deterministic blast radius.
+    3. Call the precedent endpoint to surface prior governance and any
+       contradiction.
+    4. Present a governed-review report: affected count, severity rings, owners,
+       precedent counts, and any contradiction.
+    5. Require an explicit human decision with reviewer name and written reason.
+       Record it via POST /api/approve.
+    6. Confirm the chain still verifies via GET /api/audit/verify.
+
+  Supply-chain workflow, used when the question is about a dependency rather than
+  a diff:
+    1. Run the dependency_risk tool to propagate every advisory onto the graph.
+    2. For each BLOCK, report the importing files, the entry-point definitions and
+       their ring counts, and the owning directory.
+    3. State the verdict. Severity alone does not block. A high-severity advisory
+       against a package this repo never imports is not a release blocker, and
+       treating it as one would train people to ignore the gate.
+    4. Recommend the remediation order by blast radius, never by advisory id.
 
   Hard rules:
-  - Never fabricate a count.
-  - Never recommend or pre-select the verdict.
-  - Never claim the chain is verified without the live recompute.
-  - Never present fixture data as live Orbit data.
+    - Never fabricate a count.
+    - Never recommend or pre-select the verdict.
+    - Never claim the chain is verified without the live recompute.
+    - Never present fixture data as live Orbit data.
+    - Never call a package safe without stating whether its version is pinned.
 
 # Runnable proof without any hosted service:
 #   python skills/keystone/run_review.py <symbol> --local
@@ -36,6 +53,10 @@ system_prompt: |
 # network), and `--fail-on-block` makes it an enforceable CI gate that exits non-zero on a BLOCK.
 # The HTTP tools below target a deployed Keystone API (backend/app.py); where no API is reachable,
 # the server-less skill above is the canonical runnable path. Nothing here invents a number.
+#
+# The supply-chain tools are different in one respect: they are fully runnable with no server at
+# all, because the graph they need is the committed self-index and the lockfile is on disk:
+#   python scripts/dependency_risk.py [--json] [--package NAME] [--fail-on-block]
 # Tools the agent may invoke (matches backend endpoints)
 tools:
   - name: impact
@@ -56,6 +77,21 @@ tools:
   - name: collisions
     endpoint: POST /api/collisions
     description: Detect blast-radius collisions across open merge requests.
+  - name: dependency_risk
+    endpoint: run scripts/dependency_risk.py
+    description: >-
+      Run every known advisory through dependency-risk propagation and return the
+      ranked report plus an overall ALLOW / HOLD / BLOCK verdict. Joins the advisory
+      to real import edges, then computes bounded reverse-BFS blast radius per
+      importing definition, so the answer is which of our symbols and directories
+      this advisory actually reaches rather than a flat package list. Reads a local
+      advisory file and a lockfile and never calls the network, so the output is
+      identical on every run.
+  - name: advisory_exposure
+    endpoint: run scripts/dependency_risk.py --package {package}
+    description: >-
+      The same propagation narrowed to one advisory id or package name. Use when the
+      question is about a single dependency rather than the whole environment.
 
 # Optional configuration
 config:

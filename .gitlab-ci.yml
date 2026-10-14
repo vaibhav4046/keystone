@@ -4,6 +4,8 @@
 stages:
   - test
   - gate
+  - secure
+  - release
   - deploy
 
 test:
@@ -61,6 +63,43 @@ governance-gate-demo:
     - python skills/keystone/run_review.py tokenize --local --fixture --fail-on-block
   rules:
     - when: always
+
+# --- secure + release: dependency-risk propagation -----------------------------
+# A dependency scanner answers "this package has a CVE". Keystone answers the
+# question you actually have to act on: which of OUR definitions import it, how far
+# the damage travels from each, and which directory owns the blast.
+#
+# advisory -> gl_imported_symbol (real import edges) -> gl_definition -> reverse-BFS
+# blast radius -> ALLOW / HOLD / BLOCK. No network call, no LLM: identical inputs
+# give identical output, so this gate cannot flap between runs.
+dependency-risk:
+  stage: secure
+  image: python:3.13-slim
+  script:
+    - pip install --quiet -r requirements.txt
+    - python scripts/dependency_risk.py
+  artifacts:
+    when: always
+    paths:
+      - dependency-risk.json
+  after_script:
+    - python scripts/dependency_risk.py --json > dependency-risk.json || true
+  rules:
+    - when: always
+
+# Enforceable release gate. Exits non-zero on BLOCK, so a vulnerable dependency
+# that this repo actually imports and actually depends on cannot ship. The
+# severity is NOT what fails the build -- an untouched transitive dep is not a
+# release blocker. The propagated blast radius is.
+release-gate:
+  stage: release
+  image: python:3.13-slim
+  script:
+    - pip install --quiet -r requirements.txt
+    - python scripts/dependency_risk.py --fail-on-block
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: never
 
 # Publishes the self-contained static hero (live-API-first, FALLBACK bundle when
 # no backend is reachable). build_static.py regenerates web/data.json from the

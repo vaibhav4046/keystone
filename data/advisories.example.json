@@ -1,0 +1,47 @@
+{
+  "_comment": "EXAMPLE advisories for Keystone's dependency-risk propagation. These IDs are SYNTHETIC (DEMO-*), not real CVEs, and exist so the pipeline, the CI gate and the demo video are deterministic and reviewable. Replace this file with a real OSV export (see scripts/fetch_advisories.py) to gate on real vulnerabilities. The engine never calls the network itself.",
+  "advisories": [
+    {
+      "id": "DEMO-0001",
+      "package": "FastAPI",
+      "affected": "<0.116.0",
+      "severity": "HIGH",
+      "summary": "Synthetic example: request-parsing behaviour change affecting FastAPI below 0.116.0."
+    },
+    {
+      "id": "DEMO-0002",
+      "package": "duckdb",
+      "affected": "<1.5.4",
+      "severity": "CRITICAL",
+      "summary": "Synthetic example: DuckDB extension-loading advisory affecting builds below 1.5.4."
+    },
+    {
+      "id": "DEMO-0003",
+      "package": "pydantic",
+      "affected": "==2.13.0",
+      "severity": "MEDIUM",
+      "summary": "Synthetic example: affects one exact pin only; demonstrates the == branch."
+    },
+    {
+      "id": "DEMO-0004",
+      "package": "starlette",
+      "affected": "<0.42.0",
+      "severity": "HIGH",
+      "summary": "Synthetic example: Starlette is a transitive dependency of FastAPI; demonstrates transitive reach."
+    },
+    {
+      "id": "DEMO-0005",
+      "package": "os",
+      "affected": "<99.0.0",
+      "severity": "CRITICAL",
+      "summary": "Synthetic example: stdlib package, demonstrates the interpreter-version-bound warning."
+    },
+    {
+      "id": "DEMO-0006",
+      "package": "some-package-not-installed",
+      "affected": "<1.0.0",
+      "severity": "HIGH",
+      "summary": "Synthetic example: absent from the lockfile; demonstrates refusing to guess a version."
+    }
+  ]
+}
