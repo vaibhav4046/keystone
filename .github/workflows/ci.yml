@@ -33,6 +33,16 @@ jobs:
       # prove the gate BLOCKS a contradicted change (must exit non-zero); inverted so
       # the pipeline stays green while demonstrating the block.
       - run: "! python skills/keystone/run_review.py tokenize --local --fixture --fail-on-block"
+      # --- dependency-risk propagation (advisory -> import edges -> blast radius) ---
+      - run: python scripts/dependency_risk.py
+      # Proves the release gate BLOCKS a real exposure: the shipped example set
+      # includes a CRITICAL advisory on a package this repo imports, so the gate
+      # must exit non-zero. Inverted so CI stays green while demonstrating the block.
+      - run: "! python scripts/dependency_risk.py --fail-on-block"
+      # And that the same gate ALLOWS when nothing is actually exposed, so it cannot
+      # pass by always failing. pydantic 2.13.4 is outside the example advisory's
+      # affected range, so a correct engine reports no exposure and exits 0.
+      - run: python scripts/dependency_risk.py --package pydantic --fail-on-block
       # committed static bundle must equal a fresh build from the committed real Orbit
       # self-index + provenance + recorded agent sample (no silent drift; no orbit binary
       # or network needed - the build reads only committed artifacts)

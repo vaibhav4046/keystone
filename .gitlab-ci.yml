@@ -78,6 +78,17 @@ test:
   script:
     - pip install --quiet -r requirements.txt
     - python -m pytest -q
+    # --- dependency-risk propagation, asserted in BOTH directions ----------------
+    # A gate that only ever fails is not a gate. These two steps prove the release
+    # gate BLOCKS a real exposure and ALLOWS when nothing is exposed.
+    #
+    #   the shipped example set includes a CRITICAL advisory on duckdb, which this
+    #   repo imports, so the gate must exit non-zero (inverted to keep CI green)
+    - "! python scripts/dependency_risk.py --fail-on-block"
+    #   pydantic 2.13.4 sits outside that advisory's affected range, so a correct
+    #   engine reports no exposure and exits 0 -- this is the direction that stops a
+    #   broken gate from hiding behind a permanently red build
+    - python scripts/dependency_risk.py --package pydantic --fail-on-block
     # The committed static bundle must equal a fresh build from the committed real Orbit
     # self-index + provenance + recorded agent sample (no silent drift).
     #
