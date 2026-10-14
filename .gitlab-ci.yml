@@ -256,6 +256,11 @@ config-drift:
   rules:
     - when: always
 
+# Enforceable form: exits non-zero when a decision was recorded under a different
+# policy than the one now in force. The shipped policy has not drifted, so this job
+# must stay green on a clean tree. That is deliberate: a gate that fires on a clean
+# tree is a gate people disable. The DRIFT -> non-zero direction is covered by the
+# unit tests, where the drift is constructed on purpose.
 config-drift-gate:
   stage: release
   image: python:3.13-slim
