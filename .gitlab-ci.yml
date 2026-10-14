@@ -17,11 +17,40 @@ stages:
 # this removes that blind spot. If this job's artifact is empty and the pipeline is
 # still red, the failure is outside the job script itself (runner provisioning,
 # image pull, or scheduling).
+#
+# It also self-checks the config. An invalid .gitlab-ci.yml is the nastiest failure
+# mode of all: GitLab still creates a pipeline, still reports it as failed, and
+# silently creates ZERO jobs, so the pipeline tab looks like a runner problem and
+# nothing in the UI ever explains why. That happened here for hours before the API
+# lint endpoint was used. The first step below catches it locally and instantly.
 diagnose:
   stage: diagnose
   image: python:3.13-slim
   allow_failure: true
   script:
+    # A YAML plain scalar containing ": " parses as a MAPPING, not a string, which
+    # makes the whole job's script invalid. PyYAML loads it without complaint, so
+    # only an item-level type check catches it. This is the check that would have
+    # found the bug immediately.
+    - |
+      python -c "
+      import sys, yaml
+      d = yaml.safe_load(open('.gitlab-ci.yml'))
+      bad = []
+      for name, job in d.items():
+          if not (isinstance(job, dict) and 'script' in job):
+              continue
+          for i, item in enumerate(job['script']):
+              if not isinstance(item, str):
+                  bad.append(f'{name}[{i}] is {type(item).__name__}')
+      if bad:
+          print('INVALID CI CONFIG, non-string script entries:')
+          [print('  -', b) for b in bad]
+          print('hint: quote any script line containing a colon-space')
+          sys.exit(1)
+      jobs = [k for k, v in d.items() if isinstance(v, dict) and 'script' in v]
+      print('ci config OK:', len(jobs), 'jobs ->', ', '.join(jobs))
+      "
     - mkdir -p diagnose
     - |
       {
@@ -99,7 +128,7 @@ test:
     # compares the same bytes.
     - sha256sum web/data.json > .static-before.sha256
     - python scripts/build_static.py
-    - sha256sum -c .static-before.sha256 && echo "static bundle reproducible: no drift"
+    - 'sha256sum -c .static-before.sha256 && echo "static bundle reproducible: no drift"'
   rules:
     - when: always
 
