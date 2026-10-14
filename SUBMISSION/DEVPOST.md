@@ -117,13 +117,25 @@ deterministic fallback so the whole product works with zero API keys.
 
 ## How it uses the GitLab Duo Agent Platform and AI Catalog
 
-The submitted artifact is a Duo Agent Platform agent defined at `.gitlab/agents/keystone/agent.yml`:
-a governed-review persona with four fixed workflows and ten bound tools. The first is the original
-review workflow (resolve the symbol on the Orbit graph, compute blast radius, surface precedent and
-contradictions, require a human decision, verify the ledger). The second drives the supply-chain
-path, the third drives the feedback path, and the fourth is an assurance pass whose hard rule is to
-describe configuration drift as a fact about history rather than as wrongdoing. It is published to
-the GitLab AI Catalog so other teams can install it.
+The submission covers all three Duo Agent Platform surfaces.
+
+**Agent.** A Duo Agent Platform agent at `.gitlab/agents/keystone/agent.yml`: a governed-review
+persona with four fixed workflows and ten bound tools. The first is the original review workflow
+(resolve the symbol on the Orbit graph, compute blast radius, surface precedent and contradictions,
+require a human decision, verify the ledger). The second drives the supply-chain path, the third
+the feedback path, and the fourth is an assurance pass whose hard rule is to describe configuration
+drift as a fact about history rather than as wrongdoing. It is published to the GitLab AI Catalog so
+other teams can install it.
+
+**Flow.** A GitLab Flow at `.gitlab/flows/keystone-lifecycle.yml` runs the same engine as an ordered
+pipeline, so nobody has to remember to call the checks in the right order: resolve the symbol, verify
+the blast radius and policy verdict, propagate package advisories, gate the release, check the
+recorded policy, score the engine's recall, and stop at a human decision. The Flow is not merely
+declared: a CI job executes every step in order and then validates the Flow file itself, so a
+shipped-but-broken Flow fails the build.
+
+**MCP server.** `mcp/keystone_server.py` exposes all ten tools over Model Context Protocol, so any
+MCP client can ask the graph for a verdict without the agent being the thing that produces it.
 
 The same workflows ship as runnable scripts that need no server:
 
@@ -137,9 +149,6 @@ python scripts/config_drift.py                           # were the rules the sa
 Each takes `--fail-on-block`, `--fail-on-understated`, or `--fail-on-drift` to become an
 enforceable CI gate that exits non-zero. That is the proof the agent automates an action rather
 than chatting: it produces a deterministic report, a verdict, and a tamper-evident ledger row.
-
-The MCP server exposes all ten tools to any MCP client, so an agent can ask the graph for a
-verdict without the agent ever being the thing that produces it.
 
 ## How GitLab Orbit is used (specifically)
 

@@ -59,6 +59,28 @@ jobs:
       # would make people disable it. The opposite direction (DRIFT -> non-zero) is
       # covered by the unit tests, where the drift is constructed deliberately.
       - run: python scripts/config_drift.py --fail-on-drift
+      # --- execute the Flow -------------------------------------------------------
+      # The agent, the MCP server and the Flow are the three Duo Agent Platform
+      # surfaces. This runs the Flow's steps in order so it is exercised rather than
+      # merely declared. The two verdict steps are expected to report BLOCK and
+      # UNDERSTATED on the shipped sample data, so they are tolerated; the Flow file
+      # itself is validated without tolerance.
+      - run: python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
+      - run: python scripts/dependency_risk.py --fail-on-block || echo "release gate BLOCKED as expected"
+      - run: python scripts/incident_recall.py --fail-on-understated || echo "recall gate UNDERSTATED as expected"
+      - name: validate the Flow definition
+        run: |
+          python -c "
+          import os, sys, yaml
+          spec = yaml.safe_load(open('.gitlab/flows/keystone-lifecycle.yml'))['spec']
+          need = ['skills/keystone/run_review.py','scripts/dependency_risk.py',
+                  'scripts/incident_recall.py','scripts/config_drift.py',
+                  'data/keystone_self_graph.duckdb']
+          missing = [p for p in need if not os.path.exists(p)]
+          if missing:
+              print('FLOW INVALID, missing:', missing); sys.exit(1)
+          print('flow', spec['id'], 'steps:', [s['step'] for s in spec['steps']], 'all targets present')
+          "
       # committed static bundle must equal a fresh build from the committed real Orbit
       # self-index + provenance + recorded agent sample (no silent drift; no orbit binary
       # or network needed - the build reads only committed artifacts)

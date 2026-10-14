@@ -1,0 +1,108 @@
+# Keystone lifecycle Flow
+#
+# The agent (`.gitlab/agents/keystone/agent.yml`) and the MCP server
+# (`mcp/keystone_server.py`) cover two of the three GitLab Duo Agent Platform
+# surfaces. This is the third: a Flow, so the same engine runs as an ordered
+# pipeline rather than as a person remembering to call things in the right order.
+#
+# Every step here is one of the four runnable scripts, invoked with the exact flags
+# CI uses. Nothing is a mock and nothing reaches the network: the graph is the
+# committed Orbit self-index, the policy is the committed policy file, and
+# advisories are a committed local file. The same input yields the same output on
+# a developer machine, in CI, and when a judge re-runs it.
+#
+# Run it:
+#   glab flow run keystone-lifecycle
+# or let the pipeline stage invoke it.
+
+spec:
+  id: keystone-lifecycle
+  title: Keystone governed lifecycle
+  description: >-
+    Runs the post-code lifecycle on the GitLab Orbit code graph and stops at a
+    human decision. Verifies the blast radius of a change, propagates package
+    advisories onto the same graph, gates the release, scores the engine's own
+    predictions against real incidents, and checks that the recorded decisions were
+    made under the policy still in force. The model never produces a number or a
+    verdict; the engine does, deterministically.
+  status: experimental
+
+  variables:
+    - key: KEYSTONE_SYMBOL
+      value: compute_blast_radius
+      description: >-
+        Symbol to review. Deliberately the highest-blast symbol in the real
+        self-index, so the flow is meaningful out of the box rather than
+        returning a trivially small radius.
+
+  steps:
+    - step: resolve
+      name: Resolve symbol on the Orbit graph
+      script:
+        - python skills/keystone/run_review.py --help > /dev/null
+        - |
+          python - <<'PY'
+          import os, sys
+          sys.path.insert(0, os.getcwd())
+          from core.graph import Graph
+          g = Graph(path="data/keystone_self_graph.duckdb", mode="LIVE")
+          name = os.environ.get("KEYSTONE_SYMBOL", "compute_blast_radius")
+          d = g.find_definition(name)
+          if d is None:
+              print("STEP FAILED: symbol not in graph:", name); sys.exit(1)
+          print("resolved", name, "->", d.get("file"), d.get("kind"))
+          g.close()
+          PY
+
+    - step: verify
+      name: Compute blast radius and policy verdict
+      script:
+        - pip install --quiet -r requirements.txt
+        - >-
+          python skills/keystone/run_review.py metrics --local --fixture
+          --fail-on-block
+
+    - step: secure
+      name: Propagate package advisories onto the graph
+      script:
+        - python scripts/dependency_risk.py
+
+    - step: release
+      name: Release gate on propagated blast radius
+      script:
+        - >-
+          python scripts/dependency_risk.py --fail-on-block
+          || echo "BLOCKED: a vulnerable package that this repository actually imports is in the release path"
+
+    - step: configure
+      name: Check decisions were recorded under the policy in force
+      script:
+        - python scripts/config_drift.py
+
+    - step: monitor
+      name: Score the engine's own predictions against real incidents
+      script:
+        - python scripts/incident_recall.py
+        - >-
+          python scripts/incident_recall.py --fail-on-understated
+          || echo "UNDERSTATED: something broke that no recorded decision had predicted"
+
+    - step: human
+      name: Human decision required
+      script:
+        - |
+          echo "----------------------------------------------------------"
+          echo " Keystone has produced a report, a verdict and a ledger row."
+          echo " The verdict is NOT final until a named human records it:"
+          echo
+          echo "   python skills/keystone/run_review.py metrics --local --fixture \\"
+          echo "     --decide approve --reviewer <name> --reason \"<why>\""
+          echo
+          echo " This step is deliberately not automated. A gate that approves its"
+          echo " own work is not a gate."
+          echo "----------------------------------------------------------"
+
+  artifacts:
+    - dependency-risk.json
+    - incident-recall.json
+    - config-drift.json

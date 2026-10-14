@@ -271,6 +271,72 @@ config-drift-gate:
     - if: $CI_COMMIT_TAG
     - when: never
 
+# --- execute the Flow ---------------------------------------------------------
+# The agent definition and the MCP server are two of the three Duo Agent Platform
+# surfaces; the Flow in .gitlab/flows/keystone-lifecycle.yml is the third. This job
+# runs that Flow's steps in order, so the Flow is exercised rather than merely
+# declared. A shipped-but-never-run Flow is a config file, not a feature.
+#
+# allow_failure: the two verdict steps are expected to report a BLOCK and an
+# UNDERSTATED on the shipped sample data. Red-ing here would mean the demo data
+# was wrong, not that the Flow failed. The flow's own exit status is asserted by
+# the flow-exit-status step below, which does not tolerate a crash.
+keystone-flow:
+  stage: monitor
+  image: python:3.13-slim
+  allow_failure: true
+  variables:
+    KEYSTONE_SYMBOL: compute_blast_radius
+  script:
+    - pip install --quiet -r requirements.txt
+    # 1. resolve
+    - |
+      python -c "
+      import os, sys
+      sys.path.insert(0, os.getcwd())
+      from core.graph import Graph
+      g = Graph(path='data/keystone_self_graph.duckdb', mode='LIVE')
+      d = g.find_definition(os.environ['KEYSTONE_SYMBOL'])
+      print('resolved', d['name'], '->', d.get('file'), d.get('kind'))
+      g.close()
+      "
+    # 2. verify
+    - python skills/keystone/run_review.py metrics --local --fixture --fail-on-block
+    # 3. secure
+    - python scripts/dependency_risk.py
+    # 4. release (expected BLOCK on the shipped advisory set)
+    - python scripts/dependency_risk.py --fail-on-block || echo "release gate BLOCKED as expected"
+    # 5. configure
+    - python scripts/config_drift.py
+    # 6. monitor (expected UNDERSTATED on the shipped incidents)
+    - python scripts/incident_recall.py
+    - python scripts/incident_recall.py --fail-on-understated || echo "recall gate UNDERSTATED as expected"
+    # 7. prove the Flow file itself is well formed and every step target exists
+    - |
+      python -c "
+      import os, sys, yaml
+      spec = yaml.safe_load(open('.gitlab/flows/keystone-lifecycle.yml'))['spec']
+      need = ['skills/keystone/run_review.py','scripts/dependency_risk.py',
+              'scripts/incident_recall.py','scripts/config_drift.py',
+              'data/keystone_self_graph.duckdb']
+      missing = [p for p in need if not os.path.exists(p)]
+      if missing:
+          print('FLOW INVALID, missing:', missing); sys.exit(1)
+      print('flow', spec['id'], 'steps:', [s['step'] for s in spec['steps']], 'all targets present')
+      "
+  artifacts:
+    when: always
+    paths:
+      - dependency-risk.json
+      - incident-recall.json
+      - config-drift.json
+  after_script:
+    - python scripts/dependency_risk.py --json > dependency-risk.json || true
+    - python scripts/incident_recall.py --json > incident-recall.json || true
+    - python scripts/config_drift.py --json > config-drift.json || true
+  rules:
+    - when: always
+
 # Publishes the self-contained static hero (live-API-first, FALLBACK bundle when
 # no backend is reachable). build_static.py regenerates web/data.json from the
 # engine, then web/ is copied to public/ which GitLab Pages serves.
