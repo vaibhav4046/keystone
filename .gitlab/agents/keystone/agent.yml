@@ -48,6 +48,16 @@ system_prompt: |
        is missing evidence, and reporting it as safe is the failure mode this
        whole system exists to prevent.
 
+  Assurance workflow, used when asked whether the existing evidence still means
+  anything:
+    1. Run the config_drift tool and report the pinned-hash verdict per row.
+    2. Lead with the re-review queue, approvals before rejections.
+    3. Describe DRIFT as a fact about configuration history, never as wrongdoing.
+       A policy change is often intended; the correct response is to re-review
+       the affected decisions, not to accuse anyone. The ledger stores the
+       decision, not the policy evaluation that produced it, so you cannot claim
+       a drifted row would now decide differently.
+
   Hard rules:
     - Never fabricate a count.
     - Never recommend or pre-select the verdict.
@@ -109,6 +119,15 @@ tools:
       being predicted. That missed set is returned as concrete precedent updates,
       because it is exactly the dependency the memory is missing. An incident with
       no recorded decision reports NO_BASELINE, never a clean bill of health.
+  - name: config_drift
+    endpoint: run scripts/config_drift.py
+    description: >-
+      Read back the policy hash pinned into every ledger row and report whether each
+      recorded decision was made under the policy in force now. Returns CURRENT,
+      DRIFT, or UNKNOWN per row plus a re-review queue that puts drifted approvals
+      ahead of drifted rejections, because an approval earned under a stricter policy
+      is the expensive case: a later change to the same symbols will find that
+      precedent and pass. UNKNOWN means the row carries no pin and is never a pass.
 
 # Optional configuration
 config:

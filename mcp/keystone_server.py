@@ -220,8 +220,34 @@ def incident_recall(incidents_path: str = "", ledger_path: str = "") -> dict:
     }
 
 
+def config_drift(ledger_path: str = "") -> dict:
+    """Report whether recorded decisions were made under the policy in force now.
+
+    Keystone pins the policy hash into every ledger row. This reads those pins back,
+    which is the only way to know whether an approval still means anything: edit
+    .keystone/policy.json and every prior approval would otherwise keep looking valid
+    under rules that had stopped existing.
+
+    Returns CURRENT / DRIFT / UNKNOWN per row, plus a re-review queue that puts
+    drifted approvals ahead of drifted rejections. UNKNOWN means the row carries no
+    pinned hash, and is never reported as a pass. Deterministic, no LLM.
+    """
+    import sys as _sys
+    ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if ROOT not in _sys.path:
+        _sys.path.insert(0, ROOT)
+    from core.config_drift import audit, load_ledger, re_review_queue
+
+    led = load_ledger(ledger_path or os.path.join(ROOT, "data", "audit_ledger.jsonl"))
+    rep = audit(led)
+    d = rep.to_dict()
+    d["ok"] = True
+    d["re_review_queue"] = re_review_queue(rep)
+    return d
+
+
 for _fn in (gate_symbol, gate_diff, cross_mr_collision, scan_repo_and_gate,
-            advisory_exposure, dependency_risk, incident_recall):
+            advisory_exposure, dependency_risk, incident_recall, config_drift):
     mcp.tool()(_fn)
 
 

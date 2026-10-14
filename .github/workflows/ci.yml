@@ -49,6 +49,11 @@ jobs:
       # that reports the memory is incomplete. The enforceable form is behind a tag.
       - run: python scripts/incident_recall.py
       - run: "! python scripts/incident_recall.py --fail-on-understated"
+      # --- configuration drift: are approvals still made under today's rules? ----
+      # Reported, not fatal: a policy change is often intended and the right response
+      # is to re-review, not to red the build. The enforceable form is behind a tag.
+      - run: python scripts/config_drift.py
+      - run: "! python scripts/config_drift.py --fail-on-drift"
       # committed static bundle must equal a fresh build from the committed real Orbit
       # self-index + provenance + recorded agent sample (no silent drift; no orbit binary
       # or network needed - the build reads only committed artifacts)

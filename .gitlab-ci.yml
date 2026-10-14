@@ -232,6 +232,40 @@ incident-recall-gate:
     - if: $CI_COMMIT_TAG
     - when: never
 
+# --- configure: were the recorded decisions made under today's rules? ---------
+# The ledger pins the policy hash into every row. This reads those pins back. If
+# .keystone/policy.json has been edited since a decision was recorded, that
+# approval still shows green while describing rules that no longer exist.
+#
+# allow_failure: drift is a fact about configuration history, not a build break.
+# A policy change is often intended, and the right response is to re-review, not
+# to red the pipeline. The enforceable form runs on a tag.
+config-drift:
+  stage: gate
+  image: python:3.13-slim
+  allow_failure: true
+  script:
+    - pip install --quiet -r requirements.txt
+    - python scripts/config_drift.py
+  artifacts:
+    when: always
+    paths:
+      - config-drift.json
+  after_script:
+    - python scripts/config_drift.py --json > config-drift.json || true
+  rules:
+    - when: always
+
+config-drift-gate:
+  stage: release
+  image: python:3.13-slim
+  script:
+    - pip install --quiet -r requirements.txt
+    - python scripts/config_drift.py --fail-on-drift
+  rules:
+    - if: $CI_COMMIT_TAG
+    - when: never
+
 # Publishes the self-contained static hero (live-API-first, FALLBACK bundle when
 # no backend is reachable). build_static.py regenerates web/data.json from the
 # engine, then web/ is copied to public/ which GitLab Pages serves.
