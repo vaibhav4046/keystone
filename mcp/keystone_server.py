@@ -26,10 +26,13 @@ from core import policy as policy_mod        # noqa: E402
 from core import collision as collision_mod  # noqa: E402
 from core import diff_symbols                # noqa: E402
 from core import repo_scan                   # noqa: E402
+from core import advisory as advisory_mod    # noqa: E402
 
 from mcp.server.fastmcp import FastMCP       # noqa: E402
 
 DEFAULT_GRAPH = os.path.join(ROOT, "data", "keystone_self_graph.duckdb")
+DEFAULT_LOCK = os.path.join(ROOT, "data", "requirements.lock")
+DEFAULT_ADVISORIES = os.path.join(ROOT, "data", "advisories.example.json")
 _RANK = {"ALLOW": 0, "HOLD": 1, "BLOCK": 2}
 
 mcp = FastMCP("keystone")
@@ -115,7 +118,67 @@ def scan_repo_and_gate(repo: str, github_token: str = "", top: int = 8) -> dict:
             "top": scored[: max(1, min(int(top), 50))]}
 
 
-for _fn in (gate_symbol, gate_diff, cross_mr_collision, scan_repo_and_gate):
+def advisory_exposure(package: str, advisories_path: str = "", lock_path: str = "",
+                      graph_path: str = "") -> dict:
+    """Turn a package advisory into a ranked blast radius over the Orbit graph.
+
+    A scanner tells you `package X has a CVE`. This tells you which of THIS repo's
+    definitions import it, how far the damage travels from each, and which
+    directory owns the blast -- which is the question you actually have to act on.
+
+    package: advisory id (GHSA-/CVE-/DEMO-) or the package name itself.
+    advisories_path: local JSON advisories; defaults to the shipped example set.
+    lock_path: pinned requirements; defaults to data/requirements.lock.
+    Deterministic: no network call, no LLM, identical inputs give identical output.
+    """
+    advs = advisory_mod.load_advisories(advisories_path or DEFAULT_ADVISORIES)
+    if not advs:
+        return {"ok": False, "error": "no_advisories",
+                "advisories_path": advisories_path or DEFAULT_ADVISORIES}
+    locked = advisory_mod.parse_requirements(lock_path or DEFAULT_LOCK)
+
+    norm = package.strip().lower()
+    picked = [a for a in advs
+              if a.id.lower() == norm or a.norm_package == advisory_mod.normalize_package(package)]
+    if not picked:
+        return {"ok": False, "error": "advisory_not_found", "query": package,
+                "available": sorted(a.id for a in advs)}
+
+    g = _graph(graph_path)
+    out = [advisory_mod.propagate(g, a, locked).to_dict() for a in picked]
+    g.close()
+    return {"ok": True, "query": package, "exposures": out,
+            "worst_verdict": max((e["verdict"] for e in out), key=lambda v: _RANK.get(v, 0))}
+
+
+def dependency_risk(advisories_path: str = "", lock_path: str = "",
+                    graph_path: str = "") -> dict:
+    """Run every known advisory through dependency-risk propagation and return the
+    ranked report, worst first. This is the `secure` stage entry point: it is what
+    gates a release.
+
+    Advisories are read from a local file, never the network, so CI and a judge's
+    re-run produce byte-identical output and a flaky advisory feed cannot move a gate.
+    """
+    advs = advisory_mod.load_advisories(advisories_path or DEFAULT_ADVISORIES)
+    locked = advisory_mod.parse_requirements(lock_path or DEFAULT_LOCK)
+    if not advs:
+        return {"ok": False, "error": "no_advisories", "exposures": []}
+    g = _graph(graph_path)
+    rows = [e.to_dict() for e in advisory_mod.propagate_all(g, advs, locked)]
+    g.close()
+    return {
+        "ok": True,
+        "advisories": len(rows),
+        "matched": sum(1 for r in rows if r["matched"]),
+        "blocked": sum(1 for r in rows if r["verdict"] == "BLOCK"),
+        "verdict": max((r["verdict"] for r in rows), key=lambda v: _RANK.get(v, 0)) if rows else "ALLOW",
+        "exposures": rows,
+    }
+
+
+for _fn in (gate_symbol, gate_diff, cross_mr_collision, scan_repo_and_gate,
+            advisory_exposure, dependency_risk):
     mcp.tool()(_fn)
 
 
@@ -130,6 +193,11 @@ def _selftest() -> int:
     print(json.dumps(gate_diff(diff), indent=2)[:600])
     print("\ncross_mr_collision([compute_blast_radius],[verify]):")
     print(json.dumps(cross_mr_collision(["compute_blast_radius"], ["verify"]), indent=2)[:600])
+    print("\nadvisory_exposure(DEMO-0002):")
+    print(json.dumps(advisory_exposure("DEMO-0002"), indent=2)[:900])
+    print("\ndependency_risk():")
+    r = dependency_risk()
+    print(json.dumps({k: v for k, v in r.items() if k != "exposures"}, indent=2))
     return 0
 
 

@@ -1,0 +1,22 @@
+# Keystone dependency lock.
+#
+# Resolved from requirements.txt against the installed environment by
+# scripts/generate_lock.py. Scoped to this project's declared dependencies on
+# purpose: a full `pip freeze` would emit editable installs as absolute local
+# paths, publishing the maintainer's home directory and unrelated private
+# project names into a public repo, and would pin hundreds of packages that
+# have nothing to do with this project.
+#
+# Regenerate:  python scripts/generate_lock.py
+duckdb==1.5.3
+fastapi==0.115.6
+starlette==0.41.3
+uvicorn==0.34.0
+pydantic==2.13.4
+pytest==8.3.4
+httpx==0.28.1
+cryptography==46.0.5
+google-genai==2.8.0
+tree_sitter==0.25.2
+tree_sitter_javascript==0.25.0
+tree_sitter_typescript==0.23.2
