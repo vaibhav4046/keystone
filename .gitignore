@@ -87,3 +87,7 @@ _wasmtest.cjs
 
 # local Claude agent artifacts - not part of the project
 .claude/launch.json
+
+# the committed recall fixture IS tracked: the live ledger above is regenerable runtime
+# state, but the fixture is what makes the monitor example reproduce on a clean checkout
+!data/recall_fixture_ledger.jsonl
